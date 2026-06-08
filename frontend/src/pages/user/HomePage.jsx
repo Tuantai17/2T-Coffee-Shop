@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { getProducts } from "../../services/productService";
+import { getProducts, getCategories } from "../../services/productService";
 import { addToCart } from "../../services/cartService";
 import UserLayout from "../../layouts/UserLayout";
 
 function HomePage() {
   const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadProducts = async () => {
@@ -17,6 +18,15 @@ function HomePage() {
       console.error("Lỗi lấy sản phẩm nổi bật:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCategories = async () => {
+    try {
+      const res = await getCategories();
+      setCategories(res.data);
+    } catch (error) {
+      console.error("Lỗi lấy danh mục:", error);
     }
   };
 
@@ -38,15 +48,16 @@ function HomePage() {
 
   useEffect(() => {
     loadProducts();
+    loadCategories();
   }, []);
 
-  // Danh mục nổi bật phong cách MyKingdom
-  const categories = [
-    { name: "LEGO Lắp Ráp", color: "#ffd200", icon: "fa-cubes", img: "https://images.unsplash.com/photo-1585366119957-e5733f399e7c?w=150" },
-    { name: "Búp Bê Xinh", color: "#ff8da1", icon: "fa-child-dress", img: "https://images.unsplash.com/photo-1559251606-c623743a6d76?w=150" },
-    { name: "Siêu Xe Mô Hình", color: "#3ba2ff", icon: "fa-car", img: "https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=150" },
-    { name: "Đồ Chơi Giáo Dục", color: "#5cdb5c", icon: "fa-puzzle-piece", img: "https://images.unsplash.com/photo-1515488042361-404e9250afef?w=150" },
-    { name: "Robot Lắp Ghép", color: "#a55cff", icon: "fa-robot", img: "https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=150" }
+  // Danh mục phong cách mặc định đẹp mắt để hiển thị động
+  const categoryStyles = [
+    { color: "#ffd200", img: "https://images.unsplash.com/photo-1585366119957-e5733f399e7c?w=150" }, // LEGO
+    { color: "#ff8da1", img: "https://images.unsplash.com/photo-1559251606-c623743a6d76?w=150" }, // Búp bê
+    { color: "#3ba2ff", img: "https://images.unsplash.com/photo-1581235720704-06d3acfcb36f?w=150" }, // Siêu xe
+    { color: "#5cdb5c", img: "https://images.unsplash.com/photo-1515488042361-404e9250afef?w=150" }, // Giáo dục
+    { color: "#a55cff", img: "https://images.unsplash.com/photo-1546776310-eef45dd6d63c?w=150" }  // Robot
   ];
 
   return (
@@ -70,19 +81,26 @@ function HomePage() {
           <p className="text-muted">Lựa chọn đồ chơi phù hợp với lứa tuổi phát triển của bé</p>
         </div>
         <div className="row justify-content-center text-center g-4">
-          {categories.map((cat, idx) => (
-            <div className="col-6 col-md-2.5 category-item mx-lg-3" key={idx} style={{ cursor: "pointer", width: "180px" }}>
-              <div className="category-circle" style={{ backgroundColor: cat.color + "25" }}>
-                <img
-                  src={cat.img}
-                  alt={cat.name}
-                  className="rounded-circle"
-                  style={{ width: "80px", height: "80px", objectFit: "cover" }}
-                />
-              </div>
-              <span className="fw-bold text-dark d-block mt-2" style={{ fontSize: "0.95rem" }}>{cat.name}</span>
-            </div>
-          ))}
+          {categories.length === 0 ? (
+            <div className="text-muted">Không có danh mục nào.</div>
+          ) : (
+            categories.map((cat, idx) => {
+              const style = categoryStyles[idx % categoryStyles.length];
+              return (
+                <div className="col-6 col-md-2.5 category-item mx-lg-3" key={cat.id || idx} style={{ cursor: "pointer", width: "180px" }}>
+                  <div className="category-circle" style={{ backgroundColor: style.color + "25" }}>
+                    <img
+                      src={style.img}
+                      alt={cat.name}
+                      className="rounded-circle"
+                      style={{ width: "80px", height: "80px", objectFit: "cover" }}
+                    />
+                  </div>
+                  <span className="fw-bold text-dark d-block mt-2" style={{ fontSize: "0.95rem" }}>{cat.name}</span>
+                </div>
+              );
+            })
+          )}
         </div>
       </div>
 
