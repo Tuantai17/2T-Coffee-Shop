@@ -26,7 +26,7 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public Product getProductById(Long id) {
-        return productRepository.getOne(id);
+        return productRepository.findById(id).orElse(null);
     }
 
     @Override
@@ -37,6 +37,21 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public Product addProduct(Product product) {
         return productRepository.save(product);
+    }
+
+    @Override
+    public Product updateProduct(Long id, Product productDetails) {
+        Product product = productRepository.findById(id).orElse(null);
+        if (product != null) {
+            product.setProductName(productDetails.getProductName());
+            product.setPrice(productDetails.getPrice());
+            product.setDiscription(productDetails.getDiscription());
+            product.setCategory(productDetails.getCategory());
+            product.setAvailability(productDetails.getAvailability());
+            product.setImageUrl(productDetails.getImageUrl());
+            return productRepository.save(product);
+        }
+        return null;
     }
 
     @Override

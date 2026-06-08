@@ -1,8 +1,9 @@
 package com.rainbowforest.productcatalogservice.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import javax.persistence.*;
-import javax.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
 
 @Entity
@@ -32,6 +33,9 @@ public class Product {
     @Column (name = "availability")
     @NotNull
     private int availability;
+
+    @Column (name = "image_url")
+    private String imageUrl;
 
 	public Product() {
 
@@ -83,5 +87,53 @@ public class Product {
 
 	public void setAvailability(int availability) {
 		this.availability = availability;
-	} 
+	}
+
+	public String getImageUrl() {
+		return imageUrl;
+	}
+
+	public void setImageUrl(String imageUrl) {
+		this.imageUrl = imageUrl;
+	}
+
+	@JsonProperty("name")
+	public String getName() {
+		return productName;
+	}
+
+	@JsonProperty("name")
+	public void setName(String name) {
+		this.productName = name;
+	}
+
+	@JsonProperty("description")
+	public String getDescription() {
+		return discription;
+	}
+
+	@JsonProperty("description")
+	public void setDescription(String description) {
+		this.discription = description;
+	}
+
+	@JsonProperty("quantity")
+	public int getQuantity() {
+		return availability;
+	}
+
+	@JsonProperty("quantity")
+	public void setQuantity(int quantity) {
+		this.availability = quantity;
+	}
+
+	@JsonProperty("categoryId")
+	public String getCategoryId() {
+		return category;
+	}
+
+	@JsonProperty("categoryId")
+	public void setCategoryId(String categoryId) {
+		this.category = categoryId;
+	}
 }

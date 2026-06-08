@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 public class CartController {
@@ -19,7 +19,7 @@ public class CartController {
     private HeaderGenerator headerGenerator;
 
     @GetMapping (value = "/cart")
-    public ResponseEntity<List<Object>> getCart(@RequestHeader(value = "Cookie") String cartId){
+    public ResponseEntity<List<Object>> getCart(@RequestHeader(value = "Cart-Id") String cartId){
         List<Object> cart = cartService.getCart(cartId);
         if(!cart.isEmpty()) {
         	return new ResponseEntity<List<Object>>(
@@ -36,7 +36,7 @@ public class CartController {
     public ResponseEntity<List<Object>> addItemToCart(
             @RequestParam("productId") Long productId,
             @RequestParam("quantity") Integer quantity,
-            @RequestHeader(value = "Cookie") String cartId,
+            @RequestHeader(value = "Cart-Id") String cartId,
             HttpServletRequest request) {
         List<Object> cart = cartService.getCart(cartId);
         if(cart != null) {
@@ -62,7 +62,7 @@ public class CartController {
     @DeleteMapping(value = "/cart", params = "productId")
     public ResponseEntity<Void> removeItemFromCart(
             @RequestParam("productId") Long productId,
-            @RequestHeader(value = "Cookie") String cartId){
+            @RequestHeader(value = "Cart-Id") String cartId){
     	List<Object> cart = cartService.getCart(cartId);
     	if(cart != null) {
     		cartService.deleteItemFromCart(cartId, productId);

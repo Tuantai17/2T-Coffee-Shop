@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/admin")
@@ -20,7 +20,7 @@ public class AdminProductController {
     private HeaderGenerator headerGenerator;
 
     @PostMapping(value = "/products")
-    private ResponseEntity<Product> addProduct(@RequestBody Product product, HttpServletRequest request){
+    public ResponseEntity<Product> addProduct(@RequestBody Product product, HttpServletRequest request){
     	if(product != null) {
     		try {
     			productService.addProduct(product);
@@ -40,8 +40,34 @@ public class AdminProductController {
     			HttpStatus.BAD_REQUEST);       
     }
     
+    @PutMapping(value = "/products/{id}")
+    public ResponseEntity<Product> updateProduct(@PathVariable("id") Long id, @RequestBody Product product, HttpServletRequest request) {
+    	if(product != null) {
+    		try {
+    			Product updatedProduct = productService.updateProduct(id, product);
+    			if (updatedProduct != null) {
+    				return new ResponseEntity<Product>(
+    						updatedProduct,
+    						headerGenerator.getHeadersForSuccessGetMethod(),
+    						HttpStatus.OK);
+    			}
+    			return new ResponseEntity<Product>(
+    					headerGenerator.getHeadersForError(),
+    					HttpStatus.NOT_FOUND);
+    		} catch (Exception e) {
+				e.printStackTrace();
+				return new ResponseEntity<Product>(
+						headerGenerator.getHeadersForError(),
+						HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+    	}
+    	return new ResponseEntity<Product>(
+    			headerGenerator.getHeadersForError(),
+    			HttpStatus.BAD_REQUEST);       
+    }
+
     @DeleteMapping(value = "/products/{id}")
-    private ResponseEntity<Void> deleteProduct(@PathVariable("id") Long id){
+    public ResponseEntity<Void> deleteProduct(@PathVariable("id") Long id){
     	Product product = productService.getProductById(id);
     	if(product != null) {
     		try {
@@ -51,7 +77,7 @@ public class AdminProductController {
     	        		HttpStatus.OK);
     		}catch (Exception e) {
 				e.printStackTrace();
-    	        return new ResponseEntity<Void>(
+     	        return new ResponseEntity<Void>(
     	        		headerGenerator.getHeadersForError(),
     	        		HttpStatus.INTERNAL_SERVER_ERROR);
 			}

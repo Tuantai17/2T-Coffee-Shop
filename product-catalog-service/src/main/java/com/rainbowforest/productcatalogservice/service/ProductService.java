@@ -10,5 +10,6 @@ public interface ProductService {
     public Product getProductById(Long id);
     public List<Product> getAllProductsByName(String name);
     public Product addProduct(Product product);
+    public Product updateProduct(Long id, Product product);
     public void deleteProduct(Long productId);
 }
