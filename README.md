@@ -1,5 +1,15 @@
-# 
-HỆ THỐNG VI DỊCH VỤ THƯƠNG MẠI ĐIỆN TỬ - MYKINGDOM TOY STORE (MICROSERVICES)
+# THÔNG TIN SINH VIÊN
+
+| Thông tin | Chi tiết |
+| :--- | :--- |
+| **Sinh viên thực hiện** | Nguyễn Tuấn Tài |
+| **MSSV** | 2123110166 |
+| **Lớp** | CCQ2311E |
+| **Môn học** | Chuyên đề ứng dụng lập trình WEB 2 |
+
+---
+
+# HỆ THỐNG VI DỊCH VỤ THƯƠNG MẠI ĐIỆN TỬ - MYKINGDOM TOY STORE (MICROSERVICES)
 
 Dự án triển khai kiến trúc **REST Microservices** cho hệ thống cửa hàng đồ chơi trẻ em **MyKingdom Toy Store** sử dụng **Spring Boot**, **Spring Cloud** và các dịch vụ phụ trợ như **PostgreSQL**, **Redis**, **Apache Kafka**, cùng với giao diện người dùng xây dựng bằng **React (Vite)**.
 
