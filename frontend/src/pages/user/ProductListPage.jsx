@@ -66,49 +66,59 @@ function ProductListPage() {
           </div>
         ) : (
           <div className="row g-4">
-            {products.map((p) => (
-              <div className="col-12 col-md-3" key={p.id}>
-                <div className="card h-100 toy-card position-relative p-2">
-                  <span className="toy-badge-discount">-25%</span>
-                  
-                  <div className="position-relative bg-light rounded-4 overflow-hidden" style={{ height: "220px", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                    <img
-                      src={p.imageUrl || "https://images.unsplash.com/photo-1585366119957-e5733f399e7c?w=500"}
-                      className="card-img-top w-100 h-100"
-                      alt={p.name}
-                      style={{ objectFit: "cover" }}
-                    />
-                  </div>
-
-                  <div className="card-body d-flex flex-column p-3">
-                    <h5 className="card-title fw-bold text-dark text-truncate mb-1">{p.name}</h5>
-                    <p className="card-text text-muted text-truncate mb-2" style={{ fontSize: "0.85rem" }}>{p.description}</p>
+            {products.map((p) => {
+              const hasDiscount = p.originalPrice && p.originalPrice > p.price;
+              const discountPercentage = hasDiscount ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
+              return (
+                <div className="col-12 col-md-3" key={p.id}>
+                  <div className="card h-100 toy-card position-relative p-2">
+                    {hasDiscount && (
+                      <span className="toy-badge-discount">-{discountPercentage}%</span>
+                    )}
                     
-                    <div className="mb-3">
-                      <span className="text-danger fw-extrabold fs-5">
-                        {p.price.toLocaleString("vi-VN")} VNĐ
-                      </span>
-                      <br />
-                      <span className="text-muted text-decoration-line-through me-2" style={{ fontSize: "0.85rem" }}>
-                        {(p.price * 1.33).toLocaleString("vi-VN")} VNĐ
-                      </span>
+                    <div className="position-relative bg-light rounded-4 overflow-hidden" style={{ height: "220px", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <img
+                        src={p.imageUrl || "https://images.unsplash.com/photo-1585366119957-e5733f399e7c?w=500"}
+                        className="card-img-top w-100 h-100"
+                        alt={p.name}
+                        style={{ objectFit: "cover" }}
+                      />
                     </div>
 
-                    <div className="mt-auto d-flex gap-2">
-                      <Link to={`/products/${p.id}`} className="btn btn-outline-danger btn-sm rounded-pill fw-bold flex-grow-1" style={{ borderWidth: "2px" }}>
-                        Chi tiết
-                      </Link>
-                      <button
-                        className="btn btn-danger btn-sm rounded-pill px-3"
-                        onClick={() => handleAddToCart(p.id)}
-                      >
-                        <i className="fa-solid fa-cart-shopping"></i> Mua
-                      </button>
+                    <div className="card-body d-flex flex-column p-3">
+                      <h5 className="card-title fw-bold text-dark text-truncate mb-1">{p.name}</h5>
+                      <p className="card-text text-muted text-truncate mb-2" style={{ fontSize: "0.85rem" }}>{p.description}</p>
+                      
+                      <div className="mb-3" style={{ minHeight: "48px" }}>
+                        <span className="text-danger fw-extrabold fs-5">
+                          {p.price.toLocaleString("vi-VN")} VNĐ
+                        </span>
+                        {hasDiscount && (
+                          <>
+                            <br />
+                            <span className="text-muted text-decoration-line-through me-2" style={{ fontSize: "0.85rem" }}>
+                              {p.originalPrice.toLocaleString("vi-VN")} VNĐ
+                            </span>
+                          </>
+                        )}
+                      </div>
+
+                      <div className="mt-auto d-flex gap-2">
+                        <Link to={`/products/${p.id}`} className="btn btn-outline-danger btn-sm rounded-pill fw-bold flex-grow-1" style={{ borderWidth: "2px" }}>
+                          Chi tiết
+                        </Link>
+                        <button
+                          className="btn btn-danger btn-sm rounded-pill px-3"
+                          onClick={() => handleAddToCart(p.id)}
+                        >
+                          <i className="fa-solid fa-cart-shopping"></i> Mua
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

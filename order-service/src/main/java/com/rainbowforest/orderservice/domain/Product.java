@@ -1,6 +1,7 @@
 package com.rainbowforest.orderservice.domain;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
@@ -8,14 +9,10 @@ import java.util.List;
 
 @Entity
 @Table (name = "products")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Product {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @JsonIgnore
-    private Long productId;
-
-    @Transient
     private Long id;
 
     @Column (name = "product_name")

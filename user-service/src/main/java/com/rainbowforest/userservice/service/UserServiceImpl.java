@@ -57,6 +57,33 @@ public class UserServiceImpl implements UserService {
         return userRepository.save(user);
     }
 
+    @Override
+    public User updateUser(Long id, User userDetails) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user != null) {
+            user.setActive(userDetails.getActive());
+            if (userDetails.getRole() != null) {
+                UserRole role = userRoleRepository.findUserRoleByRoleName(userDetails.getRole().getRoleName());
+                if (role != null) {
+                    user.setRole(role);
+                }
+            }
+            if (userDetails.getUserDetails() != null) {
+                com.rainbowforest.userservice.entity.UserDetails details = user.getUserDetails();
+                if (details == null) {
+                    details = new com.rainbowforest.userservice.entity.UserDetails();
+                }
+                details.setFirstName(userDetails.getUserDetails().getFirstName());
+                details.setLastName(userDetails.getUserDetails().getLastName());
+                details.setEmail(userDetails.getUserDetails().getEmail());
+                details.setPhoneNumber(userDetails.getUserDetails().getPhoneNumber());
+                user.setUserDetails(details);
+            }
+            return userRepository.save(user);
+        }
+        return null;
+    }
+
     @jakarta.annotation.PostConstruct
     public void initData() {
         createRoleIfNotExist("ROLE_ADMIN");

@@ -10,6 +10,7 @@ function AdminProductPage() {
     name: "",
     description: "",
     price: "",
+    originalPrice: "",
     quantity: "",
     imageUrl: "",
     categoryId: "",
@@ -21,6 +22,7 @@ function AdminProductPage() {
     name: "",
     description: "",
     price: "",
+    originalPrice: "",
     quantity: "",
     imageUrl: "",
     categoryId: "",
@@ -66,6 +68,7 @@ function AdminProductPage() {
       await createProduct({
         ...form,
         price: Number(form.price),
+        originalPrice: form.originalPrice ? Number(form.originalPrice) : null,
         quantity: Number(form.quantity),
         categoryId: String(form.categoryId), // Lưu ID dưới dạng chuỗi khớp với kiểu String của Backend
       });
@@ -75,6 +78,7 @@ function AdminProductPage() {
         name: "",
         description: "",
         price: "",
+        originalPrice: "",
         quantity: "",
         imageUrl: "",
         categoryId: "",
@@ -92,6 +96,7 @@ function AdminProductPage() {
       name: p.name || p.productName || "",
       description: p.description || p.discription || "",
       price: p.price || "",
+      originalPrice: p.originalPrice || "",
       quantity: p.quantity || p.availability || "",
       imageUrl: p.imageUrl || "",
       categoryId: p.categoryId || p.category || "",
@@ -104,6 +109,7 @@ function AdminProductPage() {
       await updateProduct(editingProduct.id, {
         ...editForm,
         price: Number(editForm.price),
+        originalPrice: editForm.originalPrice ? Number(editForm.originalPrice) : null,
         quantity: Number(editForm.quantity),
         categoryId: String(editForm.categoryId),
       });
@@ -150,7 +156,7 @@ function AdminProductPage() {
         <form onSubmit={handleCreate} className="card shadow-sm border-0 rounded-4 p-4 mb-4">
           <h5 className="fw-bold text-primary mb-3">Thêm sản phẩm mới</h5>
           <div className="row g-3">
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label className="form-label fw-semibold">Tên sản phẩm</label>
               <input
                 name="name"
@@ -161,7 +167,7 @@ function AdminProductPage() {
                 required
               />
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
               <label className="form-label fw-semibold">Giá bán (VNĐ)</label>
               <input
                 name="price"
@@ -172,7 +178,18 @@ function AdminProductPage() {
                 required
               />
             </div>
-            <div className="col-md-4">
+            <div className="col-md-3">
+              <label className="form-label fw-semibold">Giá gốc (VNĐ)</label>
+              <input
+                name="originalPrice"
+                type="number"
+                className="form-control rounded-3"
+                placeholder="Để trống nếu không giảm giá"
+                value={form.originalPrice}
+                onChange={handleChange}
+              />
+            </div>
+            <div className="col-md-3">
               <label className="form-label fw-semibold">Số lượng trong kho</label>
               <input
                 name="quantity"
@@ -246,6 +263,7 @@ function AdminProductPage() {
                   <th className="py-3">Tên sản phẩm</th>
                   <th className="py-3">Danh mục</th>
                   <th className="py-3">Giá bán</th>
+                  <th className="py-3">Giá gốc</th>
                   <th className="py-3">Số lượng kho</th>
                   <th className="py-3 text-center" style={{ width: "200px" }}>Thao tác</th>
                 </tr>
@@ -271,6 +289,9 @@ function AdminProductPage() {
                       </span>
                     </td>
                     <td className="py-3 text-danger fw-bold">{(p.price || 0).toLocaleString("vi-VN")} VNĐ</td>
+                    <td className="py-3 text-muted text-decoration-line-through">
+                      {p.originalPrice ? `${p.originalPrice.toLocaleString("vi-VN")} VNĐ` : "-"}
+                    </td>
                     <td className="py-3 fw-medium">{p.quantity || p.availability} chiếc</td>
                     <td className="py-3 text-center">
                       <button
@@ -322,28 +343,6 @@ function AdminProductPage() {
                       />
                     </div>
                     <div className="col-md-6">
-                      <label className="form-label fw-semibold">Giá bán (VNĐ)</label>
-                      <input
-                        name="price"
-                        type="number"
-                        className="form-control rounded-3"
-                        value={editForm.price}
-                        onChange={handleEditChange}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6">
-                      <label className="form-label fw-semibold">Số lượng trong kho</label>
-                      <input
-                        name="quantity"
-                        type="number"
-                        className="form-control rounded-3"
-                        value={editForm.quantity}
-                        onChange={handleEditChange}
-                        required
-                      />
-                    </div>
-                    <div className="col-md-6">
                       <label className="form-label fw-semibold">Danh mục đồ chơi</label>
                       <select
                         name="categoryId"
@@ -359,6 +358,39 @@ function AdminProductPage() {
                           </option>
                         ))}
                       </select>
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold">Giá bán (VNĐ)</label>
+                      <input
+                        name="price"
+                        type="number"
+                        className="form-control rounded-3"
+                        value={editForm.price}
+                        onChange={handleEditChange}
+                        required
+                      />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold">Giá gốc (VNĐ)</label>
+                      <input
+                        name="originalPrice"
+                        type="number"
+                        className="form-control rounded-3"
+                        placeholder="Không giảm giá"
+                        value={editForm.originalPrice || ""}
+                        onChange={handleEditChange}
+                      />
+                    </div>
+                    <div className="col-md-4">
+                      <label className="form-label fw-semibold">Số lượng trong kho</label>
+                      <input
+                        name="quantity"
+                        type="number"
+                        className="form-control rounded-3"
+                        value={editForm.quantity}
+                        onChange={handleEditChange}
+                        required
+                      />
                     </div>
                     <div className="col-12">
                       <label className="form-label fw-semibold">Đường dẫn hình ảnh (URL)</label>

@@ -23,6 +23,9 @@ public class Product {
     @NotNull
     private BigDecimal price;
 
+    @Column (name = "original_price")
+    private BigDecimal originalPrice;
+
     @Column (name = "discription")
     private String discription;
 
@@ -63,6 +66,14 @@ public class Product {
 
 	public void setPrice(BigDecimal price) {
 		this.price = price;
+	}
+
+	public BigDecimal getOriginalPrice() {
+		return originalPrice;
+	}
+
+	public void setOriginalPrice(BigDecimal originalPrice) {
+		this.originalPrice = originalPrice;
 	}
 
 	public String getDiscription() {

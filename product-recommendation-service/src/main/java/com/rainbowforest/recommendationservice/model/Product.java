@@ -1,12 +1,14 @@
 package com.rainbowforest.recommendationservice.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import lombok.NoArgsConstructor;
 import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
 @Table (name = "products")
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Product {
 
     @Id
@@ -26,6 +28,14 @@ public class Product {
     public Product(String productName, List<Recommendation> recomendations) {
         this.productName = productName;
         this.recomendations = recomendations;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
     }
 
     public String getProductName() {

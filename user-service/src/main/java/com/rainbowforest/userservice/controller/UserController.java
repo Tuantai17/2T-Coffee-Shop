@@ -78,4 +78,18 @@ public class UserController {
 		}
     	return new ResponseEntity<User>(HttpStatus.BAD_REQUEST);
     }
+
+    @PutMapping (value = "/users/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable("id") Long id, @RequestBody User userDetails) {
+        User updatedUser = userService.updateUser(id, userDetails);
+        if (updatedUser != null) {
+            return new ResponseEntity<User>(
+                updatedUser,
+                headerGenerator.getHeadersForSuccessGetMethod(),
+                HttpStatus.OK);
+        }
+        return new ResponseEntity<User>(
+            headerGenerator.getHeadersForError(),
+            HttpStatus.NOT_FOUND);
+    }
 }

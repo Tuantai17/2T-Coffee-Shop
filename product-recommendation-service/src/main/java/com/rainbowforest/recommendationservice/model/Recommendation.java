@@ -13,12 +13,11 @@ public class Recommendation {
     @Column (name = "rating")
     private int rating;
 
-    @ManyToOne (cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn (name = "product_id")
-
     private Product product;
 
-    @ManyToOne (cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn (name = "user_id")
     private User user;
     

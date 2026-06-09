@@ -33,3 +33,11 @@ export const logout = () => {
 export const getUserProfile = async (userId) => {
   return axiosClient.get(`/api/accounts/users/${userId}`);
 };
+
+export const getUsers = async () => {
+  return axiosClient.get("/api/accounts/users");
+};
+
+export const updateUser = async (id, data) => {
+  return axiosClient.put(`/api/accounts/users/${id}`, data);
+};
