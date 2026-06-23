@@ -38,7 +38,10 @@ function RegisterPage() {
       navigate("/login");
     } catch (err) {
       console.error(err);
-      setError("Đăng ký thất bại. Tên đăng nhập hoặc Email có thể đã tồn tại!");
+      setError(
+        err?.response?.data?.message ||
+        "Đăng ký thất bại. Tên đăng nhập hoặc Email có thể đã tồn tại!"
+      );
     } finally {
       setLoading(false);
     }

@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getAuthSession, getAuthStorageScopeFromPath } from "../utils/authStorage";
 
 const axiosClient = axios.create({
   baseURL: "http://localhost:8900",
@@ -8,7 +9,9 @@ const axiosClient = axios.create({
 });
 
 axiosClient.interceptors.request.use((config) => {
-  const token = sessionStorage.getItem("token");
+  const pathname = typeof window !== "undefined" ? window.location.pathname : "";
+  const scope = getAuthStorageScopeFromPath(pathname);
+  const { token } = getAuthSession(scope);
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

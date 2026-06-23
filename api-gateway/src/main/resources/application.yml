@@ -24,24 +24,52 @@ spring:
             - Path=/api/accounts/**
           filters:
             - StripPrefix=2
-        - id: product-catalog-service
-          uri: lb://product-catalog-service
-          predicates:
-            - Path=/api/catalog/**
-          filters:
-            - StripPrefix=2
         - id: order-service
           uri: lb://order-service
           predicates:
             - Path=/api/shop/**
           filters:
             - StripPrefix=2
-        - id: product-recommendation-service
-          uri: lb://product-recommendation-service
+        - id: product-catalog-service
+          uri: lb://product-catalog-service
           predicates:
-            - Path=/api/review/**
+            - Path=/api/catalog/**
           filters:
             - StripPrefix=2
+        - id: payment-service
+          uri: lb://payment-service
+          predicates:
+            - Path=/api/payments/**
+          filters:
+            - StripPrefix=2
+        - id: inventory-service
+          uri: lb://inventory-service
+          predicates:
+            - Path=/api/inventory/**
+          filters:
+            - StripPrefix=1
+        - id: delivery-service
+          uri: lb://delivery-service
+          predicates:
+            - Path=/api/deliveries/**
+          filters:
+            - StripPrefix=1
+        - id: revenue-service
+          uri: lb://revenue-service
+          predicates:
+            - Path=/api/revenues/**
+          filters:
+            - StripPrefix=1
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - StripPrefix=1
+        - id: notification-ws
+          uri: lb:ws://notification-service
+          predicates:
+            - Path=/ws-notifications/**
 
 eureka:
   client:

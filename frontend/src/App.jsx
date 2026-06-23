@@ -5,6 +5,7 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import HomePage from "./pages/user/HomePage";
 import ProductListPage from "./pages/user/ProductListPage";
 import ProductDetailPage from "./pages/user/ProductDetailPage";
+import CollectionDetailPage from "./pages/user/CollectionDetailPage";
 import CartPage from "./pages/user/CartPage";
 import CheckoutPage from "./pages/user/CheckoutPage";
 import LoginPage from "./pages/user/LoginPage";
@@ -18,6 +19,11 @@ import AdminProductPage from "./pages/admin/AdminProductPage";
 import AdminCategoryPage from "./pages/admin/AdminCategoryPage";
 import AdminOrderPage from "./pages/admin/AdminOrderPage";
 import AdminUserPage from "./pages/admin/AdminUserPage";
+import AdminBannerPage from "./pages/admin/AdminBannerPage";
+import AdminCollectionPage from "./pages/admin/AdminCollectionPage";
+import AdminLoginPage from "./pages/admin/AdminLoginPage";
+import AdminNotificationPage from "./pages/admin/AdminNotificationPage";
+import AdminMenuPage from "./pages/admin/AdminMenuPage";
 
 // Security
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -30,8 +36,10 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/products" element={<ProductListPage />} />
         <Route path="/products/:id" element={<ProductDetailPage />} />
+        <Route path="/collections/:slug" element={<CollectionDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/admin/login" element={<AdminLoginPage />} />
 
         {/* User Protected Routes */}
         <Route
@@ -102,10 +110,42 @@ function App() {
           }
         />
         <Route
+          path="/admin/banners"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminBannerPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/collections"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminCollectionPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/admin/users"
           element={
             <ProtectedRoute adminOnly={true}>
               <AdminUserPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/notifications"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminNotificationPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/menus"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminMenuPage />
             </ProtectedRoute>
           }
         />

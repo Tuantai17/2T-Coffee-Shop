@@ -1,11 +1,19 @@
 import axiosClient from "../api/axiosClient";
 
-export const getProducts = async () => {
-  return axiosClient.get("/api/catalog/products");
+export const getProducts = async (params = {}) => {
+  return axiosClient.get("/api/catalog/products", { params });
+};
+
+export const getPagedProducts = async (params = {}) => {
+  return axiosClient.get("/api/catalog/products/paged", { params });
 };
 
 export const getProductById = async (id) => {
   return axiosClient.get(`/api/catalog/products/${id}`);
+};
+
+export const getProductBySlug = async (slug) => {
+  return axiosClient.get(`/api/catalog/products/slug/${slug}`);
 };
 
 export const createProduct = async (data) => {
@@ -22,6 +30,42 @@ export const deleteProduct = async (id) => {
 
 export const getCategories = async () => {
   return axiosClient.get("/api/catalog/products/categories");
+};
+
+export const getBanners = async (params = {}) => {
+  return axiosClient.get("/api/catalog/banners", { params });
+};
+
+export const getCollections = async (params = {}) => {
+  return axiosClient.get("/api/catalog/collections", { params });
+};
+
+export const getCollectionBySlug = async (slug) => {
+  return axiosClient.get(`/api/catalog/collections/${slug}`);
+};
+
+export const createCollection = async (data) => {
+  return axiosClient.post("/api/catalog/admin/collections", data);
+};
+
+export const updateCollection = async (id, data) => {
+  return axiosClient.put(`/api/catalog/admin/collections/${id}`, data);
+};
+
+export const deleteCollection = async (id) => {
+  return axiosClient.delete(`/api/catalog/admin/collections/${id}`);
+};
+
+export const createBanner = async (data) => {
+  return axiosClient.post("/api/catalog/admin/banners", data);
+};
+
+export const updateBanner = async (id, data) => {
+  return axiosClient.put(`/api/catalog/admin/banners/${id}`, data);
+};
+
+export const deleteBanner = async (id) => {
+  return axiosClient.delete(`/api/catalog/admin/banners/${id}`);
 };
 
 export const createCategory = async (data) => {

@@ -14,4 +14,28 @@ public class OrderUtilities {
         }
         return total;
     }
+
+    public static BigDecimal resolveDiscountAmount(BigDecimal subTotal, String voucherCode) {
+        if (subTotal == null || voucherCode == null || voucherCode.isBlank()) {
+            return BigDecimal.ZERO;
+        }
+
+        String normalized = voucherCode.trim().toUpperCase();
+        if ("TOY10".equals(normalized)) {
+            return subTotal.multiply(new BigDecimal("0.10"));
+        }
+        if ("FREESHIP".equals(normalized)) {
+            return BigDecimal.ZERO;
+        }
+        return BigDecimal.ZERO;
+    }
+
+    public static BigDecimal resolveShippingFee(BigDecimal subTotal) {
+        if (subTotal == null) {
+            return BigDecimal.ZERO;
+        }
+        return subTotal.compareTo(new BigDecimal("500000")) >= 0
+                ? BigDecimal.ZERO
+                : new BigDecimal("30000");
+    }
 }

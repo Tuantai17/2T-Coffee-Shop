@@ -1,243 +1,377 @@
-import { useEffect, useState } from "react";
-import { getCategories, createCategory, updateCategory, deleteCategory } from "../../services/productService";
+import { useEffect, useState, useMemo } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
+import {
+  getCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  getProducts
+} from "../../services/productService";
+import CategoryFilterBar from "./categories/CategoryFilterBar";
+import CategoryTreeList from "./categories/CategoryTreeList";
+import CategoryFormModal from "./categories/CategoryFormModal";
 
 function AdminCategoryPage() {
   const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [form, setForm] = useState({
-    name: "",
-    description: "",
-  });
   
-  // State phục vụ Edit
+  const [selectedIds, setSelectedIds] = useState([]);
+  
+  // Filtering state
+  const [filters, setFilters] = useState({});
+  const [appliedFilters, setAppliedFilters] = useState({});
+  
+  // Form Modal State
+  const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
-  const [editForm, setEditForm] = useState({
-    name: "",
-    description: "",
-  });
 
-  const loadCategories = async () => {
+  // Status message
+  const [statusMsg, setStatusMsg] = useState(null);
+
+  const loadData = async () => {
+    setLoading(true);
     try {
-      const res = await getCategories();
-      setCategories(res.data);
+      const [catRes, prodRes] = await Promise.all([
+        getCategories(),
+        getProducts() // Fetch products to calculate product count
+      ]);
+      setCategories(catRes.data || []);
+      setProducts(prodRes.data || []);
     } catch (error) {
-      console.error("Lỗi lấy danh mục:", error);
+      console.error(error);
+      showStatus("Lỗi khi tải dữ liệu. Vui lòng thử lại.", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleChange = (e) => {
-    setForm({
-      ...form,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleEditChange = (e) => {
-    setEditForm({
-      ...editForm,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  const handleCreate = async (e) => {
-    e.preventDefault();
-    try {
-      await createCategory(form);
-      alert("Thêm danh mục thành công!");
-      setForm({ name: "", description: "" });
-      loadCategories();
-    } catch (error) {
-      alert("Thêm danh mục thất bại!");
-      console.error(error);
-    }
-  };
-
-  const handleStartEdit = (cat) => {
-    setEditingCategory(cat);
-    setEditForm({
-      name: cat.name,
-      description: cat.description || "",
-    });
-  };
-
-  const handleUpdate = async (e) => {
-    e.preventDefault();
-    try {
-      await updateCategory(editingCategory.id, editForm);
-      alert("Cập nhật danh mục thành công!");
-      setEditingCategory(null);
-      loadCategories();
-    } catch (error) {
-      alert("Cập nhật danh mục thất bại!");
-      console.error(error);
-    }
-  };
-
-  const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa danh mục này?")) return;
-    try {
-      await deleteCategory(id);
-      alert("Xóa danh mục thành công!");
-      loadCategories();
-    } catch (error) {
-      alert("Xóa danh mục thất bại!");
-      console.error(error);
-    }
-  };
-
   useEffect(() => {
-    loadCategories();
+    loadData();
   }, []);
+
+  const showStatus = (message, type = "success") => {
+    setStatusMsg({ message, type });
+    setTimeout(() => setStatusMsg(null), 3000);
+  };
+
+  // --- Calculate Product Counts & Build Tree ---
+  const categoriesWithCount = useMemo(() => {
+    return categories.map(cat => {
+      // Find products that belong directly to this category
+      const count = products.filter(p => String(p.categoryId || p.category) === String(cat.id)).length;
+      return { ...cat, productCount: count };
+    });
+  }, [categories, products]);
+
+  const treeDataRaw = useMemo(() => {
+    const parentMap = new Map();
+    const roots = [];
+
+    // First pass: put all categories in a map
+    categoriesWithCount.forEach(cat => {
+      parentMap.set(String(cat.id), { ...cat, children: [] });
+    });
+
+    // Second pass: build the tree
+    categoriesWithCount.forEach(cat => {
+      const node = parentMap.get(String(cat.id));
+      if (cat.parentId && parentMap.has(String(cat.parentId))) {
+        parentMap.get(String(cat.parentId)).children.push(node);
+      } else {
+        roots.push(node);
+      }
+    });
+
+    // Calculate total product count for parents (including children) if needed, 
+    // but the requirement says "Nếu Backend chỉ trả số sản phẩm trực tiếp, phải hiển thị rõ đó là số trực tiếp." 
+    // We will just show direct count for now to avoid confusion unless requested.
+    return roots;
+  }, [categoriesWithCount]);
+
+  // --- Filter Logic ---
+  const handleApplyFilter = () => {
+    setAppliedFilters(filters);
+  };
+
+  const handleResetFilter = () => {
+    setFilters({});
+    setAppliedFilters({});
+  };
+
+  const filteredTreeData = useMemo(() => {
+    let result = [...treeDataRaw];
+    const { search, level, parentId, hasProducts } = appliedFilters;
+
+    // We need to flatten and re-build or just filter the flattened list.
+    // The requirement says: "Nếu kết quả là danh mục con, phải tự động mở danh mục cha chứa nó."
+    // For simplicity, we filter the raw array and then rebuild the tree for the filtered items.
+
+    let filteredFlat = [...categoriesWithCount];
+
+    if (search) {
+      const q = search.toLowerCase();
+      filteredFlat = filteredFlat.filter(c => 
+        (c.name || "").toLowerCase().includes(q) ||
+        (c.slug || "").toLowerCase().includes(q) ||
+        (c.description || "").toLowerCase().includes(q)
+      );
+      // If a child matches, we must include its parent so the tree builds correctly.
+      const parentIdsToInclude = new Set(filteredFlat.map(c => c.parentId).filter(Boolean));
+      parentIdsToInclude.forEach(pid => {
+        if (!filteredFlat.some(c => String(c.id) === String(pid))) {
+          const parent = categoriesWithCount.find(c => String(c.id) === String(pid));
+          if (parent) filteredFlat.push(parent);
+        }
+      });
+    }
+
+    if (level) {
+      if (level === "parent") {
+        filteredFlat = filteredFlat.filter(c => !c.parentId);
+      } else if (level === "child") {
+        filteredFlat = filteredFlat.filter(c => c.parentId);
+      }
+    }
+
+    if (parentId) {
+      filteredFlat = filteredFlat.filter(c => String(c.parentId) === String(parentId) || String(c.id) === String(parentId));
+    }
+
+    if (hasProducts) {
+      if (hasProducts === "yes") {
+        filteredFlat = filteredFlat.filter(c => c.productCount > 0);
+      } else if (hasProducts === "no") {
+        filteredFlat = filteredFlat.filter(c => c.productCount === 0);
+      }
+    }
+
+    // Rebuild tree from filtered list
+    const filteredParentMap = new Map();
+    const filteredRoots = [];
+
+    filteredFlat.forEach(cat => {
+      filteredParentMap.set(String(cat.id), { ...cat, children: [] });
+    });
+
+    filteredFlat.forEach(cat => {
+      const node = filteredParentMap.get(String(cat.id));
+      if (cat.parentId && filteredParentMap.has(String(cat.parentId))) {
+        filteredParentMap.get(String(cat.parentId)).children.push(node);
+      } else {
+        filteredRoots.push(node);
+      }
+    });
+
+    return filteredRoots;
+  }, [treeDataRaw, categoriesWithCount, appliedFilters]);
+
+  // --- Selection Logic ---
+  const handleSelectAll = (checked, visibleNodes) => {
+    if (checked) {
+      setSelectedIds(visibleNodes.map(node => node.id));
+    } else {
+      setSelectedIds([]);
+    }
+  };
+
+  const handleSelectOne = (id, checked) => {
+    if (checked) {
+      setSelectedIds(prev => [...prev, id]);
+    } else {
+      setSelectedIds(prev => prev.filter(item => item !== id));
+    }
+  };
+
+  // --- Actions ---
+  const validateDelete = (categoryId) => {
+    // Find node in tree
+    const node = categoriesWithCount.find(c => c.id === categoryId);
+    if (!node) return null;
+
+    if (node.productCount > 0) {
+      return `Không thể xóa danh mục "${node.name}" vì vẫn còn ${node.productCount} sản phẩm.`;
+    }
+    
+    // check if it has children
+    const hasChildren = categoriesWithCount.some(c => c.parentId === categoryId);
+    if (hasChildren) {
+      return `Không thể xóa danh mục cha "${node.name}" khi vẫn còn danh mục con.`;
+    }
+
+    return null;
+  };
+
+  const handleDeleteSelected = async () => {
+    if (selectedIds.length === 0) return;
+
+    // Validate
+    const validIds = [];
+    const invalidMessages = [];
+    let productsCount = 0;
+    let childrenCount = 0;
+
+    selectedIds.forEach(id => {
+      const error = validateDelete(id);
+      if (error) {
+        if (error.includes("sản phẩm")) productsCount++;
+        if (error.includes("danh mục con")) childrenCount++;
+        invalidMessages.push(error);
+      } else {
+        validIds.push(id);
+      }
+    });
+
+    if (validIds.length === 0) {
+      alert(`Không có danh mục nào đủ điều kiện xóa.\n\nNguyên nhân:\n- ${productsCount} danh mục đang chứa sản phẩm.\n- ${childrenCount} danh mục đang chứa danh mục con.`);
+      return;
+    }
+
+    let confirmMsg = `Bạn đã chọn ${selectedIds.length} danh mục:\n`;
+    confirmMsg += `- ${validIds.length} danh mục đủ điều kiện xóa.\n`;
+    if (productsCount > 0) confirmMsg += `- ${productsCount} danh mục đang chứa sản phẩm.\n`;
+    if (childrenCount > 0) confirmMsg += `- ${childrenCount} danh mục đang chứa danh mục con.\n`;
+    confirmMsg += `\nBạn có muốn tiến hành xóa ${validIds.length} danh mục hợp lệ không?`;
+
+    if (!window.confirm(confirmMsg)) return;
+    
+    setLoading(true);
+    let successCount = 0;
+    for (const id of validIds) {
+      try {
+        await deleteCategory(id);
+        successCount++;
+      } catch (e) {
+        console.error(`Failed to delete ${id}`, e);
+      }
+    }
+    
+    showStatus(`Đã xóa thành công ${successCount}/${validIds.length} danh mục.`);
+    setSelectedIds([]);
+    loadData();
+  };
+
+  const handleDelete = async (node) => {
+    const error = validateDelete(node.id);
+    if (error) {
+      alert(error + "\n\nVui lòng chuyển hoặc xóa các dữ liệu liên quan trước.");
+      return;
+    }
+
+    if (!window.confirm(`Bạn có chắc chắn muốn xóa danh mục '${node.name}'? Thao tác này không thể hoàn tác.`)) return;
+    
+    try {
+      await deleteCategory(node.id);
+      showStatus("Xóa danh mục thành công!");
+      setSelectedIds(prev => prev.filter(i => i !== node.id));
+      loadData();
+    } catch (error) {
+      showStatus("Xóa danh mục thất bại!", "error");
+    }
+  };
+
+  const mapFormToPayload = (form) => ({
+    name: form.name,
+    description: form.description || null,
+    slug: form.slug || null,
+    parentId: form.parentId ? Number(form.parentId) : null,
+    imageUrl: form.imageUrl || null,
+  });
+
+  const handleSubmitForm = async (formData) => {
+    setLoading(true);
+    try {
+      const payload = mapFormToPayload(formData);
+      if (editingCategory) {
+        await updateCategory(editingCategory.id, payload);
+        showStatus("Cập nhật danh mục thành công!");
+      } else {
+        await createCategory(payload);
+        showStatus("Thêm danh mục mới thành công!");
+      }
+      setShowModal(false);
+      setEditingCategory(null);
+      loadData();
+    } catch (error) {
+      console.error(error);
+      showStatus("Lưu danh mục thất bại!", "error");
+      setLoading(false); 
+    }
+  };
+
+  const parentCategories = categoriesWithCount.filter(c => !c.parentId);
 
   return (
     <AdminLayout>
-      <div className="container mt-4">
-        <h2 className="fw-bold mb-4">Quản Lý Danh Mục</h2>
-
-        <div className="row">
-          {/* Cột trái: Form Thêm */}
-          <div className="col-lg-4 mb-4">
-            <form onSubmit={handleCreate} className="card shadow-sm border-0 rounded-4 p-4">
-              <h5 className="fw-bold text-primary mb-3">Thêm danh mục mới</h5>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Tên danh mục</label>
-                <input
-                  name="name"
-                  type="text"
-                  className="form-control rounded-3"
-                  value={form.name}
-                  onChange={handleChange}
-                  placeholder="Ví dụ: LEGO Lắp Ráp"
-                  required
-                />
+      <div className="container-fluid px-0">
+        
+        {/* Header Section */}
+        <div className="d-flex justify-content-between align-items-center mb-4">
+          <div>
+            <h3 className="fw-bold mb-1" style={{ color: "var(--admin-text)" }}>Quản lý danh mục</h3>
+            <p className="mb-0 text-muted">Quản lý cấu trúc danh mục sản phẩm theo dạng cây và số lượng sản phẩm trong từng danh mục.</p>
+          </div>
+          <div className="d-flex gap-3 align-items-center">
+            {statusMsg && (
+              <div className={`badge bg-${statusMsg.type === 'error' ? 'danger' : 'success'} px-3 py-2 rounded-pill shadow-sm animate__animated animate__fadeIn`}>
+                {statusMsg.message}
               </div>
-              <div className="mb-3">
-                <label className="form-label fw-semibold">Mô tả danh mục</label>
-                <textarea
-                  name="description"
-                  className="form-control rounded-3"
-                  rows="3"
-                  value={form.description}
-                  onChange={handleChange}
-                  placeholder="Mô tả ngắn về danh mục này..."
-                ></textarea>
-              </div>
-              <button type="submit" className="btn btn-primary w-100 py-2.5 rounded-3 fw-bold mt-2">
-                <i className="fa-solid fa-plus me-1"></i> Lưu Danh Mục
+            )}
+            <button className="neu-pill text-decoration-none" onClick={loadData} title="Làm mới">
+              <i className="fa-solid fa-rotate-right me-2"></i> Làm mới
+            </button>
+            {selectedIds.length > 0 && (
+              <button className="neu-pill text-danger text-decoration-none border-danger" onClick={handleDeleteSelected}>
+                <i className="fa-regular fa-trash-can me-2"></i> Xóa đã chọn ({selectedIds.length})
               </button>
-            </form>
-          </div>
-
-          {/* Cột phải: Danh sách danh mục */}
-          <div className="col-lg-8">
-            <div className="card shadow-sm border-0 rounded-4 overflow-hidden">
-              {loading ? (
-                <div className="text-center my-5">
-                  <div className="spinner-border text-primary" role="status">
-                    <span className="visually-hidden">Đang tải...</span>
-                  </div>
-                </div>
-              ) : categories.length === 0 ? (
-                <div className="text-center my-5 text-muted">Chưa có danh mục nào được tạo.</div>
-              ) : (
-                <table className="table table-hover align-middle mb-0">
-                  <thead className="table-light">
-                    <tr>
-                      <th className="px-4 py-3" style={{ width: "80px" }}>ID</th>
-                      <th className="py-3" style={{ width: "220px" }}>Tên danh mục</th>
-                      <th className="py-3">Mô tả</th>
-                      <th className="py-3 text-center" style={{ width: "180px" }}>Thao tác</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {categories.map((cat) => (
-                      <tr key={cat.id}>
-                        <td className="px-4 py-3 fw-bold">#{cat.id}</td>
-                        <td className="py-3 fw-semibold text-dark">{cat.name}</td>
-                        <td className="py-3 text-muted text-truncate" style={{ maxWidth: "250px" }}>
-                          {cat.description || "Không có mô tả"}
-                        </td>
-                        <td className="py-3 text-center">
-                          <button
-                            className="btn btn-outline-primary btn-sm rounded-3 px-2.5 me-2"
-                            onClick={() => handleStartEdit(cat)}
-                          >
-                            <i className="fa-solid fa-pen-to-square me-1"></i> Sửa
-                          </button>
-                          <button
-                            className="btn btn-danger btn-sm rounded-3 px-2.5"
-                            onClick={() => handleDelete(cat.id)}
-                          >
-                            <i className="fa-solid fa-trash-can me-1"></i> Xóa
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
+            )}
+            <button 
+              className="neu-pill text-decoration-none" 
+              style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }}
+              onClick={() => { setEditingCategory(null); setShowModal(true); }}
+            >
+              <i className="fa-solid fa-plus me-2"></i> Thêm danh mục
+            </button>
           </div>
         </div>
+
+        {/* Filter Section */}
+        <CategoryFilterBar 
+          filters={filters} 
+          setFilters={setFilters} 
+          parentCategories={parentCategories}
+          onApply={handleApplyFilter}
+          onReset={handleResetFilter}
+        />
+
+        {/* Selection Info */}
+        {selectedIds.length > 0 && (
+          <div className="mb-3 text-primary fw-semibold small">
+            Đã chọn {selectedIds.length} danh mục.
+          </div>
+        )}
+
+        {/* Category Tree Table */}
+        <CategoryTreeList 
+          treeData={filteredTreeData}
+          loading={loading}
+          selectedIds={selectedIds}
+          onSelectAll={handleSelectAll}
+          onSelectOne={handleSelectOne}
+          onEdit={(cat) => { setEditingCategory(cat); setShowModal(true); }}
+          onDelete={handleDelete}
+        />
+
+        {/* Form Modal */}
+        <CategoryFormModal 
+          show={showModal}
+          onClose={() => { setShowModal(false); setEditingCategory(null); }}
+          initialData={editingCategory}
+          parentCategories={parentCategories}
+          onSubmit={handleSubmitForm}
+        />
+
       </div>
-
-      {/* Modal chỉnh sửa Danh mục */}
-      {editingCategory && (
-        <div className="modal show d-block" tabIndex="-1" style={{ backgroundColor: "rgba(0,0,0,0.5)" }}>
-          <div className="modal-dialog modal-dialog-centered">
-            <div className="modal-content border-0 rounded-4 shadow-lg">
-              <form onSubmit={handleUpdate}>
-                <div className="modal-header border-bottom-0 pt-4 px-4 pb-2">
-                  <h5 className="modal-title fw-bold text-dark">Chỉnh Sửa Danh Mục</h5>
-                  <button
-                    type="button"
-                    className="btn-close"
-                    onClick={() => setEditingCategory(null)}
-                  ></button>
-                </div>
-                <div className="modal-body px-4 py-3">
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Tên danh mục</label>
-                    <input
-                      name="name"
-                      type="text"
-                      className="form-control rounded-3"
-                      value={editForm.name}
-                      onChange={handleEditChange}
-                      required
-                    />
-                  </div>
-                  <div className="mb-3">
-                    <label className="form-label fw-semibold">Mô tả danh mục</label>
-                    <textarea
-                      name="description"
-                      className="form-control rounded-3"
-                      rows="3"
-                      value={editForm.description}
-                      onChange={handleEditChange}
-                    ></textarea>
-                  </div>
-                </div>
-                <div className="modal-footer border-top-0 pb-4 px-4 pt-2 justify-content-end gap-2">
-                  <button
-                    type="button"
-                    className="btn btn-light rounded-3 px-4 py-2 fw-semibold"
-                    onClick={() => setEditingCategory(null)}
-                  >
-                    Hủy
-                  </button>
-                  <button type="submit" className="btn btn-primary rounded-3 px-4 py-2 fw-bold">
-                    Cập Nhật
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
     </AdminLayout>
   );
 }

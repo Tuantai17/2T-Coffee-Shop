@@ -1,16 +1,22 @@
+import { Outlet } from "react-router-dom";
 import AdminSidebar from "../components/AdminSidebar";
+import AdminHeader from "../pages/admin/components/AdminHeader";
 
 function AdminLayout({ children }) {
   return (
-    <div className="d-flex min-vh-100 bg-light">
+    <div className="d-flex min-vh-100" style={{ backgroundColor: "var(--admin-bg)" }}>
       <AdminSidebar />
-      <div className="flex-grow-1 p-4" style={{ overflowY: "auto" }}>
-        <header className="d-flex justify-content-between align-items-center pb-3 mb-4 border-bottom">
-          <h4 className="fw-bold text-dark">Hệ thống quản trị</h4>
-          <span className="badge bg-primary px-3 py-2 fs-6">Đã xác thực Admin</span>
-        </header>
-        <main>
-          {children}
+      <div 
+        className="flex-grow-1 position-relative" 
+        style={{ 
+          height: "100vh", 
+          overflowY: "auto",
+          padding: "24px 32px"
+        }}
+      >
+        <AdminHeader />
+        <main style={{ marginTop: "32px" }}>
+          {children || <Outlet />}
         </main>
       </div>
     </div>

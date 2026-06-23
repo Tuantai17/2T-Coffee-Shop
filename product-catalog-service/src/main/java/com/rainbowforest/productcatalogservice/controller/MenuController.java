@@ -1,0 +1,28 @@
+package com.rainbowforest.productcatalogservice.controller;
+
+import com.rainbowforest.productcatalogservice.entity.Menu;
+import com.rainbowforest.productcatalogservice.http.header.HeaderGenerator;
+import com.rainbowforest.productcatalogservice.service.MenuService;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+
+@RestController
+public class MenuController {
+
+    @Autowired
+    private MenuService menuService;
+
+    @Autowired
+    private HeaderGenerator headerGenerator;
+
+    @GetMapping("/menus")
+    public ResponseEntity<List<Menu>> getPublicMenus() {
+        List<Menu> menus = menuService.getPublicMenus();
+        return new ResponseEntity<>(menus, headerGenerator.getHeadersForSuccessGetMethod(), HttpStatus.OK);
+    }
+}

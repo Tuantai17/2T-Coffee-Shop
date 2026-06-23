@@ -25,6 +25,42 @@ public class Order {
     @Column (name = "total")
     private BigDecimal total;
 
+    @Column(name = "receiver_name")
+    private String receiverName;
+
+    @Column(name = "phone")
+    private String phone;
+
+    @Column(name = "address")
+    private String address;
+
+    @Column(name = "province")
+    private String province;
+
+    @Column(name = "district")
+    private String district;
+
+    @Column(name = "ward")
+    private String ward;
+
+    @Column(name = "note", length = 1000)
+    private String note;
+
+    @Column(name = "payment_method")
+    private String paymentMethod;
+
+    @Column(name = "payment_status")
+    private String paymentStatus;
+
+    @Column(name = "voucher_code")
+    private String voucherCode;
+
+    @Column(name = "discount_amount")
+    private BigDecimal discountAmount;
+
+    @Column(name = "shipping_fee")
+    private BigDecimal shippingFee;
+
     @ManyToMany (cascade = CascadeType.ALL)
     @JoinTable (name = "cart" , joinColumns = @JoinColumn(name = "order_id"), inverseJoinColumns = @JoinColumn (name = "item_id"))
     private List<Item> items;
@@ -68,6 +104,102 @@ public class Order {
 	public void setTotal(BigDecimal total) {
 		this.total = total;
 	}
+
+    public String getReceiverName() {
+        return receiverName;
+    }
+
+    public void setReceiverName(String receiverName) {
+        this.receiverName = receiverName;
+    }
+
+    public String getPhone() {
+        return phone;
+    }
+
+    public void setPhone(String phone) {
+        this.phone = phone;
+    }
+
+    public String getAddress() {
+        return address;
+    }
+
+    public void setAddress(String address) {
+        this.address = address;
+    }
+
+    public String getProvince() {
+        return province;
+    }
+
+    public void setProvince(String province) {
+        this.province = province;
+    }
+
+    public String getDistrict() {
+        return district;
+    }
+
+    public void setDistrict(String district) {
+        this.district = district;
+    }
+
+    public String getWard() {
+        return ward;
+    }
+
+    public void setWard(String ward) {
+        this.ward = ward;
+    }
+
+    public String getNote() {
+        return note;
+    }
+
+    public void setNote(String note) {
+        this.note = note;
+    }
+
+    public String getPaymentMethod() {
+        return paymentMethod;
+    }
+
+    public void setPaymentMethod(String paymentMethod) {
+        this.paymentMethod = paymentMethod;
+    }
+
+    public String getPaymentStatus() {
+        return paymentStatus;
+    }
+
+    public void setPaymentStatus(String paymentStatus) {
+        this.paymentStatus = paymentStatus;
+    }
+
+    public String getVoucherCode() {
+        return voucherCode;
+    }
+
+    public void setVoucherCode(String voucherCode) {
+        this.voucherCode = voucherCode;
+    }
+
+    public BigDecimal getDiscountAmount() {
+        return discountAmount;
+    }
+
+    public void setDiscountAmount(BigDecimal discountAmount) {
+        this.discountAmount = discountAmount;
+    }
+
+    public BigDecimal getShippingFee() {
+        return shippingFee;
+    }
+
+    public void setShippingFee(BigDecimal shippingFee) {
+        this.shippingFee = shippingFee;
+    }
 
 	public List<Item> getItems() {
 		return items;

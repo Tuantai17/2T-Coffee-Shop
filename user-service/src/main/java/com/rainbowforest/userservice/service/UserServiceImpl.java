@@ -8,11 +8,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.List;
 
 @Service
 @Transactional
 public class UserServiceImpl implements UserService {
+
+    private static final Logger log = LoggerFactory.getLogger(UserServiceImpl.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -45,6 +49,21 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public User saveUser(User user) {
+        if (user == null) {
+            throw new IllegalArgumentException("Dữ liệu đăng ký không hợp lệ.");
+        }
+        if (user.getUserName() == null || user.getUserName().isBlank()) {
+            throw new IllegalArgumentException("Tên đăng nhập không được để trống.");
+        }
+        if (user.getUserDetails() == null || user.getUserDetails().getEmail() == null || user.getUserDetails().getEmail().isBlank()) {
+            throw new IllegalArgumentException("Email không được để trống.");
+        }
+        if (userRepository.findByUserName(user.getUserName()) != null) {
+            throw new IllegalArgumentException("Tên đăng nhập đã tồn tại.");
+        }
+        if (userRepository.findByUserDetailsEmail(user.getUserDetails().getEmail()) != null) {
+            throw new IllegalArgumentException("Email đã tồn tại.");
+        }
         user.setActive(1);
         UserRole role = userRoleRepository.findUserRoleByRoleName("ROLE_USER");
         if (role == null) {
@@ -107,7 +126,7 @@ public class UserServiceImpl implements UserService {
             admin.setUserDetails(details);
             
             userRepository.save(admin);
-            System.out.println(">>> Đã khởi tạo tài khoản admin mặc định (admin/123456)");
+            log.info(">>> Đã khởi tạo tài khoản admin mặc định (admin/123456)");
         }
 
         // Tạo tài khoản staff mặc định
@@ -127,7 +146,7 @@ public class UserServiceImpl implements UserService {
             staff.setUserDetails(details);
             
             userRepository.save(staff);
-            System.out.println(">>> Đã khởi tạo tài khoản staff mặc định (staff/123456)");
+            log.info(">>> Đã khởi tạo tài khoản staff mặc định (staff/123456)");
         }
     }
 

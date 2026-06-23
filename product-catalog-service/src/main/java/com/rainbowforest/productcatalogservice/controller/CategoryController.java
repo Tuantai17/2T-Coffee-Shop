@@ -23,16 +23,10 @@ public class CategoryController {
     @GetMapping("/products/categories")
     public ResponseEntity<List<Category>> getAllCategories() {
         List<Category> categories = categoryService.getAllCategories();
-        if (!categories.isEmpty()) {
-            return new ResponseEntity<>(
-                    categories,
-                    headerGenerator.getHeadersForSuccessGetMethod(),
-                    HttpStatus.OK
-            );
-        }
         return new ResponseEntity<>(
-                headerGenerator.getHeadersForError(),
-                HttpStatus.NOT_FOUND
+                categories,
+                headerGenerator.getHeadersForSuccessGetMethod(),
+                HttpStatus.OK
         );
     }
 

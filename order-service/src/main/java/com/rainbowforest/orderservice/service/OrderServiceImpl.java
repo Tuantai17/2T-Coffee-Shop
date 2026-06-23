@@ -31,10 +31,15 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public Order updateOrderStatus(Long orderId, String status) {
+    public Order updateOrderStatus(Long orderId, String status, String paymentStatus) {
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order != null) {
-            order.setStatus(status);
+            if (status != null && !status.isBlank()) {
+                order.setStatus(status);
+            }
+            if (paymentStatus != null && !paymentStatus.isBlank()) {
+                order.setPaymentStatus(paymentStatus);
+            }
             return orderRepository.save(order);
         }
         return null;

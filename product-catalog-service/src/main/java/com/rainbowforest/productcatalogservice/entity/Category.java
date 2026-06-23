@@ -20,6 +20,18 @@ public class Category {
     @Column(name = "description")
     private String description;
 
+    @Column(name = "slug", unique = true)
+    private String slug;
+
+    @Column(name = "image_url")
+    private String imageUrl;
+
+    @Column(name = "parent_id")
+    private Long parentId;
+
+    @Column(name = "sort_order")
+    private Integer sortOrder;
+
     public Category() {
     }
 
@@ -50,5 +62,37 @@ public class Category {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public Long getParentId() {
+        return parentId;
+    }
+
+    public void setParentId(Long parentId) {
+        this.parentId = parentId;
+    }
+
+    public Integer getSortOrder() {
+        return sortOrder;
+    }
+
+    public void setSortOrder(Integer sortOrder) {
+        this.sortOrder = sortOrder;
     }
 }

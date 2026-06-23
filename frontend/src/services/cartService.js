@@ -8,6 +8,10 @@ export const addToCart = async (productId, quantity = 1) => {
   return axiosClient.post(`/api/shop/cart?productId=${productId}&quantity=${quantity}`);
 };
 
+export const updateCartItemQuantity = async (productId, quantity) => {
+  return axiosClient.post(`/api/shop/cart?productId=${productId}&quantity=${quantity}`);
+};
+
 export const removeCartItem = async (productId) => {
   return axiosClient.delete(`/api/shop/cart?productId=${productId}`);
 };

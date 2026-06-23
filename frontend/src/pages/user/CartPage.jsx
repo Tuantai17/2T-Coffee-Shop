@@ -1,26 +1,30 @@
 import { useEffect, useState } from "react";
-import { getCart, removeCartItem } from "../../services/cartService";
 import { useNavigate } from "react-router-dom";
 import UserLayout from "../../layouts/UserLayout";
+import { getCart, removeCartItem, updateCartItemQuantity } from "../../services/cartService";
 
 function CartPage() {
   const navigate = useNavigate();
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
 
   const loadCart = async () => {
     try {
-      const res = await getCart();
-      setCart(res.data);
+      const response = await getCart();
+      setCart(response.data);
     } catch (error) {
       console.error("Lỗi tải giỏ hàng:", error);
+      setCart([]);
     } finally {
       setLoading(false);
     }
   };
 
   const handleRemove = async (productId) => {
-    if (!productId) return;
+    if (!productId) {
+      return;
+    }
     try {
       await removeCartItem(productId);
       loadCart();
@@ -30,9 +34,30 @@ function CartPage() {
     }
   };
 
+  const handleUpdateQuantity = async (productId, nextQuantity) => {
+    if (!productId || nextQuantity < 1) {
+      return;
+    }
+    setUpdatingId(productId);
+    try {
+      await updateCartItemQuantity(productId, nextQuantity);
+      await loadCart();
+    } catch (error) {
+      console.error(error);
+      alert("Cập nhật số lượng thất bại!");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   const calculateTotal = () => {
-    if (!cart || !Array.isArray(cart)) return 0;
-    return cart.reduce((total, item) => total + ((item.product ? item.product.price : 0) * item.quantity), 0);
+    if (!cart || !Array.isArray(cart)) {
+      return 0;
+    }
+    return cart.reduce(
+      (total, item) => total + ((item.product ? item.product.price : 0) * item.quantity),
+      0
+    );
   };
 
   useEffect(() => {
@@ -42,7 +67,9 @@ function CartPage() {
   return (
     <UserLayout>
       <div className="container mt-4">
-        <h3 className="fw-extrabold text-danger mb-4"><i className="fa-solid fa-basket-shopping me-2"></i>GIỎ HÀNG CỦA BẠN</h3>
+        <h3 className="fw-extrabold text-danger mb-4">
+          <i className="fa-solid fa-basket-shopping me-2"></i>GIỎ HÀNG CỦA BẠN
+        </h3>
 
         {loading ? (
           <div className="text-center my-5">
@@ -56,8 +83,13 @@ function CartPage() {
               <i className="fa-solid fa-face-sad-tear text-warning" style={{ fontSize: "5rem" }}></i>
             </div>
             <h4 className="fw-bold">Giỏ hàng của bạn đang trống!</h4>
-            <p className="text-muted">Hãy chọn cho bé những món đồ chơi lắp ráp LEGO, búp bê, hoặc mô hình xe cực kỳ thông minh.</p>
-            <button className="btn btn-toy-primary px-5 py-3 mt-3 rounded-pill text-white fw-bold" onClick={() => navigate("/products")}>
+            <p className="text-muted">
+              Hãy chọn cho bé những món đồ chơi lắp ráp LEGO, búp bê, hoặc mô hình xe cực kỳ thông minh.
+            </p>
+            <button
+              className="btn btn-toy-primary px-5 py-3 mt-3 rounded-pill text-white fw-bold"
+              onClick={() => navigate("/products")}
+            >
               QUAY LẠI MUA SẮM NGAY
             </button>
           </div>
@@ -70,34 +102,66 @@ function CartPage() {
                     <tr>
                       <th className="px-4 py-3">Sản phẩm đồ chơi</th>
                       <th className="py-3">Số lượng</th>
-                      <th className="py-3">Giá tiền</th>
+                      <th className="py-3">Đơn giá</th>
+                      <th className="py-3">Thành tiền</th>
                       <th className="py-3 text-center">Thao tác</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {cart.map((item) => (
-                      <tr key={item.id || (item.product ? item.product.id : Math.random())}>
-                        <td className="px-4 py-4">
-                          <span className="fw-bold text-dark fs-6">{item.product ? item.product.productName : "Sản phẩm đồ chơi"}</span>
-                        </td>
-                        <td className="py-4">
-                          <span className="badge bg-light text-dark border px-3 py-2.5 rounded-pill fw-bold" style={{ fontSize: "0.95rem" }}>
-                            {item.quantity} chiếc
-                          </span>
-                        </td>
-                        <td className="py-4 fw-extrabold text-danger fs-6">
-                          {(item.product ? item.product.price : 0).toLocaleString("vi-VN")} VNĐ
-                        </td>
-                        <td className="py-4 text-center">
-                          <button
-                            className="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-bold"
-                            onClick={() => handleRemove(item.product ? item.product.id : null)}
-                          >
-                            <i className="fa-solid fa-trash-can me-1"></i> Xóa
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    {cart.map((item) => {
+                      const productId = item.product ? item.product.id : null;
+                      const price = item.product ? item.product.price : 0;
+                      const isUpdating = updatingId === productId;
+                      return (
+                        <tr key={item.id || productId || Math.random()}>
+                          <td className="px-4 py-4">
+                            <span className="fw-bold text-dark fs-6">
+                              {item.product ? item.product.productName : "Sản phẩm đồ chơi"}
+                            </span>
+                          </td>
+                          <td className="py-4">
+                            <div
+                              className="d-flex align-items-center border rounded-pill bg-white px-2 py-1"
+                              style={{ width: "132px" }}
+                            >
+                              <button
+                                type="button"
+                                className="btn btn-link text-danger fw-bold border-0 p-0 fs-5 mx-2"
+                                disabled={isUpdating || item.quantity <= 1}
+                                onClick={() => handleUpdateQuantity(productId, item.quantity - 1)}
+                              >
+                                -
+                              </button>
+                              <span className="flex-grow-1 text-center fw-bold">
+                                {isUpdating ? "..." : item.quantity}
+                              </span>
+                              <button
+                                type="button"
+                                className="btn btn-link text-danger fw-bold border-0 p-0 fs-5 mx-2"
+                                disabled={isUpdating}
+                                onClick={() => handleUpdateQuantity(productId, item.quantity + 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </td>
+                          <td className="py-4 fw-semibold text-dark">
+                            {price.toLocaleString("vi-VN")} VNĐ
+                          </td>
+                          <td className="py-4 fw-extrabold text-danger fs-6">
+                            {(price * item.quantity).toLocaleString("vi-VN")} VNĐ
+                          </td>
+                          <td className="py-4 text-center">
+                            <button
+                              className="btn btn-outline-danger btn-sm rounded-pill px-3 py-1.5 fw-bold"
+                              onClick={() => handleRemove(productId)}
+                            >
+                              <i className="fa-solid fa-trash-can me-1"></i> Xóa
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

@@ -8,5 +8,5 @@ public interface OrderService {
     public Order saveOrder(Order order);
     public List<Order> getAllOrders();
     public List<Order> getOrdersByUserId(Long userId);
-    public Order updateOrderStatus(Long orderId, String status);
+    public Order updateOrderStatus(Long orderId, String status, String paymentStatus);
 }

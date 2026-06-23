@@ -1,11 +1,12 @@
 import { Navigate } from "react-router-dom";
+import { AUTH_SCOPES, getAuthSession } from "../utils/authStorage";
 
 function ProtectedRoute({ children, adminOnly = false }) {
-  const token = sessionStorage.getItem("token");
-  const role = sessionStorage.getItem("role");
+  const scope = adminOnly ? AUTH_SCOPES.ADMIN : AUTH_SCOPES.USER;
+  const { token, role } = getAuthSession(scope);
 
   if (!token) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to={adminOnly ? "/admin/login" : "/login"} replace />;
   }
 
   if (adminOnly && role !== "ROLE_ADMIN" && role !== "ROLE_STAFF") {

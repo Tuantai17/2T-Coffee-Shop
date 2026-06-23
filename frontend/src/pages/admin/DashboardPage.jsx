@@ -1,47 +1,189 @@
-import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
+import { getUsers } from "../../services/authService";
+import { getAllOrders } from "../../services/orderService";
+import {
+  getBanners,
+  getCategories,
+  getCollections,
+  getProducts,
+} from "../../services/productService";
+import DashboardChart from "./components/DashboardChart";
+import DashboardHeading from "./components/DashboardHeading";
+import DashboardStatCard from "./components/DashboardStatCard";
+import RecentOrders from "./components/RecentOrders";
 
 function DashboardPage() {
+  const [stats, setStats] = useState({
+    products: 0,
+    categories: 0,
+    orders: 0,
+    users: 0,
+    revenue: 0,
+    pendingOrders: 0,
+    paidOrders: 0,
+    banners: 0,
+    collections: 0,
+  });
+  const [ordersList, setOrdersList] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const loadDashboard = async () => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const [productsRes, categoriesRes, ordersRes, usersRes, bannersRes, collectionsRes] =
+          await Promise.all([
+            getProducts(),
+            getCategories(),
+            getAllOrders(),
+            getUsers(),
+            getBanners({ activeOnly: false }),
+            getCollections({ activeOnly: false }),
+          ]);
+
+        const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+        setOrdersList(orders);
+        
+        const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
+        const pendingOrders = orders.filter((order) =>
+          ["PENDING_CONFIRMATION", "PENDING", "PROCESSING"].includes(
+            String(order.status || "").toUpperCase()
+          )
+        ).length;
+        const paidOrders = orders.filter((order) =>
+          ["PAID", "PAYMENT_ON_DELIVERY", "COMPLETED"].includes(
+            String(order.paymentStatus || "").toUpperCase()
+          )
+        ).length;
+
+        setStats({
+          products: Array.isArray(productsRes.data) ? productsRes.data.length : 0,
+          categories: Array.isArray(categoriesRes.data) ? categoriesRes.data.length : 0,
+          orders: orders.length,
+          users: Array.isArray(usersRes.data) ? usersRes.data.length : 0,
+          revenue,
+          pendingOrders,
+          paidOrders,
+          banners: Array.isArray(bannersRes.data) ? bannersRes.data.length : 0,
+          collections: Array.isArray(collectionsRes.data) ? collectionsRes.data.length : 0,
+        });
+      } catch (nextError) {
+        console.error("Lỗi tải dashboard:", nextError);
+        setError(
+          "Không thể tải dashboard từ các microservice. Hãy kiểm tra gateway, user-service, order-service và product-catalog-service."
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDashboard();
+  }, []);
+
+  const moneyFormatter = new Intl.NumberFormat("vi-VN");
+
   return (
     <AdminLayout>
-      <div className="container mt-4">
-        <h2 className="fw-bold mb-4">Dashboard Quản Trị Hệ Thống</h2>
+      <div className="container-fluid px-0">
+        <DashboardHeading />
+
+        {error && <div className="alert alert-danger rounded-4 neu-surface mb-4 border-0 shadow-sm">{error}</div>}
 
         <div className="row g-4 mb-4">
-          <div className="col-md-3">
-            <div className="card border-0 bg-primary text-white shadow rounded-4 p-4">
-              <h5>Tổng Sản Phẩm</h5>
-              <h2 className="fw-bold">12</h2>
-              <Link to="/admin/products" className="text-white-50 text-decoration-none">Quản lý sản phẩm &rarr;</Link>
-            </div>
+          <div className="col-md-6 col-xl-3">
+            <DashboardStatCard 
+              title="Tổng doanh thu"
+              value={`${moneyFormatter.format(stats.revenue)}đ`}
+              icon="fa-dollar-sign"
+              color="success"
+              percent="18.6"
+              isIncrease={true}
+              subtext="So với 7 ngày trước"
+              loading={loading}
+            />
           </div>
-          <div className="col-md-3">
-            <div className="card border-0 bg-success text-white shadow rounded-4 p-4">
-              <h5>Danh Mục</h5>
-              <h2 className="fw-bold">4</h2>
-              <Link to="/admin/categories" className="text-white-50 text-decoration-none">Quản lý danh mục &rarr;</Link>
-            </div>
+          <div className="col-md-6 col-xl-3">
+            <DashboardStatCard 
+              title="Tổng đơn hàng"
+              value={stats.orders}
+              icon="fa-cart-shopping"
+              color="primary"
+              percent="12.4"
+              isIncrease={true}
+              subtext="So với 7 ngày trước"
+              loading={loading}
+            />
           </div>
-          <div className="col-md-3">
-            <div className="card border-0 bg-warning text-dark shadow rounded-4 p-4">
-              <h5>Đơn Hàng</h5>
-              <h2 className="fw-bold">8</h2>
-              <Link to="/admin/orders" className="text-dark-50 text-decoration-none">Xem chi tiết đơn hàng &rarr;</Link>
-            </div>
+          <div className="col-md-6 col-xl-3">
+            <DashboardStatCard 
+              title="Tổng sản phẩm"
+              value={stats.products}
+              icon="fa-box"
+              color="warning"
+              percent="8.7"
+              isIncrease={true}
+              subtext="So với 7 ngày trước"
+              loading={loading}
+            />
           </div>
-          <div className="col-md-3">
-            <div className="card border-0 bg-info text-white shadow rounded-4 p-4">
-              <h5>Người Dùng</h5>
-              <h2 className="fw-bold">3</h2>
-              <Link to="/admin/users" className="text-white-50 text-decoration-none">Quản lý tài khoản &rarr;</Link>
+          <div className="col-md-6 col-xl-3">
+            <DashboardStatCard 
+              title="Tổng người dùng"
+              value={stats.users}
+              icon="fa-users"
+              color="danger"
+              percent="15.3"
+              isIncrease={true}
+              subtext="So với 7 ngày trước"
+              loading={loading}
+            />
+          </div>
+        </div>
+
+        <div className="row g-4 mb-4">
+          <div className="col-xl-8">
+            <DashboardChart loading={loading} />
+          </div>
+          <div className="col-xl-4">
+            <RecentOrders orders={ordersList} loading={loading} />
+          </div>
+        </div>
+        
+        {/* Quick Actions Component */}
+        <div className="neu-card p-4">
+          <h5 className="fw-bold mb-3">Thao tác nhanh</h5>
+          <div className="d-flex flex-wrap gap-3">
+            <div className="neu-pill px-4">
+              <i className="fa-solid fa-box text-primary"></i>
+              Thêm sản phẩm
+            </div>
+            <div className="neu-pill px-4">
+              <i className="fa-solid fa-folder text-success"></i>
+              Thêm danh mục
+            </div>
+            <div className="neu-pill px-4">
+              <i className="fa-solid fa-panorama text-danger"></i>
+              Thêm banner
+            </div>
+            <div className="neu-pill px-4">
+              <i className="fa-solid fa-layer-group text-warning"></i>
+              Thêm collection
+            </div>
+            <div className="neu-pill px-4">
+              <i className="fa-solid fa-file-invoice text-info"></i>
+              Xem đơn hàng
+            </div>
+            <div className="neu-pill px-4">
+              <i className="fa-solid fa-users text-secondary"></i>
+              Quản lý người dùng
             </div>
           </div>
         </div>
 
-        <div className="card shadow-sm border-0 rounded-4 p-4">
-          <h4 className="fw-bold mb-3">Thông tin dự án E-Commerce Microservices</h4>
-          <p className="text-muted mb-0">Hệ thống đang hoạt động và giám sát tất cả 7 services thông qua Netflix Eureka Server. Bạn có thể sử dụng các thanh điều hướng bên trái hoặc trên header để truy cập sâu vào các tính năng cấu hình dữ liệu.</p>
-        </div>
       </div>
     </AdminLayout>
   );

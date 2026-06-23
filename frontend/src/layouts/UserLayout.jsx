@@ -1,17 +1,14 @@
 import Navbar from "../components/Navbar";
+import Footer from "../components/Footer";
 
 function UserLayout({ children }) {
   return (
-    <div className="d-flex flex-column min-vh-100">
+    <div className="d-flex flex-column min-vh-100 bg-light">
       <Navbar />
-      <main className="flex-grow-1 container pb-5">
+      <main className="flex-grow-1 pb-5">
         {children}
       </main>
-      <footer className="bg-dark text-white text-center py-3 mt-auto">
-        <div className="container">
-          <small>&copy; {new Date().getFullYear()} E-Commerce Microservices. Tất cả các quyền được bảo lưu.</small>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

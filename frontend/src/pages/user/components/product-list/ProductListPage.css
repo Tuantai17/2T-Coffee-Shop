@@ -1,0 +1,210 @@
+/* ProductListPage custom styling matching MyKingdom clone */
+
+.mykingdom-container {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+/* Sidebar Styling */
+.product-filter-sidebar {
+  background: #fff;
+  border-radius: 12px;
+  /* padding: 20px; */
+}
+
+.filter-group .filter-header {
+  padding: 10px 0;
+}
+
+.filter-group .filter-header h5 {
+  font-size: 16px;
+  text-transform: uppercase;
+}
+
+.btn-clear-filter {
+  background-color: #f8f9fa;
+  border: 1px solid #e9ecef;
+  color: #e30613;
+  border-radius: 20px;
+  padding: 8px 16px;
+  transition: all 0.2s ease;
+}
+
+.btn-clear-filter:hover {
+  background-color: #e30613;
+  color: #fff;
+}
+
+/* Custom Checkbox / Radio */
+.custom-checkbox .form-check-input {
+  width: 18px;
+  height: 18px;
+  margin-top: 0.15rem;
+  border: 1.5px solid #ced4da;
+  cursor: pointer;
+}
+
+.custom-checkbox .form-check-input:checked {
+  background-color: #e30613;
+  border-color: #e30613;
+}
+
+.custom-checkbox .form-check-label {
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  margin-left: 8px;
+}
+
+/* Toolbar Styling */
+.btn-view-toggle {
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6c757d;
+  transition: all 0.2s ease;
+}
+
+.btn-view-toggle:hover {
+  background: #e9ecef;
+}
+
+.btn-view-toggle.active {
+  background: #fdf0f0;
+  color: #e30613;
+  border-color: #f5c2c7;
+}
+
+.sort-select {
+  border-bottom: 1px solid #dee2e6 !important;
+  border-radius: 0 !important;
+  padding-left: 0;
+  padding-right: 20px;
+  min-width: 180px;
+}
+
+.sort-select:focus {
+  border-color: #e30613 !important;
+  box-shadow: none !important;
+}
+
+/* Product Card Grid */
+.product-grid-card {
+  border-radius: 20px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  transition: all 0.3s ease;
+  padding-top: 15px;
+}
+
+.product-grid-card:hover {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  transform: translateY(-4px);
+}
+
+.product-list-card {
+  border-radius: 20px !important;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+  transition: all 0.3s ease;
+}
+
+.product-list-card:hover {
+  box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+  transform: translateY(-2px);
+}
+
+.product-img-wrapper {
+  height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-img {
+  max-height: 100%;
+  max-width: 100%;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.product-grid-card:hover .product-img {
+  transform: scale(1.05);
+}
+
+/* Badge */
+.product-badge {
+  background-color: #e30613;
+  color: #fff;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 13px;
+  z-index: 2;
+  position: absolute;
+}
+
+.product-badge.discount {
+  top: 15px;
+  right: 15px;
+}
+
+/* Typography on Card */
+.text-primary-dark {
+  color: #192746;
+}
+
+.product-name {
+  font-size: 15px;
+  line-height: 1.4;
+  height: 42px; /* 2 lines exactly */
+}
+
+.btn-add-cart {
+  background-color: #e30613;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 12px;
+}
+
+.btn-add-cart:hover {
+  background-color: #c4040e;
+  color: white;
+}
+
+.btn-add-cart:disabled {
+  background-color: #ccc;
+  border-color: #ccc;
+}
+
+.btn-wishlist {
+  border-radius: 8px;
+}
+
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Pagination */
+.product-pagination-container .page-link {
+  color: #495057;
+  width: 40px;
+  height: 40px;
+  font-weight: 600;
+}
+
+.product-pagination-container .page-item.active .page-link {
+  background-color: #e30613;
+  color: #fff;
+}
+
+.product-pagination-container .page-item.disabled .page-link {
+  background-color: transparent;
+  color: #adb5bd;
+}
