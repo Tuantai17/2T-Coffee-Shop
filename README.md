@@ -45,15 +45,21 @@ graph TD
     Gateway -->|/api/catalog/**| CatalogService[Product Catalog Service - Port 8810]
     Gateway -->|/api/shop/**| OrderService[Order Service - Port 8813]
     Gateway -->|/api/review/**| RecService[Recommendation Service - Port 8812]
+    Gateway -->|/api/inventory/**| InventoryService[Inventory Service - Port 8816]
+    Gateway -->|/api/deliveries/**| DeliveryService[Delivery Service - Port 8817]
+    Gateway -->|/api/revenues/**| RevenueService[Revenue Service - Port 8818]
   
-    UserService & CatalogService & OrderService & RecService & PaymentService[Payment Service - Port 8814] & NotificationService[Notification Service - Port 8815] <-->|Đăng ký / Khám phá dịch vụ| Eureka[Eureka Discovery Server - Port 8761]
+    UserService & CatalogService & OrderService & RecService & PaymentService[Payment Service - Port 8814] & NotificationService[Notification Service - Port 8815] & InventoryService & DeliveryService & RevenueService <-->|Đăng ký / Khám phá dịch vụ| Eureka[Eureka Discovery Server - Port 8761]
   
     OrderService -->|Gửi event đặt hàng| Kafka[Apache Kafka - Port 9092]
     Kafka -->|Topic: order-events| PaymentService
     Kafka -->|Topic: order-events| NotificationService
+    Kafka -->|Topic: order-events| InventoryService
+    Kafka -->|Topic: order-events| DeliveryService
+    Kafka -->|Topic: order-events| RevenueService
   
-    OrderService <-->|Lưu trữ Session Giỏ hàng| Redis[(Redis Cache - Port 6379)]
-    UserService & CatalogService & OrderService & RecService <-->|Lưu trữ dữ liệu| Postgres[(PostgreSQL - Port 5432)]
+    OrderService & RevenueService <-->|Lưu trữ dữ liệu| Redis[(Redis Cache - Port 6379)]
+    UserService & CatalogService & OrderService & RecService & InventoryService & DeliveryService & RevenueService <-->|Lưu trữ dữ liệu| Postgres[(PostgreSQL - Port 5432)]
 ```
 
 ---
@@ -64,32 +70,39 @@ graph TD
 | :------------------------------------------- | :----------: | :----------------: | :----------------------------------------------------------------------------------------------------------------------------------------- |
 | **`eureka-server`**                  |   `8761`   |       Không       | **Discovery Server**: Đăng ký và phát hiện địa chỉ động của các dịch vụ.                                              |
 | **`api-gateway`**                    |   `8900`   |       Không       | **API Gateway**: Đầu mối nhận request từ Frontend, hỗ trợ CORS, định tuyến và phân tải request qua Eureka.              |
-| **`user-service`**                   |   `8811`   |     PostgreSQL     | **Quản lý Tài khoản & Phân quyền**: Đăng ký, Đăng nhập, lưu thông tin khách hàng, cấp phát & xác thực JWT.       |
-| **`product-catalog-service`**        |   `8810`   |     PostgreSQL     | **Quản lý Sản phẩm & Danh mục**: Cung cấp danh mục đồ chơi (LEGO, Búp bê...) và sản phẩm. Hỗ trợ CRUD cho Admin.    |
+| **`user-service`**                   |   `8811`   |     PostgreSQL     | **Quản lý Tài khoản & Phân quyền**: Đăng ký, Đăng nhập, JWT, quản lý địa chỉ giao hàng và danh sách yêu thích.       |
+| **`product-catalog-service`**        |   `8810`   |     PostgreSQL     | **Quản lý Sản phẩm & Giao diện**: Cung cấp danh mục đồ chơi, sản phẩm, banner, menu, và bộ sưu tập.    |
 | **`order-service`**                  |   `8813`   | PostgreSQL & Redis | **Quản lý Đơn hàng & Giỏ hàng**: Xử lý giỏ hàng (sử dụng Redis), đặt hàng và gửi sự kiện đặt hàng tới Kafka. |
 | **`product-recommendation-service`** |   `8812`   |     PostgreSQL     | **Quản lý Đánh giá & Gợi ý**: Lưu trữ đánh giá sản phẩm và đề xuất cho khách hàng.                               |
 | **`payment-service`**                |   `8814`   |       Không       | **Thanh toán**: Tiêu thụ sự kiện `order-events` từ Kafka để thanh toán bất đồng bộ.                                   |
-| **`notification-service`**           |   `8815`   |       Không       | **Thông báo**: Tiêu thụ sự kiện từ Kafka gửi email/SMS thông báo khi đặt hàng thành công.                             |
+| **`notification-service`**           |   `8815`   |       Không       | **Thông báo**: Tiêu thụ sự kiện từ Kafka gửi email/SMS/WebSocket thông báo khi đặt hàng thành công.                             |
+| **`inventory-service`**              |   `8816`   |     PostgreSQL     | **Quản lý Kho**: Theo dõi số lượng tồn kho và cập nhật trừ kho khi có đơn hàng mới thông qua Kafka. |
+| **`delivery-service`**               |   `8817`   |     PostgreSQL     | **Quản lý Giao hàng**: Xử lý thông tin vận chuyển, quản lý lộ trình và trạng thái giao nhận đơn hàng. |
+| **`revenue-service`**                |   `8818`   | PostgreSQL & Redis | **Quản lý Doanh thu**: Thu thập dữ liệu doanh thu từ đơn hàng, báo cáo thống kê qua bộ nhớ đệm Redis. |
 
 ---
 
-## 🌟 Chi Tiết Các Phân Hệ Tính Năng
+## 🌟 Chi Tiết Các Phân Hệ Tính Hệ Thống
 
 ### 1. Phân Hệ Người Dùng (User App)
 
 - **Trang chủ & Danh mục**: Hiển thị động danh mục đồ chơi kèm hiệu ứng hover và danh sách sản phẩm nổi bật/khuyến mãi.
+- **Quản lý nội dung (Banners, Collections)**: Cung cấp trải nghiệm mua sắm sinh động với các banner quảng cáo và bộ sưu tập sản phẩm mới.
 - **Chi tiết sản phẩm**: Xem chi tiết thông số, hình ảnh, mô tả sản phẩm đồ chơi và các đánh giá (rating 5 sao) từ khách hàng khác.
 - **Giỏ hàng động (Redis)**: Thêm/bớt sản phẩm, cập nhật số lượng trực tiếp trong giỏ hàng (kết nối trực tiếp với bộ nhớ đệm Redis).
-- **Đặt hàng**: Thanh toán nhanh chóng, điền địa chỉ & số điện thoại.
+- **Yêu thích (Wishlist)**: Cho phép người dùng lưu lại các sản phẩm quan tâm.
+- **Quản lý địa chỉ**: Người dùng có thể lưu nhiều địa chỉ nhận hàng để thanh toán nhanh chóng hơn.
+- **Đặt hàng**: Thanh toán nhanh chóng, điền địa chỉ & số điện thoại, theo dõi lộ trình đơn hàng.
 - **Lịch sử mua hàng & Chi tiết hóa đơn**: Xem danh sách đơn hàng đã mua, mở Modal xem hóa đơn chi tiết, và cho phép in ấn hóa đơn trực tiếp tại màn hình.
 - **Tài khoản**: Đăng ký, đăng nhập và cập nhật hồ sơ cá nhân.
 
 ### 2. Phân Hệ Quản Trị (Admin Dashboard)
 
-- **Thống kê tổng quan**: Dashboard hiển thị nhanh số lượng Sản phẩm, Đơn hàng, Người dùng và Danh mục hiện có.
-- **Quản lý danh mục**: Thêm mới, chỉnh sửa và xóa danh mục sản phẩm đồ chơi.
+- **Thống kê tổng quan & Doanh thu**: Dashboard hiển thị nhanh số lượng Sản phẩm, Đơn hàng, Người dùng và báo cáo doanh thu động.
+- **Quản lý danh mục & Menu**: Thêm mới, chỉnh sửa và cấu hình hiển thị danh mục, menu trên hệ thống.
 - **Quản lý sản phẩm**: Thêm mới đồ chơi, cập nhật giá tiền, số lượng tồn kho, tải ảnh sản phẩm và gán danh mục thông minh.
-- **Quản lý đơn hàng**: Xem toàn bộ danh sách hóa đơn từ mọi khách hàng và cập nhật trạng thái đơn hàng (ví dụ: duyệt từ `PAYMENT_EXPECTED` sang `COMPLETED`).
+- **Quản lý Banners & Collections**: Thay đổi banner quảng cáo và cập nhật các bộ sưu tập nổi bật tại trang chủ dễ dàng.
+- **Quản lý đơn hàng & Giao hàng**: Xem toàn bộ danh sách hóa đơn từ mọi khách hàng và cập nhật trạng thái đơn hàng và quá trình vận chuyển.
 - **Quản lý tài khoản**: Xem danh sách người dùng đã đăng ký tài khoản trên hệ thống.
 
 ---
@@ -107,12 +120,15 @@ graph TD
 
 #### Bước 1: Thiết lập Cơ sở dữ liệu PostgreSQL
 
-* Tạo một database mới tên là `ecommerce_microservices_db` trong PostgreSQL:
+* Tạo các database mới trong PostgreSQL tương ứng cho các microservices:
   ```sql
   CREATE DATABASE ecommerce_microservices_db;
+  CREATE DATABASE inventory_db;
+  CREATE DATABASE delivery_db;
+  CREATE DATABASE revenue_db;
   ```
-* Thông tin kết nối mặc định trong các file `application.properties` của các dịch vụ:
-  - **Database URL**: `jdbc:postgresql://localhost:5432/ecommerce_microservices_db`
+* Thông tin kết nối mặc định trong các file `application.properties` và `application.yml` của các dịch vụ:
+  - **Database URL**: `jdbc:postgresql://localhost:5432/<tên_db>`
   - **Username**: `postgres`
   - **Password**: `123456`
 
@@ -125,7 +141,7 @@ graph TD
 
 #### Bước 3: Khởi chạy các dịch vụ Backend Spring Boot
 
-* Sử dụng tập lệnh tự động [run.bat](file:///e:/Web2_/e-commerce-microservices/run.bat) để khởi động toàn bộ 8 services của backend một cách tự động và dọn dẹp các cổng xung đột:
+* Sử dụng tập lệnh tự động [run.bat](file:///e:/Web2_/e-commerce-microservices/run.bat) để khởi động toàn bộ **11 services** của backend một cách tự động và dọn dẹp các cổng xung đột:
   ```powershell
   .\run.bat
   ```
