@@ -15,6 +15,9 @@ public class BannerServiceImpl implements BannerService {
     @Autowired
     private BannerRepository bannerRepository;
 
+    @Autowired
+    private FileUploadService fileUploadService;
+
     @Override
     public List<Banner> getAllBanners(String position, boolean activeOnly) {
         if (position != null && !position.isBlank()) {
@@ -45,6 +48,11 @@ public class BannerServiceImpl implements BannerService {
             return null;
         }
 
+        if (banner.getImageUrl() != null && bannerDetails.getImageUrl() != null 
+                && !banner.getImageUrl().equals(bannerDetails.getImageUrl())) {
+            fileUploadService.deleteImage(banner.getImageUrl());
+        }
+        
         banner.setTitle(bannerDetails.getTitle());
         banner.setSubtitle(bannerDetails.getSubtitle());
         banner.setImageUrl(bannerDetails.getImageUrl());
@@ -58,6 +66,10 @@ public class BannerServiceImpl implements BannerService {
 
     @Override
     public void deleteBanner(Long id) {
+        Banner banner = getBannerById(id);
+        if (banner != null && banner.getImageUrl() != null) {
+            fileUploadService.deleteImage(banner.getImageUrl());
+        }
         bannerRepository.deleteById(id);
     }
 

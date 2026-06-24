@@ -14,12 +14,13 @@ export const register = async (data) => {
   const lastName = parts.slice(1).join(" ") || "Huynh";
 
   return axiosClient.post("/api/accounts/registration", {
-    userName: data.username,
+    userName: data.email, // Use email as userName since it's unique
     userPassword: data.password,
     userDetails: {
       firstName: firstName,
       lastName: lastName,
-      email: data.email
+      email: data.email,
+      phoneNumber: data.phone
     }
   });
 };

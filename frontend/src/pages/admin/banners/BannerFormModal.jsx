@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import uploadService from "../../../services/uploadService";
 
 function BannerFormModal({ show, onClose, initialData, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -12,6 +13,7 @@ function BannerFormModal({ show, onClose, initialData, onSubmit }) {
   });
 
   const [previewImage, setPreviewImage] = useState("");
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (show && initialData) {
@@ -47,12 +49,27 @@ function BannerFormModal({ show, onClose, initialData, onSubmit }) {
     }));
   };
 
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewImage(url);
-      setFormData(prev => ({ ...prev, imageUrl: file.name })); // Mock saving file name
+      try {
+        setIsUploading(true);
+        // Show local preview immediately
+        const localUrl = URL.createObjectURL(file);
+        setPreviewImage(localUrl);
+        
+        // Upload to Cloudinary via backend in "banners" folder
+        const cloudinaryUrl = await uploadService.uploadImage(file, "banners");
+        
+        // Update form with actual Cloudinary URL
+        setFormData(prev => ({ ...prev, imageUrl: cloudinaryUrl }));
+        setPreviewImage(cloudinaryUrl);
+      } catch (error) {
+        alert("Có lỗi xảy ra khi tải ảnh lên Cloudinary!");
+        setPreviewImage("");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -156,9 +173,13 @@ function BannerFormModal({ show, onClose, initialData, onSubmit }) {
             </form>
           </div>
           <div className="modal-footer border-top-0 px-4 pb-4 pt-0 justify-content-end" style={{ backgroundColor: "var(--admin-bg)", borderBottomLeftRadius: "var(--admin-radius-lg)", borderBottomRightRadius: "var(--admin-radius-lg)" }}>
-            <button type="button" className="neu-pill px-4" onClick={onClose}>Hủy</button>
-            <button type="submit" form="bannerForm" className="neu-pill px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff", pointerEvents: (!formData.title || !previewImage) ? "none" : "auto", opacity: (!formData.title || !previewImage) ? 0.5 : 1 }}>
-              <i className="fa-solid fa-save me-2"></i> {initialData ? "Lưu thay đổi" : "Tạo banner"}
+            <button type="button" className="neu-pill px-4" onClick={onClose} disabled={isUploading}>Hủy</button>
+            <button type="submit" form="bannerForm" className="neu-pill px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff", pointerEvents: (!formData.title || !previewImage) ? "none" : "auto", opacity: (!formData.title || !previewImage) ? 0.5 : 1 }} disabled={isUploading}>
+              {isUploading ? (
+                <><i className="fa-solid fa-spinner fa-spin me-2"></i> Đang tải...</>
+              ) : (
+                <><i className="fa-solid fa-save me-2"></i> {initialData ? "Lưu thay đổi" : "Tạo banner"}</>
+              )}
             </button>
           </div>
         </div>

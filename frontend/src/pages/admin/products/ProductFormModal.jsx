@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import uploadService from "../../../services/uploadService";
 
 function ProductFormModal({ show, onClose, categories, initialData, onSubmit }) {
   const [formData, setFormData] = useState({
@@ -23,6 +24,7 @@ function ProductFormModal({ show, onClose, categories, initialData, onSubmit }) 
 
   const [previewMainImage, setPreviewMainImage] = useState("");
   const [previewGallery, setPreviewGallery] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
 
   useEffect(() => {
     if (show && initialData) {
@@ -73,26 +75,62 @@ function ProductFormModal({ show, onClose, categories, initialData, onSubmit }) 
     }));
   };
 
-  const handleMainImageChange = (e) => {
+  const handleMainImageChange = async (e) => {
     const file = e.target.files[0];
     if (file) {
-      const url = URL.createObjectURL(file);
-      setPreviewMainImage(url);
-      setFormData(prev => ({ ...prev, imageUrl: file.name })); // Mock saving file name
+      try {
+        setIsUploading(true);
+        // Show local preview immediately
+        const localUrl = URL.createObjectURL(file);
+        setPreviewMainImage(localUrl);
+        
+        // Upload to Cloudinary via backend
+        const targetFolder = formData.sku ? `products/${formData.sku}` : `products/temp_${Date.now()}`;
+        const cloudinaryUrl = await uploadService.uploadImage(file, targetFolder);
+        
+        // Update form with actual Cloudinary URL
+        setFormData(prev => ({ ...prev, imageUrl: cloudinaryUrl }));
+        setPreviewMainImage(cloudinaryUrl); // Update preview with actual URL
+      } catch (error) {
+        alert("Có lỗi xảy ra khi tải ảnh lên Cloudinary!");
+        setPreviewMainImage("");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
-  const handleGalleryChange = (e) => {
+  const handleGalleryChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length > 0) {
-      const newUrls = files.map(file => URL.createObjectURL(file));
-      setPreviewGallery(prev => [...prev, ...newUrls]);
-      
-      const newNames = files.map(file => file.name);
-      setFormData(prev => {
-        const currentUrls = prev.imageUrls ? prev.imageUrls.split(",").map(s=>s.trim()).filter(Boolean) : [];
-        return { ...prev, imageUrls: [...currentUrls, ...newNames].join(", ") };
-      });
+      try {
+        setIsUploading(true);
+        const newLocalUrls = files.map(file => URL.createObjectURL(file));
+        setPreviewGallery(prev => [...prev, ...newLocalUrls]);
+        
+        const uploadedUrls = [];
+        const targetFolder = formData.sku ? `products/${formData.sku}` : `products/temp_${Date.now()}`;
+        for (const file of files) {
+          const url = await uploadService.uploadImage(file, targetFolder);
+          uploadedUrls.push(url);
+        }
+        
+        setPreviewGallery(prev => {
+          // Replace local previews with actual uploaded URLs
+          const updated = [...prev];
+          updated.splice(updated.length - files.length, files.length, ...uploadedUrls);
+          return updated;
+        });
+        
+        setFormData(prev => {
+          const currentUrls = prev.imageUrls ? prev.imageUrls.split(",").map(s=>s.trim()).filter(Boolean) : [];
+          return { ...prev, imageUrls: [...currentUrls, ...uploadedUrls].join(", ") };
+        });
+      } catch (error) {
+        alert("Có lỗi xảy ra khi tải gallery ảnh lên Cloudinary!");
+      } finally {
+        setIsUploading(false);
+      }
     }
   };
 
@@ -303,9 +341,13 @@ function ProductFormModal({ show, onClose, categories, initialData, onSubmit }) 
             </form>
           </div>
           <div className="modal-footer border-top-0 px-4 pb-4 pt-0 justify-content-end" style={{ backgroundColor: "var(--admin-bg)", borderBottomLeftRadius: "var(--admin-radius-lg)", borderBottomRightRadius: "var(--admin-radius-lg)" }}>
-            <button type="button" className="neu-pill px-4" onClick={onClose}>Hủy</button>
-            <button type="submit" form="productForm" className="neu-pill px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }}>
-              <i className="fa-solid fa-save me-2"></i> {initialData ? "Lưu thay đổi" : "Tạo sản phẩm"}
+            <button type="button" className="neu-pill px-4" onClick={onClose} disabled={isUploading}>Hủy</button>
+            <button type="submit" form="productForm" className="neu-pill px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }} disabled={isUploading}>
+              {isUploading ? (
+                <><i className="fa-solid fa-spinner fa-spin me-2"></i> Đang tải ảnh...</>
+              ) : (
+                <><i className="fa-solid fa-save me-2"></i> {initialData ? "Lưu thay đổi" : "Tạo sản phẩm"}</>
+              )}
             </button>
           </div>
         </div>

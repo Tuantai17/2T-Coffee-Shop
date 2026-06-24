@@ -2,10 +2,25 @@ import { Link, useNavigate } from "react-router-dom";
 import { logout } from "../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../utils/authStorage";
 import HomeMenu from "../pages/user/components/home/HomeMenu";
+import { useState, useRef, useEffect } from "react";
 
 function Navbar() {
   const navigate = useNavigate();
   const { token, role, email } = getAuthSession(AUTH_SCOPES.USER);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleLogout = () => {
     logout(AUTH_SCOPES.USER);
@@ -76,40 +91,41 @@ function Navbar() {
             <div className="d-flex align-items-center gap-4 text-white ms-4">
               {/* Login / User */}
               {token ? (
-                <div className="dropdown">
-                  <button className="btn text-white fw-semibold d-flex align-items-center gap-2 border-0 p-0 shadow-none dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-                    <i className="fa-solid fa-user bg-white text-danger rounded-circle p-1"></i>
-                    <span>{email.split('@')[0]}</span>
+                <div className="dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
+                  <button 
+                    className="btn text-white fw-semibold d-flex align-items-center gap-2 border-0 p-0 shadow-none" 
+                    type="button" 
+                    onClick={() => setDropdownOpen(!dropdownOpen)}
+                  >
+                    <div className="bg-white text-danger rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
+                      <i className="fa-solid fa-user small"></i>
+                    </div>
+                    <span className="d-inline-block text-truncate" style={{ maxWidth: '120px' }} title={email ? email.split('@')[0] : "Tài khoản"}>
+                      {email ? email.split('@')[0] : "Tài khoản"}
+                    </span>
+                    <i className="fa-solid fa-caret-down small ms-1"></i>
                   </button>
-                  <ul className="dropdown-menu dropdown-menu-end shadow border-0 rounded-3 mt-2">
-                    {(role === "ROLE_ADMIN" || role === "ROLE_STAFF") && (
+                  {dropdownOpen && (
+                    <ul className="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3 show" style={{ padding: '8px', minWidth: '220px', borderRadius: '12px', border: '1px solid #f1f5f9', position: 'absolute', right: 0, top: '100%' }}>
                       <li>
-                        <Link to="/admin" className="dropdown-item py-2 fw-semibold text-danger">
-                          <i className="fa-solid fa-user-shield me-2"></i> Admin Panel
+                        <Link to="/profile" className="dropdown-item py-2 fw-semibold rounded d-flex align-items-center gap-2 text-dark auth-dropdown-item" onClick={() => setDropdownOpen(false)}>
+                          <i className="fa-regular fa-user text-muted" style={{ width: '20px', textAlign: 'center' }}></i> Thông tin tài khoản
                         </Link>
                       </li>
-                    )}
-                    <li>
-                      <Link to="/profile" className="dropdown-item py-2 fw-semibold">
-                        <i className="fa-solid fa-user-gear me-2 text-muted"></i> Tài khoản
-                      </Link>
-                    </li>
-                    <li>
-                      <Link to="/orders" className="dropdown-item py-2 fw-semibold">
-                        <i className="fa-solid fa-receipt me-2 text-muted"></i> Đơn hàng
-                      </Link>
-                    </li>
-                    <li><hr className="dropdown-divider" /></li>
-                    <li>
-                      <button className="dropdown-item py-2 fw-semibold text-danger" onClick={handleLogout}>
-                        <i className="fa-solid fa-right-from-bracket me-2"></i> Đăng xuất
-                      </button>
-                    </li>
-                  </ul>
+                      <li><hr className="dropdown-divider my-1 border-light" /></li>
+                      <li>
+                        <button className="dropdown-item py-2 fw-semibold text-danger rounded d-flex align-items-center gap-2 auth-dropdown-item" onClick={() => { setDropdownOpen(false); handleLogout(); }}>
+                          <i className="fa-solid fa-arrow-right-from-bracket" style={{ width: '20px', textAlign: 'center' }}></i> Đăng xuất
+                        </button>
+                      </li>
+                    </ul>
+                  )}
                 </div>
               ) : (
                 <Link to="/login" className="text-white text-decoration-none d-flex align-items-center gap-2 fw-semibold">
-                  <i className="fa-solid fa-user bg-white text-danger rounded-circle p-1" style={{ width: "24px", height: "24px", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "12px" }}></i>
+                  <div className="bg-white text-danger rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
+                    <i className="fa-solid fa-user small"></i>
+                  </div>
                   <span>Đăng nhập</span>
                 </Link>
               )}

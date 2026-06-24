@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { login } from "../../services/authService";
 import {
@@ -7,16 +7,19 @@ import {
   getAuthSession,
   setAuthSession,
 } from "../../utils/authStorage";
+import AuthLayout from "../../layouts/AuthLayout";
+import AuthHeaderIllustration from "../../components/AuthHeaderIllustration";
 
 function LoginPage() {
   const navigate = useNavigate();
   const existingUserSession = getAuthSession(AUTH_SCOPES.USER);
   const [form, setForm] = useState({
-    username: "",
+    email: "",
     password: "",
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
     setForm({
@@ -28,15 +31,31 @@ function LoginPage() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    
+    // Basic validation
+    if (!form.email || !form.email.trim()) {
+      setError("Vui lòng nhập email.");
+      return;
+    }
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email)) {
+      setError("Email không đúng định dạng.");
+      return;
+    }
+    if (!form.password) {
+      setError("Vui lòng nhập mật khẩu.");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const res = await login(form);
+      const res = await login({ username: form.email.toLowerCase().trim(), password: form.password });
       const { token, role, userId, username } = res.data;
 
       if (role === "ROLE_ADMIN" || role === "ROLE_STAFF") {
         clearAuthSession(AUTH_SCOPES.USER);
-        setError("Tai khoan quan tri vui long dang nhap tai trang admin.");
+        setError("Tài khoản quản trị vui lòng đăng nhập tại trang admin.");
         navigate("/admin/login");
         return;
       }
@@ -45,78 +64,105 @@ function LoginPage() {
         token,
         role,
         userId,
-        email: username || form.username,
+        email: username || form.email,
       });
 
-      alert("Dang nhap thanh cong!");
+      // Navigate to home or intended page
       navigate("/");
     } catch (err) {
       console.error(err);
-      setError("Dang nhap that bai. Vui long kiem tra lai tai khoan va mat khau!");
+      if (err.response && err.response.status === 401) {
+         setError("Email hoặc mật khẩu không chính xác.");
+      } else if (err.response && err.response.status === 403) {
+         setError("Tài khoản của bạn đã bị khóa.");
+      } else {
+         setError("Không thể kết nối đến hệ thống. Vui lòng thử lại.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="container mt-5" style={{ maxWidth: "500px" }}>
-      <div className="card shadow-sm border-0 rounded-5 p-4 bg-white text-left">
-        <div className="text-center mb-4">
-          <h2 className="fw-extrabold text-danger mb-1" style={{ letterSpacing: "-1px" }}>MYKINGDOM LOGIN</h2>
-          <p className="text-muted">Dang nhap tai khoan phu huynh de mua sam do choi cho be</p>
-          {existingUserSession.token && (
-            <p className="small text-success mb-0">Phien nguoi dung hien tai: {existingUserSession.email}</p>
-          )}
+    <AuthLayout title="Đăng nhập">
+      <AuthHeaderIllustration />
+      <div className="text-center mb-4">
+        <h2 className="auth-title fs-3 mb-1">Đăng Nhập</h2>
+      </div>
+
+      {error && (
+        <div className="alert alert-danger rounded-3 py-2 small" role="alert">
+          {error}
         </div>
+      )}
 
-        {error && <div className="alert alert-danger rounded-3" role="alert">{error}</div>}
+      {existingUserSession?.token && (
+        <div className="alert alert-success rounded-3 py-2 small" role="alert">
+          Đang đăng nhập với: {existingUserSession.email}
+        </div>
+      )}
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-3">
-            <label className="form-label fw-bold text-dark">Ten dang nhap hoac Email</label>
+      <form onSubmit={handleLogin}>
+        <div className="mb-3">
+          <label className="form-label fw-bold small text-dark mb-1">Email *</label>
+          <div className="auth-input-container">
+            <i className="fa-regular fa-envelope auth-input-icon"></i>
             <input
-              name="username"
-              type="text"
-              className="form-control form-toy-control rounded-3"
-              placeholder="Nhap ten dang nhap hoac email cua ban"
-              value={form.username}
+              name="email"
+              type="email"
+              className="form-control auth-input"
+              placeholder="Nhập email của bạn"
+              value={form.email}
               onChange={handleChange}
               required
             />
           </div>
+        </div>
 
-          <div className="mb-4">
-            <label className="form-label fw-bold text-dark">Mat khau</label>
+        <div className="mb-4">
+          <label className="form-label fw-bold small text-dark mb-1">Mật khẩu *</label>
+          <div className="auth-input-container">
+            <i className="fa-solid fa-lock auth-input-icon"></i>
             <input
               name="password"
-              type="password"
-              className="form-control form-toy-control rounded-3"
-              placeholder="........"
+              type={showPassword ? "text" : "password"}
+              className="form-control auth-input"
+              placeholder="Nhập mật khẩu"
               value={form.password}
               onChange={handleChange}
               required
             />
+            <i 
+              className={`fa-regular ${showPassword ? 'fa-eye-slash' : 'fa-eye'} auth-input-icon-right`}
+              onClick={() => setShowPassword(!showPassword)}
+              aria-label={showPassword ? "Ẩn mật khẩu" : "Hiện mật khẩu"}
+            ></i>
           </div>
-
-          <button
-            type="submit"
-            className="btn btn-toy-primary w-100 py-3 rounded-pill fw-bold text-white mb-3"
-            disabled={loading}
-          >
-            {loading ? "Dang xac thuc..." : "DANG NHAP NGAY"}
-          </button>
-        </form>
-
-        <div className="text-center">
-          <p className="mb-0 text-muted">
-            Chua co tai khoan phu huynh? <Link to="/register" className="text-danger fw-bold text-decoration-none">Dang ky thanh vien</Link>
-          </p>
-          <p className="mt-2 mb-0">
-            <Link to="/admin/login" className="text-decoration-none fw-semibold">Loi vao danh cho admin</Link>
-          </p>
         </div>
+
+        <button
+          type="submit"
+          className="btn auth-primary-btn w-100 py-3 mb-3"
+          disabled={loading}
+        >
+          {loading ? (
+            <span><i className="fa-solid fa-circle-notch fa-spin me-2"></i>Đang đăng nhập...</span>
+          ) : (
+            "Đăng Nhập"
+          )}
+        </button>
+      </form>
+
+      <div className="text-center mb-4">
+        <Link to="/forgot-password" className="auth-link-navy small">Quên mật khẩu?</Link>
       </div>
-    </div>
+
+      <div className="text-center mt-3 pt-3 border-top">
+        <p className="mb-0 small text-muted">
+          Chưa có tài khoản? <Link to="/register" className="auth-link-primary ms-1">Đăng ký tài khoản</Link>
+        </p>
+      </div>
+    </AuthLayout>
   );
 }
 

@@ -16,6 +16,9 @@ public class CollectionServiceImpl implements CollectionService {
     @Autowired
     private CollectionRepository collectionRepository;
 
+    @Autowired
+    private FileUploadService fileUploadService;
+
     @Override
     public List<Collection> getCollections(boolean featuredOnly, boolean activeOnly) {
         if (featuredOnly) {
@@ -50,6 +53,11 @@ public class CollectionServiceImpl implements CollectionService {
             return null;
         }
 
+        if (collection.getBannerUrl() != null && collectionDetails.getBannerUrl() != null 
+                && !collection.getBannerUrl().equals(collectionDetails.getBannerUrl())) {
+            fileUploadService.deleteImage(collection.getBannerUrl());
+        }
+
         collection.setName(collectionDetails.getName());
         collection.setSlug(collectionDetails.getSlug());
         collection.setSubtitle(collectionDetails.getSubtitle());
@@ -68,6 +76,10 @@ public class CollectionServiceImpl implements CollectionService {
 
     @Override
     public void deleteCollection(Long id) {
+        Collection collection = getCollectionById(id);
+        if (collection != null && collection.getBannerUrl() != null) {
+            fileUploadService.deleteImage(collection.getBannerUrl());
+        }
         collectionRepository.deleteById(id);
     }
 

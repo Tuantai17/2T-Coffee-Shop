@@ -177,14 +177,51 @@ function MenuFormDrawer({ show, onClose, menuToEdit, onSave, parentOptions }) {
 
           <div className="mb-3">
             <label className="form-label fw-semibold">Icon URL (Tùy chọn)</label>
-            <input 
-              type="text" 
-              className="form-control shadow-none" 
-              name="icon"
-              value={formData.icon}
-              onChange={handleChange}
-              placeholder="https://..."
-            />
+            <div className="d-flex align-items-center gap-3">
+              <div 
+                className="border rounded-3 d-flex flex-column align-items-center justify-content-center bg-light position-relative overflow-hidden"
+                style={{ width: "80px", height: "80px", cursor: "pointer", borderStyle: "dashed" }}
+                onClick={() => document.getElementById('menuIconUpload').click()}
+              >
+                {formData.icon && (formData.icon.startsWith('http') || formData.icon.startsWith('data:')) ? (
+                  <img src={formData.icon} alt="Icon" style={{ width: "100%", height: "100%", objectFit: "contain" }} />
+                ) : (
+                  <i className={formData.icon ? formData.icon : "fa-solid fa-cloud-arrow-up text-muted fs-4"}></i>
+                )}
+                <input 
+                  type="file" 
+                  id="menuIconUpload" 
+                  className="d-none" 
+                  accept="image/*" 
+                  onChange={async (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      try {
+                        setIsSubmitting(true);
+                        const targetFolder = `menus/temp_${Date.now()}`;
+                        const { default: uploadService } = await import('../../../services/uploadService');
+                        const cloudinaryUrl = await uploadService.uploadImage(file, targetFolder);
+                        setFormData(prev => ({ ...prev, icon: cloudinaryUrl }));
+                      } catch (error) {
+                        alert("Có lỗi xảy ra khi tải ảnh lên Cloudinary!");
+                      } finally {
+                        setIsSubmitting(false);
+                      }
+                    }
+                  }} 
+                />
+              </div>
+              <div className="flex-grow-1">
+                <input 
+                  type="text" 
+                  className="form-control shadow-none" 
+                  name="icon"
+                  value={formData.icon}
+                  onChange={handleChange}
+                  placeholder="https://... hoặc class (vd: fa-solid fa-home)"
+                />
+              </div>
+            </div>
           </div>
 
           <div className="mb-3">

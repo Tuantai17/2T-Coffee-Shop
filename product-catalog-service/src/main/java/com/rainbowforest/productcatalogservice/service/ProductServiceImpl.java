@@ -26,6 +26,9 @@ public class ProductServiceImpl implements ProductService {
     @Autowired
     private ProductRepository productRepository;
 
+    @Autowired
+    private FileUploadService fileUploadService;
+
     @Override
     @Cacheable(value = "products", key = "'all'")
     public List<Product> getAllProduct() {
@@ -173,6 +176,22 @@ public class ProductServiceImpl implements ProductService {
     public Product updateProduct(Long id, Product productDetails) {
         Product product = productRepository.findById(id).orElse(null);
         if (product != null) {
+            // Delete main image if changed
+            if (product.getImageUrl() != null && productDetails.getImageUrl() != null 
+                    && !product.getImageUrl().equals(productDetails.getImageUrl())) {
+                fileUploadService.deleteImage(product.getImageUrl());
+            }
+
+            // Delete gallery images that were removed
+            if (product.getImageUrls() != null) {
+                List<String> newUrls = productDetails.getImageUrls() != null ? productDetails.getImageUrls() : new ArrayList<>();
+                for (String oldUrl : product.getImageUrls()) {
+                    if (!newUrls.contains(oldUrl)) {
+                        fileUploadService.deleteImage(oldUrl);
+                    }
+                }
+            }
+
             product.setProductName(productDetails.getProductName());
             product.setPrice(productDetails.getPrice());
             product.setOriginalPrice(productDetails.getOriginalPrice());
@@ -205,6 +224,24 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @CacheEvict(value = "products", allEntries = true)
     public void deleteProduct(Long productId) {
+        Product product = getProductById(productId);
+        if (product != null) {
+            if (product.getSku() != null && !product.getSku().trim().isEmpty()) {
+                fileUploadService.deleteProductFolder(product.getSku());
+            } else {
+                // Fallback if sku is missing
+                if (product.getImageUrl() != null) {
+                    fileUploadService.deleteImage(product.getImageUrl());
+                }
+                if (product.getImageUrls() != null) {
+                    for (String url : product.getImageUrls()) {
+                        if (!url.equals(product.getImageUrl())) {
+                            fileUploadService.deleteImage(url);
+                        }
+                    }
+                }
+            }
+        }
         productRepository.deleteById(productId);
     }
 

@@ -15,6 +15,9 @@ public class CategoryServiceImpl implements CategoryService {
     @Autowired
     private CategoryRepository categoryRepository;
 
+    @Autowired
+    private FileUploadService fileUploadService;
+
     @Override
     public List<Category> getAllCategories() {
         return categoryRepository.findAll();
@@ -35,6 +38,10 @@ public class CategoryServiceImpl implements CategoryService {
     public Category updateCategory(Long id, Category categoryDetails) {
         Category category = categoryRepository.findById(id).orElse(null);
         if (category != null) {
+            if (category.getImageUrl() != null && categoryDetails.getImageUrl() != null 
+                    && !category.getImageUrl().equals(categoryDetails.getImageUrl())) {
+                fileUploadService.deleteImage(category.getImageUrl());
+            }
             category.setName(categoryDetails.getName());
             category.setDescription(categoryDetails.getDescription());
             category.setSlug(categoryDetails.getSlug());
@@ -49,6 +56,10 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public void deleteCategory(Long id) {
+        Category category = getCategoryById(id);
+        if (category != null && category.getImageUrl() != null) {
+            fileUploadService.deleteImage(category.getImageUrl());
+        }
         categoryRepository.deleteById(id);
     }
 

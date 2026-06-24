@@ -6,6 +6,7 @@ import {
   getCollections,
   updateCollection,
 } from "../../services/productService";
+import uploadService from "../../services/uploadService";
 
 const defaultForm = {
   name: "",
@@ -118,6 +119,30 @@ function AdminCollectionPage() {
     });
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleImageUpload = async (e, setter) => {
+    const file = e.target.files[0];
+    if (file) {
+      try {
+        setIsUploading(true);
+        // Upload to Cloudinary via backend
+        const targetFolder = `collections/temp_${Date.now()}`;
+        const cloudinaryUrl = await uploadService.uploadImage(file, targetFolder);
+        
+        // Update form with actual Cloudinary URL
+        setter((current) => ({
+          ...current,
+          bannerUrl: cloudinaryUrl,
+        }));
+      } catch (error) {
+        alert("Có lỗi xảy ra khi tải ảnh lên Cloudinary!");
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  };
+
   const renderForm = (source, setter, onSubmit, submitLabel) => (
     <form onSubmit={onSubmit} className="card shadow-sm border-0 rounded-4 p-4 mb-4">
       <div className="row g-3">
@@ -137,10 +162,35 @@ function AdminCollectionPage() {
           <label className="form-label fw-semibold">Mô tả</label>
           <textarea name="description" className="form-control rounded-3" rows="3" value={source.description} onChange={(e) => handleChange(e, setter)}></textarea>
         </div>
+        
+        {/* Banner Upload */}
         <div className="col-md-6">
-          <label className="form-label fw-semibold">Banner URL</label>
-          <input name="bannerUrl" className="form-control rounded-3" value={source.bannerUrl} onChange={(e) => handleChange(e, setter)} />
+          <label className="form-label fw-semibold d-block">Banner URL</label>
+          <div className="d-flex align-items-center gap-3 mb-2">
+            <div 
+              className="border rounded-3 d-flex flex-column align-items-center justify-content-center bg-light position-relative overflow-hidden"
+              style={{ width: "120px", height: "80px", cursor: "pointer", borderStyle: "dashed" }}
+              onClick={() => document.getElementById(`bannerUpload_${submitLabel}`).click()}
+            >
+              {source.bannerUrl ? (
+                <img src={source.bannerUrl} alt="Banner" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+              ) : (
+                <i className="fa-solid fa-cloud-arrow-up text-muted fs-4"></i>
+              )}
+              <input 
+                type="file" 
+                id={`bannerUpload_${submitLabel}`} 
+                className="d-none" 
+                accept="image/*" 
+                onChange={(e) => handleImageUpload(e, setter)} 
+              />
+            </div>
+            <div className="flex-grow-1">
+              <input name="bannerUrl" className="form-control rounded-3" value={source.bannerUrl} onChange={(e) => handleChange(e, setter)} placeholder="Hoặc nhập link trực tiếp" />
+            </div>
+          </div>
         </div>
+
         <div className="col-md-4">
           <label className="form-label fw-semibold">Link đích</label>
           <input name="targetUrl" className="form-control rounded-3" value={source.targetUrl} onChange={(e) => handleChange(e, setter)} />
@@ -172,7 +222,9 @@ function AdminCollectionPage() {
           </div>
         </div>
       </div>
-      <button type="submit" className="btn btn-primary rounded-3 px-4 py-2 fw-bold mt-4">{submitLabel}</button>
+      <button type="submit" className="btn btn-primary rounded-3 px-4 py-2 fw-bold mt-4" disabled={isUploading}>
+        {isUploading ? <><i className="fa-solid fa-spinner fa-spin me-2"></i> Đang tải ảnh...</> : submitLabel}
+      </button>
     </form>
   );
 

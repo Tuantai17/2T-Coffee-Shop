@@ -15,6 +15,9 @@ public class MenuServiceImpl implements MenuService {
     @Autowired
     private MenuRepository menuRepository;
 
+    @Autowired
+    private FileUploadService fileUploadService;
+
     @Override
     public List<Menu> getAllMenus() {
         return menuRepository.findAllByOrderByDisplayOrderAsc();
@@ -96,6 +99,12 @@ public class MenuServiceImpl implements MenuService {
             menu.setParentId(menuDetails.getParentId());
             menu.setDisplayOrder(menuDetails.getDisplayOrder());
             menu.setIsActive(menuDetails.getIsActive());
+
+            if (menu.getIcon() != null && menuDetails.getIcon() != null 
+                    && !menu.getIcon().equals(menuDetails.getIcon())) {
+                fileUploadService.deleteImage(menu.getIcon());
+            }
+
             menu.setIcon(menuDetails.getIcon());
             return menuRepository.save(menu);
         }
@@ -120,6 +129,10 @@ public class MenuServiceImpl implements MenuService {
             for (Menu child : children) {
                 deleteMenu(child.getId());
             }
+        }
+        Menu menu = getMenuById(id);
+        if (menu != null && menu.getIcon() != null) {
+            fileUploadService.deleteImage(menu.getIcon());
         }
         menuRepository.deleteById(id);
     }
