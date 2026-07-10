@@ -87,22 +87,21 @@ function ProductFilterSidebar({ categories, filters, onFilterChange, onReset }) 
 
                 return (
                   <div key={cat.id} className="category-item mb-2">
-                    <div 
-                      className="d-flex justify-content-between align-items-center cursor-pointer py-1"
-                      onClick={() => {
-                        if (hasChildren) {
-                          toggleCategory(cat.id);
-                        } else {
-                          // Nếu không có con, click vào cha thì coi như filter theo cha luôn
+                    <div className="d-flex justify-content-between align-items-center py-1">
+                      <span 
+                        className={`flex-grow-1 cursor-pointer ${isAnyActive ? 'fw-bold text-danger' : 'text-dark'}`}
+                        onClick={() => {
                           onFilterChange("category", filters.category === cat.id.toString() ? "" : cat.id.toString());
-                        }
-                      }}
-                    >
-                      <span className={`flex-grow-1 ${isAnyActive ? 'fw-bold text-danger' : 'text-dark'}`}>
+                        }}
+                      >
                         {cat.name}
                       </span>
                       {hasChildren && (
-                        <i className={`fa-solid fa-chevron-${isExpanded ? 'down' : 'right'} text-muted ms-2`} style={{ fontSize: '12px' }}></i>
+                        <i 
+                          className={`fa-solid fa-chevron-${isExpanded ? 'down' : 'right'} text-muted ms-2 cursor-pointer`} 
+                          style={{ fontSize: '12px', padding: '5px' }}
+                          onClick={() => toggleCategory(cat.id)}
+                        ></i>
                       )}
                     </div>
                     

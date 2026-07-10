@@ -6,7 +6,10 @@ import {
   getCategories,
   getProducts,
   updateProduct,
+  getToppings,
+  getOptionGroups
 } from "../../services/productService";
+import { Link } from "react-router-dom";
 import ProductFilterBar from "./products/ProductFilterBar";
 import ProductList from "./products/ProductList";
 import ProductPagination from "./products/ProductPagination";
@@ -15,6 +18,8 @@ import ProductFormModal from "./products/ProductFormModal";
 function AdminProductPage() {
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [toppings, setToppings] = useState([]);
+  const [optionGroups, setOptionGroups] = useState([]);
   const [loading, setLoading] = useState(true);
   
   const [selectedIds, setSelectedIds] = useState([]);
@@ -37,15 +42,22 @@ function AdminProductPage() {
   // Status message
   const [statusMsg, setStatusMsg] = useState(null);
 
+  // Soft Delete Modal State
+  const [softDeleteModal, setSoftDeleteModal] = useState({ show: false, ids: [], reason: "", isBulk: false });
+
   const loadData = async () => {
     setLoading(true);
     try {
-      const [prodRes, catRes] = await Promise.all([
+      const [prodRes, catRes, topRes, optRes] = await Promise.all([
         getProducts({ sort: "newest" }),
-        getCategories()
+        getCategories(),
+        getToppings(),
+        getOptionGroups()
       ]);
       setProducts(prodRes.data || []);
       setCategories(catRes.data || []);
+      setToppings(topRes.data || []);
+      setOptionGroups(optRes.data || []);
     } catch (error) {
       console.error(error);
       showStatus("Lỗi khi tải dữ liệu. Vui lòng thử lại.", "error");
@@ -132,35 +144,41 @@ function AdminProductPage() {
 
   // --- Actions ---
   const handleDeleteSelected = async () => {
-    if (!window.confirm(`Bạn có chắc muốn xóa ${selectedIds.length} sản phẩm đã chọn?`)) return;
-    
-    setLoading(true);
-    let successCount = 0;
-    // Sequential delete as bulk delete API is not available
-    for (const id of selectedIds) {
-      try {
-        await deleteProduct(id);
-        successCount++;
-      } catch (e) {
-        console.error(`Failed to delete ${id}`, e);
-      }
-    }
-    
-    showStatus(`Đã xóa thành công ${successCount}/${selectedIds.length} sản phẩm.`);
-    setSelectedIds([]);
-    loadData();
+    setSoftDeleteModal({ show: true, ids: selectedIds, reason: "", isBulk: true });
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này?")) return;
-    try {
-      await deleteProduct(id);
-      showStatus("Xóa sản phẩm thành công!");
-      loadData();
-      setSelectedIds(prev => prev.filter(i => i !== id));
-    } catch (error) {
-      showStatus("Xóa sản phẩm thất bại!", "error");
+    setSoftDeleteModal({ show: true, ids: [id], reason: "", isBulk: false });
+  };
+
+  const confirmSoftDelete = async () => {
+    const { ids, reason, isBulk } = softDeleteModal;
+    setLoading(true);
+    let successCount = 0;
+    
+    for (const id of ids) {
+      try {
+        await deleteProduct(id, { deleteReason: reason, deletedBy: "Admin" });
+        successCount++;
+      } catch (error) {
+        if (error.response && error.response.status === 409) {
+           alert(`Sản phẩm (ID: ${id}) đã có đơn hàng và không thể xóa. Bạn có thể ẩn sản phẩm bằng cách chuyển trạng thái sang ngưng kinh doanh.`);
+        } else {
+           console.error(`Failed to delete ${id}`, error);
+        }
+      }
     }
+    
+    if (isBulk) {
+       showStatus(`Đã chuyển vào thùng rác ${successCount}/${ids.length} sản phẩm.`);
+       setSelectedIds([]);
+    } else if (successCount > 0) {
+       showStatus("Đã chuyển sản phẩm vào thùng rác!");
+       setSelectedIds(prev => prev.filter(i => !ids.includes(i)));
+    }
+    
+    setSoftDeleteModal({ show: false, ids: [], reason: "", isBulk: false });
+    loadData();
   };
 
   const handleToggleFeature = async (id, featureName, value) => {
@@ -330,6 +348,9 @@ function AdminProductPage() {
     featured: Boolean(form.featured),
     newArrival: Boolean(form.newArrival),
     onSale: Boolean(form.onSale),
+    variants: form.variants || [],
+    optionGroups: form.optionGroups || [],
+    toppings: form.toppings || [],
   });
 
   const handleSubmitForm = async (formData) => {
@@ -380,6 +401,9 @@ function AdminProductPage() {
                 <i className="fa-regular fa-trash-can me-2"></i> Xóa đã chọn ({selectedIds.length})
               </button>
             )}
+            <Link to="/admin/products/trash" className="neu-pill text-decoration-none bg-danger text-white border-danger">
+              <i className="fa-solid fa-trash-can me-2"></i> Thùng rác
+            </Link>
             <button 
               className="neu-pill text-decoration-none" 
               style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }}
@@ -435,8 +459,11 @@ function AdminProductPage() {
           show={showModal}
           onClose={() => { setShowModal(false); setEditingProduct(null); }}
           categories={categories}
+          toppings={toppings}
+          optionGroups={optionGroups}
           initialData={editingProduct}
           onSubmit={handleSubmitForm}
+          products={products}
         />
 
         {/* Discount Modal */}
@@ -471,6 +498,41 @@ function AdminProductPage() {
                 <div className="modal-footer border-top-0 px-4 pb-4 pt-0 justify-content-end">
                   <button type="button" className="neu-pill px-4" onClick={() => setDiscountModal({ show: false, product: null, discountPrice: "" })}>Hủy</button>
                   <button type="button" className="neu-pill px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }} onClick={handleConfirmDiscount}>
+                    Xác nhận
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Soft Delete Modal */}
+        {softDeleteModal.show && (
+          <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1060 }}>
+            <div className="modal-dialog modal-dialog-centered">
+              <div className="modal-content border-0 rounded-4 shadow-lg neu-surface">
+                <div className="modal-header border-bottom-0 pt-4 px-4 pb-2">
+                  <h5 className="modal-title fw-bold text-dark">Xác nhận chuyển vào thùng rác</h5>
+                  <button type="button" className="btn-close" onClick={() => setSoftDeleteModal({ show: false, ids: [], reason: "", isBulk: false })}></button>
+                </div>
+                <div className="modal-body px-4 py-3">
+                  <p className="mb-3">
+                    Bạn có chắc chắn muốn xóa {softDeleteModal.isBulk ? `${softDeleteModal.ids.length} sản phẩm đã chọn` : "sản phẩm này"}? Dữ liệu sẽ được chuyển vào thùng rác.
+                  </p>
+                  <div>
+                    <label className="form-label fw-semibold small">Lý do xóa (tùy chọn)</label>
+                    <textarea 
+                      className="neu-input w-100" 
+                      rows="3"
+                      placeholder="Nhập lý do xóa..."
+                      value={softDeleteModal.reason}
+                      onChange={(e) => setSoftDeleteModal(prev => ({ ...prev, reason: e.target.value }))}
+                    ></textarea>
+                  </div>
+                </div>
+                <div className="modal-footer border-top-0 px-4 pb-4 pt-0 justify-content-end">
+                  <button type="button" className="neu-pill px-4" onClick={() => setSoftDeleteModal({ show: false, ids: [], reason: "", isBulk: false })}>Hủy</button>
+                  <button type="button" className="neu-pill px-4 fw-bold bg-danger text-white border-danger" onClick={confirmSoftDelete}>
                     Xác nhận
                   </button>
                 </div>

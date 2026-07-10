@@ -1,61 +1,63 @@
 package com.rainbowforest.orderservice.redis;
 
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.dao.DataAccessException;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Repository;
-import redis.clients.jedis.Jedis;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Set;
 
 @Repository
-public class CartRedisRepositoryImpl implements CartRedisRepository{
+public class CartRedisRepositoryImpl implements CartRedisRepository {
 
-    private ObjectMapper objectMapper = new ObjectMapper();
-    private Jedis jedis = new Jedis();
+    private final ObjectMapper objectMapper;
+    private final StringRedisTemplate redisTemplate;
+
+    public CartRedisRepositoryImpl(ObjectMapper objectMapper, StringRedisTemplate redisTemplate) {
+        this.objectMapper = objectMapper.copy().findAndRegisterModules();
+        this.redisTemplate = redisTemplate;
+    }
 
     @Override
     public void addItemToCart(String key, Object item) {
         try {
-            String jsonObject = objectMapper.writeValueAsString(item);
-            jedis.sadd(key, jsonObject);
-
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            com.rainbowforest.orderservice.dto.CartItemDto cartItem = (com.rainbowforest.orderservice.dto.CartItemDto) item;
+            String jsonObject = objectMapper.writeValueAsString(cartItem);
+            redisTemplate.opsForHash().put(key, cartItem.getCartItemId(), jsonObject);
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot write cart item to Redis", e);
         }
     }
 
     @Override
     public Collection<Object> getCart(String key, Class type) {
         Collection<Object> cart = new ArrayList<>();
-        for (String smember : jedis.smembers(key)) {
-            try {
-                cart.add(objectMapper.readValue(smember, type));
-            } catch (JsonParseException e) {
-                e.printStackTrace();
-            } catch (JsonMappingException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
+        try {
+            java.util.Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
+            for (Object value : entries.values()) {
+                cart.add(objectMapper.readValue(value.toString(), type));
             }
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot read cart from Redis", e);
         }
         return cart;
     }
 
     @Override
-    public void deleteItemFromCart(String key, Object item) {
+    public void deleteItemFromCart(String key, Object itemId) {
         try {
-            String itemCart = objectMapper.writeValueAsString(item);
-            jedis.srem(key, itemCart);
-        } catch (JsonProcessingException e) {
-            e.printStackTrace();
+            redisTemplate.opsForHash().delete(key, itemId.toString());
+        } catch (Exception e) {
+            throw new IllegalStateException("Cannot delete cart item from Redis", e);
         }
     }
 
     @Override
     public void deleteCart(String key) {
-        jedis.del(key);
+        redisTemplate.delete(key);
     }
 }

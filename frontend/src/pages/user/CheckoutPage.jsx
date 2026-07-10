@@ -1,33 +1,74 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import UserLayout from "../../layouts/UserLayout";
-import { getCart } from "../../services/cartService";
+import { getCart, clearCart } from "../../services/cartService";
 import { createOrder } from "../../services/orderService";
+import { getDefaultAddress, addUserAddress } from "../../services/addressService";
+import { getUserProfile } from "../../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
+import loyaltyApi from "../../api/loyaltyApi";
+
+import CheckoutStepper from "./components/checkout/CheckoutStepper";
+import AddressSelectorModal from "./components/checkout/AddressSelectorModal";
+import AddressFormModal from "./components/profile/AddressFormModal";
+import VoucherModal from "./components/cart/VoucherModal";
+import DeliveryMethodCard from "./components/checkout/DeliveryMethodCard";
+import ScheduleCard from "./components/checkout/ScheduleCard";
+import CustomerInfoCard from "./components/checkout/CustomerInfoCard";
+import DiscountCard from "./components/checkout/DiscountCard";
+import PaymentMethodCard from "./components/checkout/PaymentMethodCard";
+import OrderSummaryCard from "./components/checkout/OrderSummaryCard";
+import SecurityCard from "./components/checkout/SecurityCard";
 
 function CheckoutPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [cart, setCart] = useState([]);
   const [loadingCart, setLoadingCart] = useState(true);
   const [loadingSubmit, setLoadingSubmit] = useState(false);
+  const [showAddressSelector, setShowAddressSelector] = useState(false);
+  const [showAddressForm, setShowAddressForm] = useState(false);
+  const [showVoucherModal, setShowVoucherModal] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [voucherError, setVoucherError] = useState("");
+  const [selectedAddress, setSelectedAddress] = useState(null);
+  const [availableVouchers, setAvailableVouchers] = useState([]);
+
   const [form, setForm] = useState({
     receiverName: "",
     phone: "",
-    address: "",
-    province: "",
-    district: "",
-    ward: "",
+    email: "",
     note: "",
-    paymentMethod: "COD",
-    voucherCode: "",
   });
+
+  const [deliveryMethod, setDeliveryMethod] = useState("DELIVERY");
+  const [scheduleType, setScheduleType] = useState("NOW");
+  const [paymentMethod, setPaymentMethod] = useState("COD");
+  const [voucherCode, setVoucherCode] = useState(location.state?.voucherCode || "");
+  const [appliedVoucher, setAppliedVoucher] = useState(null);
+  const [pointsAvailable, setPointsAvailable] = useState(0);
+  const [pointsUsed, setPointsUsed] = useState(0);
+
+  const subTotal = cart.reduce(
+    (total, item) => total + (item.subTotal || ((item.product ? item.product.price : 0) * item.quantity)),
+    0
+  );
+  const pointDiscount = pointsUsed * 10;
+  const shippingFee = deliveryMethod === "PICKUP" ? 0 : (subTotal >= 500000 ? 0 : (cart.length > 0 ? 20000 : 0));
+  const discount = appliedVoucher ? Number(appliedVoucher.discountAmount || 0) : 0;
+  const grandTotal = Math.max(0, subTotal - discount - pointDiscount + shippingFee);
+  const loyaltyPointsEarned = Math.floor(grandTotal / 1000);
 
   const loadCart = async () => {
     try {
       const response = await getCart();
-      setCart(Array.isArray(response.data) ? response.data : []);
+      const cartData = Array.isArray(response.data) ? response.data : [];
+      setCart(cartData);
+      if (cartData.length === 0 && !loadingCart) {
+        setSubmitError("Gio hang cua ban dang trong.");
+        setTimeout(() => navigate("/cart"), 1500);
+      }
     } catch (error) {
-      console.error("Lỗi tải giỏ hàng:", error);
       setCart([]);
     } finally {
       setLoadingCart(false);
@@ -35,28 +76,123 @@ function CheckoutPage() {
   };
 
   useEffect(() => {
-    loadCart();
+    const init = async () => {
+      loadCart();
+      const { userId, email } = getAuthSession(AUTH_SCOPES.USER);
+      if (!userId) {
+        navigate("/login?returnUrl=/checkout");
+        return;
+      }
+
+      setForm((prev) => ({ ...prev, email: email || "" }));
+
+      try {
+        const [profileRes, loyaltyRes, voucherRes] = await Promise.all([
+          getUserProfile(userId),
+          loyaltyApi.getMyLoyaltyAccount(),
+          loyaltyApi.getMyVouchers(),
+        ]);
+        const profileEmail = profileRes?.data?.userDetails?.email || profileRes?.data?.email || profileRes?.data?.userName;
+        if (profileEmail) {
+          setForm((prev) => ({ ...prev, email: profileEmail }));
+        }
+        setPointsAvailable(Number(loyaltyRes?.data?.availablePoints || 0));
+        setAvailableVouchers((Array.isArray(voucherRes?.data) ? voucherRes.data : []).filter((voucher) => voucher.canApply));
+      } catch (error) {
+        // noop
+      }
+
+      loadDefaultAddress(userId);
+    };
+
+    init();
   }, []);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setForm((current) => ({
-      ...current,
-      [name]: value,
-    }));
+  useEffect(() => {
+    if (!voucherCode || subTotal <= 0) return;
+    if (location.state?.voucherCode) {
+      handleApplyVoucher(location.state.voucherCode);
+    }
+  }, [subTotal]);
+
+  const loadDefaultAddress = async (userId) => {
+    try {
+      const response = await getDefaultAddress(userId);
+      if (response.data) {
+        const addr = response.data;
+        setSelectedAddress(addr);
+        setForm((prev) => ({
+          ...prev,
+          receiverName: addr.receiverName || prev.receiverName,
+          phone: addr.phoneNumber || prev.phone,
+        }));
+      }
+    } catch (error) {
+      // noop
+    }
   };
 
-  const subTotal = cart.reduce(
-    (total, item) => total + ((item.product ? item.product.price : 0) * item.quantity),
-    0
-  );
-  const discount = form.voucherCode.trim().toUpperCase() === "TOY10" ? subTotal * 0.1 : 0;
-  const shippingFee = subTotal >= 500000 ? 0 : cart.length > 0 ? 30000 : 0;
-  const grandTotal = Math.max(0, subTotal - discount + shippingFee);
+  const handleAddressSelect = (addr) => {
+    setSelectedAddress(addr);
+    setForm((prev) => ({
+      ...prev,
+      receiverName: addr.receiverName || "",
+      phone: addr.phoneNumber || "",
+    }));
+    setShowAddressSelector(false);
+  };
 
-  const handleCheckout = async (event) => {
-    event.preventDefault();
+  const handleSaveNewAddress = async (addressData) => {
+    const { userId } = getAuthSession(AUTH_SCOPES.USER);
+    if (!userId) return;
 
+    try {
+      if (addressData.saveToAddressBook) {
+        const res = await addUserAddress(userId, addressData);
+        handleAddressSelect(res.data || { ...addressData, id: Date.now() });
+      } else {
+        handleAddressSelect({ ...addressData, id: "temp-" + Date.now() });
+      }
+      setShowAddressForm(false);
+    } catch (error) {
+      setSubmitError("Loi khi them dia chi.");
+    }
+  };
+
+  const handleChangeForm = (event) => {
+    const { name, value } = event.target;
+    setForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleApplyVoucher = async (manualCode) => {
+    const codeToUse = (manualCode || voucherCode || "").trim();
+    if (!codeToUse) {
+      setVoucherError("Vui long nhap ma voucher");
+      return;
+    }
+    try {
+      const response = await loyaltyApi.previewCheckoutVoucher({
+        voucherCode: codeToUse,
+        orderTotal: subTotal,
+      });
+      setAppliedVoucher(response?.data || null);
+      setVoucherCode(codeToUse);
+      setVoucherError("");
+    } catch (error) {
+      setAppliedVoucher(null);
+      setVoucherError(error?.response?.data?.message || "Voucher khong hop le hoac khong ap dung duoc");
+    }
+  };
+
+  const handleChangeVoucher = (value) => {
+    setVoucherCode(value);
+    setVoucherError("");
+    if (!value) {
+      setAppliedVoucher(null);
+    }
+  };
+
+  const handleCheckout = async () => {
     const { userId } = getAuthSession(AUTH_SCOPES.USER);
     if (!userId) {
       navigate("/login");
@@ -64,214 +200,146 @@ function CheckoutPage() {
     }
 
     if (!cart.length) {
-      alert("Giỏ hàng đang trống, chưa thể thanh toán.");
+      setSubmitError("Gio hang dang trong.");
       return;
     }
 
+    if (deliveryMethod === "DELIVERY") {
+      if (!selectedAddress) {
+        setSubmitError("Vui long chon dia chi nhan hang.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+      if (!form.receiverName.trim() || !form.phone.trim()) {
+        setSubmitError("Vui long dien day du ten nguoi nhan va so dien thoai.");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        return;
+      }
+    }
+
+    setSubmitError("");
     setLoadingSubmit(true);
     try {
-      await createOrder(Number(userId), {
-        ...form,
-        voucherCode: form.voucherCode || null,
-      });
-      alert("Đặt hàng thành công! Đơn hàng của bạn đã được ghi nhận.");
-      navigate("/orders");
+      const payload = {
+        receiverName: deliveryMethod === "PICKUP" ? (form.receiverName || "Khach hang") : form.receiverName,
+        phone: deliveryMethod === "PICKUP" ? (form.phone || "0000") : form.phone,
+        address: deliveryMethod === "PICKUP" ? "Brew Moments Flagship, Q1, HCM" : selectedAddress.addressLine,
+        province: deliveryMethod === "PICKUP" ? "HCM" : selectedAddress.province,
+        district: deliveryMethod === "PICKUP" ? "Q1" : selectedAddress.district,
+        ward: deliveryMethod === "PICKUP" ? "Phuong Da Kao" : selectedAddress.ward,
+        paymentMethod,
+        note: form.note,
+        voucherCode: appliedVoucher ? appliedVoucher.voucherCode : "",
+        email: form.email,
+        fulfillmentType: deliveryMethod,
+      };
+
+      const res = await createOrder(Number(userId), payload);
+      await clearCart();
+      navigate(`/order-success/${res.data?.id || res.data?.orderId || res.data?.orderCode}`);
     } catch (error) {
-      console.error(error);
-      alert("Đặt hàng thất bại, vui lòng thử lại.");
+      setSubmitError(error?.response?.data?.message || "Dat hang that bai. Vui long thu lai.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } finally {
       setLoadingSubmit(false);
     }
   };
 
+  const getFullAddressString = (addr) => {
+    if (!addr) return "";
+    return [addr.addressLine, addr.ward, addr.district, addr.province].filter(Boolean).join(", ");
+  };
+
   return (
     <UserLayout>
-      <div className="container mt-4">
-        <div className="row g-4">
-          <div className="col-lg-7">
-            <div className="card shadow-sm border-0 rounded-5 p-4 bg-white">
-              <div className="mb-4">
-                <span className="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 fw-bold mb-2">
-                  Checkout
-                </span>
-                <h3 className="fw-bold text-dark mb-1">Thông tin nhận hàng và thanh toán</h3>
-                <p className="text-muted mb-0">
-                  Hoàn thiện đơn hàng với thông tin giao hàng, voucher và phương thức thanh toán.
-                </p>
-              </div>
+      <div style={{ backgroundColor: "#FAF8F4", minHeight: "100vh", paddingTop: "20px" }}>
+        <div className="container pb-5">
+          <CheckoutStepper currentStep={2} />
 
-              <form onSubmit={handleCheckout}>
-                <div className="row g-3">
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold text-dark">Người nhận</label>
-                    <input
-                      name="receiverName"
-                      type="text"
-                      className="form-control rounded-4"
-                      placeholder="Tên phụ huynh hoặc người nhận"
-                      value={form.receiverName}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold text-dark">Số điện thoại</label>
-                    <input
-                      name="phone"
-                      type="tel"
-                      className="form-control rounded-4"
-                      placeholder="09xxxxxxxx"
-                      value={form.phone}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label fw-bold text-dark">Địa chỉ nhận hàng</label>
-                    <input
-                      name="address"
-                      type="text"
-                      className="form-control rounded-4"
-                      placeholder="Số nhà, tên đường"
-                      value={form.address}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold text-dark">Tỉnh/Thành</label>
-                    <input
-                      name="province"
-                      type="text"
-                      className="form-control rounded-4"
-                      value={form.province}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold text-dark">Quận/Huyện</label>
-                    <input
-                      name="district"
-                      type="text"
-                      className="form-control rounded-4"
-                      value={form.district}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                  <div className="col-md-4">
-                    <label className="form-label fw-bold text-dark">Phường/Xã</label>
-                    <input
-                      name="ward"
-                      type="text"
-                      className="form-control rounded-4"
-                      value={form.ward}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold text-dark">Phương thức thanh toán</label>
-                    <select
-                      name="paymentMethod"
-                      className="form-select rounded-4"
-                      value={form.paymentMethod}
-                      onChange={handleChange}
-                    >
-                      <option value="COD">Thanh toán khi nhận hàng (COD)</option>
-                      <option value="BANKING">Chuyển khoản ngân hàng</option>
-                      <option value="VNPAY">VNPay mô phỏng</option>
-                    </select>
-                  </div>
-                  <div className="col-md-6">
-                    <label className="form-label fw-bold text-dark">Mã voucher</label>
-                    <input
-                      name="voucherCode"
-                      type="text"
-                      className="form-control rounded-4"
-                      placeholder="TOY10 hoặc FREESHIP"
-                      value={form.voucherCode}
-                      onChange={handleChange}
-                    />
-                  </div>
-                  <div className="col-12">
-                    <label className="form-label fw-bold text-dark">Ghi chú</label>
-                    <textarea
-                      name="note"
-                      className="form-control rounded-4"
-                      rows="4"
-                      placeholder="Ví dụ: giao giờ hành chính, liên hệ trước khi giao..."
-                      value={form.note}
-                      onChange={handleChange}
-                    ></textarea>
-                  </div>
-                </div>
-
-                <button
-                  type="submit"
-                  className="btn btn-danger w-100 py-3 rounded-pill fw-bold fs-6 text-white mt-4"
-                  disabled={loadingSubmit || loadingCart || !cart.length}
-                >
-                  {loadingSubmit ? "Đang tạo đơn hàng..." : "XÁC NHẬN ĐẶT HÀNG"}
-                </button>
-              </form>
+          {submitError && (
+            <div className="alert alert-danger shadow-sm border-0 rounded-4 d-flex align-items-center gap-2 mb-4">
+              <i className="fa-solid fa-triangle-exclamation"></i>
+              <span>{submitError}</span>
             </div>
-          </div>
+          )}
 
-          <div className="col-lg-5">
-            <div className="card shadow-sm border-0 rounded-5 p-4 bg-white">
-              <h4 className="fw-bold mb-3">Tóm tắt đơn hàng</h4>
-              {loadingCart ? (
-                <div className="text-center py-4">
-                  <div className="spinner-border text-danger" role="status">
-                    <span className="visually-hidden">Đang tải...</span>
-                  </div>
-                </div>
-              ) : !cart.length ? (
-                <div className="alert alert-warning rounded-4 mb-0">
-                  Giỏ hàng đang trống. Hãy chọn thêm sản phẩm trước khi thanh toán.
-                </div>
-              ) : (
-                <>
-                  <div className="d-flex flex-column gap-3 mb-4">
-                    {cart.map((item) => (
-                      <div
-                        key={item.id || item.product?.id}
-                        className="d-flex justify-content-between align-items-start border-bottom pb-3"
-                      >
-                        <div className="pe-3">
-                          <div className="fw-semibold">{item.product?.productName || "Sản phẩm đồ chơi"}</div>
-                          <div className="small text-muted">Số lượng: {item.quantity}</div>
-                        </div>
-                        <div className="text-danger fw-bold">
-                          {((item.product?.price || 0) * item.quantity).toLocaleString("vi-VN")} VNĐ
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+          <div className="row g-4 mt-1">
+            <div className="col-lg-7">
+              <DeliveryMethodCard
+                deliveryMethod={deliveryMethod}
+                onChangeMethod={setDeliveryMethod}
+                selectedAddress={selectedAddress}
+                onOpenAddressSelector={() => setShowAddressSelector(true)}
+                onOpenAddressForm={() => setShowAddressForm(true)}
+                form={form}
+                onChangeForm={handleChangeForm}
+                getFullAddressString={getFullAddressString}
+              />
 
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Tạm tính</span>
-                    <span className="fw-semibold">{subTotal.toLocaleString("vi-VN")} VNĐ</span>
-                  </div>
-                  <div className="d-flex justify-content-between mb-2">
-                    <span className="text-muted">Giảm giá</span>
-                    <span className="fw-semibold text-success">-{discount.toLocaleString("vi-VN")} VNĐ</span>
-                  </div>
-                  <div className="d-flex justify-content-between mb-3">
-                    <span className="text-muted">Phí vận chuyển</span>
-                    <span className="fw-semibold">{shippingFee.toLocaleString("vi-VN")} VNĐ</span>
-                  </div>
-                  <div className="bg-danger text-white rounded-4 px-4 py-3 d-flex justify-content-between align-items-center">
-                    <span className="fw-bold fs-5">Tổng thanh toán</span>
-                    <span className="fw-extrabold fs-4">{grandTotal.toLocaleString("vi-VN")} VNĐ</span>
-                  </div>
-                </>
-              )}
+              <ScheduleCard scheduleType={scheduleType} onChangeType={setScheduleType} />
+
+              <CustomerInfoCard form={form} onChangeForm={handleChangeForm} />
+
+              <DiscountCard
+                voucherCode={voucherCode}
+                onChangeVoucher={handleChangeVoucher}
+                onApplyVoucher={() => handleApplyVoucher()}
+                appliedVoucher={appliedVoucher}
+                voucherError={voucherError}
+                onOpenVoucherWallet={() => setShowVoucherModal(true)}
+                pointsAvailable={pointsAvailable}
+                pointsUsed={pointsUsed}
+                onChangePoints={setPointsUsed}
+              />
+
+              <PaymentMethodCard paymentMethod={paymentMethod} onChangePayment={setPaymentMethod} />
+            </div>
+
+            <div className="col-lg-5">
+              <OrderSummaryCard
+                cart={cart}
+                subTotal={subTotal}
+                shippingFee={shippingFee}
+                discount={discount}
+                pointDiscount={pointDiscount}
+                grandTotal={grandTotal}
+                loadingSubmit={loadingSubmit}
+                onSubmit={handleCheckout}
+                loyaltyPointsEarned={loyaltyPointsEarned}
+              />
+              <SecurityCard />
             </div>
           </div>
         </div>
       </div>
+
+      <AddressSelectorModal
+        show={showAddressSelector}
+        onClose={() => setShowAddressSelector(false)}
+        onSelect={handleAddressSelect}
+        currentAddressId={selectedAddress?.id}
+        onAddNew={() => {
+          setShowAddressSelector(false);
+          setShowAddressForm(true);
+        }}
+      />
+
+      <AddressFormModal
+        show={showAddressForm}
+        onClose={() => setShowAddressForm(false)}
+        onSave={handleSaveNewAddress}
+        address={null}
+      />
+
+      <VoucherModal
+        show={showVoucherModal}
+        onClose={() => setShowVoucherModal(false)}
+        vouchers={availableVouchers}
+        onSelect={(voucher) => {
+          setVoucherCode(voucher.code);
+          handleApplyVoucher(voucher.code);
+        }}
+      />
     </UserLayout>
   );
 }

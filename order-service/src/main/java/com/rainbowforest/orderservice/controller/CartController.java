@@ -21,52 +21,59 @@ public class CartController {
     @GetMapping (value = "/cart")
     public ResponseEntity<List<Object>> getCart(@RequestHeader(value = "Cart-Id") String cartId){
         List<Object> cart = cartService.getCart(cartId);
+
         return new ResponseEntity<List<Object>>(
         			cart,
         			headerGenerator.getHeadersForSuccessGetMethod(),
         			HttpStatus.OK);
     }
 
-    @PostMapping(value = "/cart", params = {"productId", "quantity"})
+    @PostMapping(value = "/cart")
     public ResponseEntity<List<Object>> addItemToCart(
-            @RequestParam("productId") Long productId,
-            @RequestParam("quantity") Integer quantity,
+            @RequestBody com.rainbowforest.orderservice.dto.CartItemRequest request,
             @RequestHeader(value = "Cart-Id") String cartId,
-            HttpServletRequest request) {
-        List<Object> cart = cartService.getCart(cartId);
-        if(cart != null) {
-        	if(cart.isEmpty()){
-        		cartService.addItemToCart(cartId, productId, quantity);
-        	}else{
-        		if(cartService.checkIfItemIsExist(cartId, productId)){
-        			cartService.changeItemQuantity(cartId, productId, quantity);
-        		}else {
-        			cartService.addItemToCart(cartId, productId, quantity);
-        		}
-        	}
-        	return new ResponseEntity<List<Object>>(
-        			cart,
-        			headerGenerator.getHeadersForSuccessPostMethod(request, Long.parseLong(cartId)),
-        			HttpStatus.CREATED);
-        }
+            HttpServletRequest req) {
+        
+        cartService.addItemToCart(cartId, request);
+        List<Object> updatedCart = cartService.getCart(cartId);
         return new ResponseEntity<List<Object>>(
-        		headerGenerator.getHeadersForError(),
-        		HttpStatus.BAD_REQUEST);
+                updatedCart,
+                headerGenerator.getHeadersForSuccessPostMethod(req, Long.parseLong(cartId)),
+                HttpStatus.CREATED);
     }
 
-    @DeleteMapping(value = "/cart", params = "productId")
+    @PutMapping(value = "/cart")
+    public ResponseEntity<List<Object>> updateItemQuantity(
+            @RequestParam("cartItemId") String cartItemId,
+            @RequestParam("quantity") Integer quantity,
+            @RequestHeader(value = "Cart-Id") String cartId,
+            HttpServletRequest req) {
+        
+        if (cartService.checkIfItemIsExist(cartId, cartItemId)) {
+            cartService.changeItemQuantity(cartId, cartItemId, quantity);
+            List<Object> updatedCart = cartService.getCart(cartId);
+            return new ResponseEntity<List<Object>>(
+                    updatedCart,
+                    headerGenerator.getHeadersForSuccessPostMethod(req, Long.parseLong(cartId)),
+                    HttpStatus.OK);
+        }
+        return new ResponseEntity<List<Object>>(
+                headerGenerator.getHeadersForError(),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @DeleteMapping(value = "/cart", params = "cartItemId")
     public ResponseEntity<Void> removeItemFromCart(
-            @RequestParam("productId") Long productId,
+            @RequestParam("cartItemId") String cartItemId,
             @RequestHeader(value = "Cart-Id") String cartId){
-    	List<Object> cart = cartService.getCart(cartId);
-    	if(cart != null) {
-    		cartService.deleteItemFromCart(cartId, productId);
+        if (cartService.checkIfItemIsExist(cartId, cartItemId)) {
+            cartService.deleteItemFromCart(cartId, cartItemId);
             return new ResponseEntity<Void>(
-            		headerGenerator.getHeadersForSuccessGetMethod(),
-            		HttpStatus.OK);
-    	}
+                    headerGenerator.getHeadersForSuccessGetMethod(),
+                    HttpStatus.OK);
+        }
         return new ResponseEntity<Void>(
-        		headerGenerator.getHeadersForError(),
-        		HttpStatus.NOT_FOUND);
+                headerGenerator.getHeadersForError(),
+                HttpStatus.NOT_FOUND);
     }
 }

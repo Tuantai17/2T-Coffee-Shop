@@ -7,4 +7,5 @@ import com.rainbowforest.orderservice.domain.Item;
 
 @Repository
 public interface ItemRepository extends JpaRepository<Item, Long> {
+    boolean existsByProductId(Long productId);
 }

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -6,9 +7,13 @@ const getStatusBadge = (status) => {
       return <span className="badge bg-warning text-dark px-3 py-2 rounded-pill shadow-sm" style={{ backgroundColor: "#fef08a", color: "#854d0e" }}>Chờ xác nhận</span>;
     case "CONFIRMED":
       return <span className="badge bg-info text-white px-3 py-2 rounded-pill shadow-sm">Đã xác nhận</span>;
-    case "PACKING":
+    case "PREPARING":
       return <span className="badge bg-secondary text-white px-3 py-2 rounded-pill shadow-sm">Đang chuẩn bị</span>;
-    case "SHIPPING":
+    case "READY_FOR_PICKUP":
+      return <span className="badge bg-primary text-white px-3 py-2 rounded-pill shadow-sm">Chờ nhận tại quầy</span>;
+    case "READY_FOR_DELIVERY":
+      return <span className="badge bg-primary text-white px-3 py-2 rounded-pill shadow-sm">Chờ giao hàng</span>;
+    case "DELIVERING":
       return <span className="badge px-3 py-2 rounded-pill shadow-sm" style={{ backgroundColor: "var(--admin-primary)", color: "white" }}>Đang giao</span>;
     case "COMPLETED":
       return <span className="badge bg-success px-3 py-2 rounded-pill shadow-sm">Hoàn thành</span>;
@@ -84,7 +89,6 @@ function OrderList({
 
   return (
     <div className="neu-card overflow-hidden mb-4">
-      {/* Bulk Actions Header (When selection > 0) */}
       {selectedIds.length > 0 && (
         <div className="bg-light px-4 py-3 d-flex align-items-center justify-content-between border-bottom">
           <div className="fw-bold text-primary">
@@ -97,12 +101,14 @@ function OrderList({
                 Cập nhật trạng thái
               </button>
               <ul className="dropdown-menu shadow-sm rounded-3">
-                <li><button className="dropdown-item small" onClick={() => onUpdateStatus(selectedIds, "CONFIRMED")}>Đã xác nhận</button></li>
-                <li><button className="dropdown-item small" onClick={() => onUpdateStatus(selectedIds, "PACKING")}>Đang chuẩn bị</button></li>
-                <li><button className="dropdown-item small" onClick={() => onUpdateStatus(selectedIds, "SHIPPING")}>Đang giao</button></li>
+                <li><button className="dropdown-item small text-info" onClick={() => onUpdateStatus(selectedIds, "CONFIRMED")}>Xác nhận đơn (CONFIRMED)</button></li>
+                <li><button className="dropdown-item small text-secondary" onClick={() => onUpdateStatus(selectedIds, "PREPARING")}>Đang chuẩn bị (PREPARING)</button></li>
+                <li><button className="dropdown-item small text-warning" onClick={() => onUpdateStatus(selectedIds, "READY_FOR_PICKUP")}>Chờ nhận tại quầy (READY_FOR_PICKUP)</button></li>
+                <li><button className="dropdown-item small text-warning" onClick={() => onUpdateStatus(selectedIds, "READY_FOR_DELIVERY")}>Chờ giao hàng (READY_FOR_DELIVERY)</button></li>
+                <li><button className="dropdown-item small text-primary" onClick={() => onUpdateStatus(selectedIds, "DELIVERING")}>Đang giao (DELIVERING)</button></li>
                 <li><hr className="dropdown-divider" /></li>
-                <li><button className="dropdown-item small text-success" onClick={() => onUpdateStatus(selectedIds, "COMPLETED")}>Hoàn thành</button></li>
-                <li><button className="dropdown-item small text-danger" onClick={() => onUpdateStatus(selectedIds, "CANCELLED")}>Hủy đơn</button></li>
+                <li><button className="dropdown-item small text-success" onClick={() => onUpdateStatus(selectedIds, "COMPLETED")}>Hoàn thành (COMPLETED)</button></li>
+                <li><button className="dropdown-item small text-danger" onClick={() => onUpdateStatus(selectedIds, "CANCELLED")}>Hủy đơn (CANCELLED)</button></li>
               </ul>
             </div>
             <button className="btn btn-sm btn-outline-secondary rounded-pill px-3 fw-semibold" onClick={onPrint}>
@@ -199,7 +205,7 @@ function OrderList({
                           {order.items?.slice(0, 3).map((item, idx) => (
                             <img 
                               key={idx} 
-                              src={item.product?.imageUrl || "https://placehold.co/100?text=No+Img"} 
+                              src={item.imageUrl || item.product?.imageUrl || "https://placehold.co/100?text=No+Img"} 
                               alt="product" 
                               className="rounded bg-white border border-light shadow-sm object-fit-cover" 
                               style={{ width: "32px", height: "32px", marginLeft: idx > 0 ? "-10px" : "0", zIndex: 10 - idx }}
@@ -227,25 +233,54 @@ function OrderList({
                       <div className="text-black-50">{time}</div>
                     </td>
                     <td className="py-3 text-center">
-                      <div className="d-flex gap-2 justify-content-center">
-                        <button className="btn btn-sm btn-light text-secondary rounded-circle shadow-sm" style={{ width: "32px", height: "32px" }} title="Xem chi tiết" onClick={() => onViewDetail(order)}>
-                          <i className="fa-regular fa-eye"></i>
+                      <div className="dropdown">
+                        <button className="btn btn-sm btn-light text-secondary rounded-circle shadow-sm" style={{ width: "32px", height: "32px" }} data-bs-toggle="dropdown" data-bs-boundary="window" data-bs-display="static">
+                          <i className="fa-solid fa-ellipsis"></i>
                         </button>
-                        <button className="btn btn-sm btn-light text-secondary rounded-circle shadow-sm" style={{ width: "32px", height: "32px" }} title="In đơn" onClick={() => onPrint([order.id])}>
-                          <i className="fa-solid fa-print"></i>
-                        </button>
-                        <div className="dropdown">
-                          <button className="btn btn-sm btn-light text-secondary rounded-circle shadow-sm" style={{ width: "32px", height: "32px" }} data-bs-toggle="dropdown">
-                            <i className="fa-solid fa-ellipsis"></i>
-                          </button>
-                          <ul className="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
-                            <li><button className="dropdown-item small" onClick={() => onUpdateStatus([order.id], "CONFIRMED")}><i className="fa-solid fa-check w-20px me-2 text-info"></i> Xác nhận đơn</button></li>
-                            <li><button className="dropdown-item small" onClick={() => onUpdateStatus([order.id], "SHIPPING")}><i className="fa-solid fa-truck-fast w-20px me-2 text-primary"></i> Giao hàng</button></li>
-                            <li><button className="dropdown-item small text-danger" onClick={() => onUpdateStatus([order.id], "CANCELLED")}><i className="fa-solid fa-xmark w-20px me-2 text-danger"></i> Hủy đơn</button></li>
-                            <li><hr className="dropdown-divider" /></li>
-                            <li><button className="dropdown-item small" onClick={() => onExportSingle(order)}><i className="fa-solid fa-file-excel w-20px me-2 text-success"></i> Xuất Excel</button></li>
-                          </ul>
-                        </div>
+                        <ul className="dropdown-menu dropdown-menu-end shadow-sm rounded-3">
+                          <li>
+                            <button className="dropdown-item small" onClick={() => onViewDetail(order)}>
+                              <i className="fa-regular fa-eye w-20px me-2 text-secondary"></i> Xem chi tiết
+                            </button>
+                          </li>
+                          <li>
+                            <Link to={`/admin/orders/${order.id}/edit`} className={`dropdown-item small ${order.status === 'COMPLETED' || order.status === 'CANCELLED' ? 'disabled' : ''}`}>
+                              <i className="fa-solid fa-pen-to-square w-20px me-2 text-primary"></i> Chỉnh sửa đơn hàng
+                            </Link>
+                          </li>
+                          <li>
+                            <button className="dropdown-item small" onClick={() => onPrint([order.id])}>
+                              <i className="fa-solid fa-print w-20px me-2 text-secondary"></i> In đơn hàng
+                            </button>
+                          </li>
+                          <li>
+                            <Link to={`/admin/orders/${order.id}/edit`} className="dropdown-item small">
+                              <i className="fa-solid fa-clock-rotate-left w-20px me-2 text-info"></i> Xem lịch sử xử lý
+                            </Link>
+                          </li>
+                          <li>
+                            <Link to={`/admin/orders/${order.id}/edit`} className="dropdown-item small">
+                              <i className="fa-solid fa-headset w-20px me-2 text-warning"></i> Ghi nhận liên hệ
+                            </Link>
+                          </li>
+                          {order.status !== 'SHIPPING' && order.status !== 'COMPLETED' && order.status !== 'CANCELLED' && (
+                            <>
+                              <li>
+                                <button className="dropdown-item small text-danger fw-bold" onClick={() => {
+                                  if (onCancel) onCancel(order.id);
+                                }}>
+                                  <i className="fa-solid fa-xmark w-20px me-2"></i> Hủy đơn hàng
+                                </button>
+                              </li>
+                            </>
+                          )}
+                          <li><hr className="dropdown-divider" /></li>
+                          <li>
+                            <button className="dropdown-item small" onClick={() => onExportSingle(order)}>
+                              <i className="fa-solid fa-file-excel w-20px me-2 text-success"></i> Xuất Excel
+                            </button>
+                          </li>
+                        </ul>
                       </div>
                     </td>
                   </tr>

@@ -35,13 +35,30 @@ function CategoryFormModal({ show, onClose, initialData, parentCategories, onSub
     }
   }, [show, initialData]);
 
+  const generateSlug = (text) => {
+    if (!text) return '';
+    return text.toString().toLowerCase()
+      .replace(/á|à|ả|ạ|ã|ă|ắ|ằ|ẳ|ẵ|ặ|â|ấ|ầ|ẩ|ẫ|ậ/gi, 'a')
+      .replace(/é|è|ẻ|ẽ|ẹ|ê|ế|ề|ể|ễ|ệ/gi, 'e')
+      .replace(/i|í|ì|ỉ|ĩ|ị/gi, 'i')
+      .replace(/ó|ò|ỏ|õ|ọ|ô|ố|ồ|ổ|ỗ|ộ|ơ|ớ|ờ|ở|ỡ|ợ/gi, 'o')
+      .replace(/ú|ù|ủ|ũ|ụ|ư|ứ|ừ|ử|ữ|ự/gi, 'u')
+      .replace(/ý|ỳ|ỷ|ỹ|ỵ/gi, 'y')
+      .replace(/đ/gi, 'd')
+      .replace(/\s+/g, '-')
+      .replace(/[^\w\-]+/g, '')
+      .replace(/\-\-+/g, '-')
+      .replace(/^-+/, '')
+      .replace(/-+$/, '');
+  };
+
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => {
       const newData = { ...prev, [name]: value };
-      // Auto-generate slug from name if creating new and slug is empty
-      if (name === "name" && !initialData && !prev.slug) {
-        newData.slug = value.toLowerCase().replace(/ /g, '-').replace(/[^\w-]+/g, '');
+      // Auto-generate slug from name
+      if (name === "name") {
+        newData.slug = generateSlug(value);
       }
       return newData;
     });
@@ -84,7 +101,7 @@ function CategoryFormModal({ show, onClose, initialData, parentCategories, onSub
   return (
     <div className="modal show d-block" style={{ backgroundColor: "rgba(0,0,0,0.5)", zIndex: 1050 }}>
       <div className="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div className="modal-content border-0 rounded-4 shadow-lg neu-surface">
+        <div className="modal-content border-0 rounded-0 shadow-lg bg-white">
           <div className="modal-header border-bottom-0 pt-4 px-4 pb-2">
             <h5 className="modal-title fw-bold text-dark">{initialData ? "Chỉnh sửa danh mục" : "Thêm danh mục mới"}</h5>
             <button type="button" className="btn-close" onClick={onClose}></button>
@@ -92,20 +109,20 @@ function CategoryFormModal({ show, onClose, initialData, parentCategories, onSub
           <div className="modal-body px-4 py-3" style={{ backgroundColor: "var(--admin-bg)" }}>
             <form onSubmit={handleSubmit} id="categoryForm">
               
-              <div className="neu-card p-4 mb-4">
+              <div className="card rounded-0 border-light p-4 mb-4 shadow-sm bg-white">
                 <div className="row g-3">
                   <div className="col-md-6">
                     <label className="form-label fw-semibold small">Tên danh mục <span className="text-danger">*</span></label>
-                    <input type="text" className="neu-input w-100" name="name" value={formData.name} onChange={handleChange} required />
+                    <input type="text" className="form-control rounded-0 w-100" name="name" value={formData.name} onChange={handleChange} required />
                   </div>
                   <div className="col-md-6">
                     <label className="form-label fw-semibold small">Slug</label>
-                    <input type="text" className="neu-input w-100" name="slug" value={formData.slug} onChange={handleChange} placeholder="Tu dong tao neu de trong" />
+                    <input type="text" className="form-control rounded-0 w-100" name="slug" value={formData.slug} onChange={handleChange} placeholder="Tự động tạo nếu để trống" />
                   </div>
                   <div className="col-md-12">
                     <label className="form-label fw-semibold small">Danh mục cha</label>
                     <select 
-                      className="neu-input w-100 form-select" 
+                      className="form-select rounded-0 w-100" 
                       name="parentId" 
                       value={formData.parentId} 
                       onChange={handleChange}
@@ -125,12 +142,12 @@ function CategoryFormModal({ show, onClose, initialData, parentCategories, onSub
                 </div>
               </div>
 
-              <div className="neu-card p-4 mb-4">
+              <div className="card rounded-0 border-light p-4 mb-4 shadow-sm bg-white">
                 <div className="row g-4">
                   <div className="col-md-4">
                     <label className="form-label fw-semibold small d-block">Ảnh đại diện</label>
                     <div 
-                      className="neu-card d-flex flex-column align-items-center justify-content-center overflow-hidden position-relative" 
+                      className="card rounded-0 d-flex flex-column align-items-center justify-content-center overflow-hidden position-relative bg-light mb-2" 
                       style={{ height: "150px", border: "2px dashed rgba(0,0,0,0.1)", backgroundColor: "var(--admin-bg)", cursor: "pointer" }}
                       onClick={() => document.getElementById("catImageInput").click()}
                     >
@@ -145,16 +162,26 @@ function CategoryFormModal({ show, onClose, initialData, parentCategories, onSub
                       <input type="file" id="catImageInput" className="d-none" accept="image/*" onChange={handleImageChange} />
                     </div>
                     {previewImage && (
-                      <button type="button" className="btn btn-sm btn-link text-danger mt-2 w-100" onClick={() => { setPreviewImage(""); setFormData(p=>({...p, imageUrl: ""})) }}>
+                      <button type="button" className="btn btn-sm btn-link text-danger w-100 mb-2" onClick={() => { setPreviewImage(""); setFormData(p=>({...p, imageUrl: ""})) }}>
                         Xóa ảnh
                       </button>
                     )}
+                    <input 
+                      type="text" 
+                      className="form-control rounded-0 form-control-sm" 
+                      placeholder="Hoặc nhập Link URL ảnh..."
+                      value={formData.imageUrl}
+                      onChange={(e) => {
+                         setFormData(p => ({...p, imageUrl: e.target.value}));
+                         setPreviewImage(e.target.value);
+                      }}
+                    />
                   </div>
                   
                   <div className="col-md-8">
                     <label className="form-label fw-semibold small">Mô tả</label>
                     <textarea 
-                      className="neu-input w-100" 
+                      className="form-control rounded-0 w-100" 
                       name="description" 
                       rows="6" 
                       placeholder="Nhập mô tả chi tiết danh mục..." 
@@ -166,9 +193,9 @@ function CategoryFormModal({ show, onClose, initialData, parentCategories, onSub
               </div>
             </form>
           </div>
-          <div className="modal-footer border-top-0 px-4 pb-4 pt-0 justify-content-end" style={{ backgroundColor: "var(--admin-bg)", borderBottomLeftRadius: "var(--admin-radius-lg)", borderBottomRightRadius: "var(--admin-radius-lg)" }}>
-            <button type="button" className="neu-pill px-4" onClick={onClose} disabled={isUploading}>Hủy</button>
-            <button type="submit" form="categoryForm" className="neu-pill px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }} disabled={isUploading}>
+          <div className="modal-footer border-top-0 px-4 pb-4 pt-0 justify-content-end" style={{ backgroundColor: "var(--admin-bg)" }}>
+            <button type="button" className="btn btn-outline-secondary rounded-0 px-4 bg-white" onClick={onClose} disabled={isUploading}>Hủy</button>
+            <button type="submit" form="categoryForm" className="btn rounded-0 px-4 fw-bold" style={{ backgroundColor: "var(--admin-primary)", color: "#fff" }} disabled={isUploading}>
               {isUploading ? (
                 <><i className="fa-solid fa-spinner fa-spin me-2"></i> Đang tải...</>
               ) : (

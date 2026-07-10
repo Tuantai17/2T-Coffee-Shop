@@ -30,10 +30,6 @@ public class ProductController {
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
             @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
-            @RequestParam(value = "age", required = false) Integer age,
-            @RequestParam(value = "featured", required = false) Boolean featured,
-            @RequestParam(value = "onSale", required = false) Boolean onSale,
-            @RequestParam(value = "newArrival", required = false) Boolean newArrival,
             @RequestParam(value = "badge", required = false) String badge,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "sort", required = false) String sort
@@ -49,10 +45,6 @@ public class ProductController {
                 || brand != null
                 || minPrice != null
                 || maxPrice != null
-                || age != null
-                || featured != null
-                || onSale != null
-                || newArrival != null
                 || badge != null
                 || status != null
                 || sort != null;
@@ -64,10 +56,10 @@ public class ProductController {
                     brand,
                     minPrice,
                     maxPrice,
-                    age,
-                    featured,
-                    onSale,
-                    newArrival,
+                    null,
+                    null,
+                    null,
+                    null,
                     badge,
                     status,
                     sort
@@ -90,11 +82,6 @@ public class ProductController {
             @RequestParam(value = "name", required = false) String name,
             @RequestParam(value = "minPrice", required = false) BigDecimal minPrice,
             @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
-            @RequestParam(value = "ageFrom", required = false) Integer ageFrom,
-            @RequestParam(value = "ageTo", required = false) Integer ageTo,
-            @RequestParam(value = "featured", required = false) Boolean featured,
-            @RequestParam(value = "onSale", required = false) Boolean onSale,
-            @RequestParam(value = "newArrival", required = false) Boolean newArrival,
             @RequestParam(value = "badge", required = false) String badge,
             @RequestParam(value = "status", required = false) String status,
             @RequestParam(value = "sort", required = false) String sort,
@@ -113,11 +100,11 @@ public class ProductController {
                 brand,
                 minPrice,
                 maxPrice,
-                ageFrom,
-                ageTo,
-                featured,
-                onSale,
-                newArrival,
+                null,
+                null,
+                null,
+                null,
+                null,
                 badge,
                 status,
                 sort,

@@ -24,8 +24,20 @@ export const updateProduct = async (id, data) => {
   return axiosClient.put(`/api/catalog/admin/products/${id}`, data);
 };
 
-export const deleteProduct = async (id) => {
-  return axiosClient.delete(`/api/catalog/admin/products/${id}`);
+export const deleteProduct = async (id, params = {}) => {
+  return axiosClient.delete(`/api/catalog/admin/products/${id}`, { params });
+};
+
+export const getTrashProducts = async () => {
+  return axiosClient.get("/api/catalog/admin/products/trash");
+};
+
+export const restoreProduct = async (id) => {
+  return axiosClient.patch(`/api/catalog/admin/products/${id}/restore`);
+};
+
+export const permanentlyDeleteProduct = async (id) => {
+  return axiosClient.delete(`/api/catalog/admin/products/${id}/permanent`);
 };
 
 export const getCategories = async () => {
@@ -79,3 +91,36 @@ export const updateCategory = async (id, data) => {
 export const deleteCategory = async (id) => {
   return axiosClient.delete(`/api/catalog/admin/categories/${id}`);
 };
+
+export const getOptionGroups = async () => {
+  return axiosClient.get("/api/catalog/admin/option-groups");
+};
+
+export const createOptionGroup = async (data) => {
+  return axiosClient.post("/api/catalog/admin/option-groups", data);
+};
+
+export const updateOptionGroup = async (id, data) => {
+  return axiosClient.put(`/api/catalog/admin/option-groups/${id}`, data);
+};
+
+export const deleteOptionGroup = async (id) => {
+  return axiosClient.delete(`/api/catalog/admin/option-groups/${id}`);
+};
+
+export const getToppings = async () => {
+  return axiosClient.get("/api/catalog/admin/toppings");
+};
+
+export const createTopping = async (data) => {
+  return axiosClient.post("/api/catalog/admin/toppings", data);
+};
+
+export const updateTopping = async (id, data) => {
+  return axiosClient.put(`/api/catalog/admin/toppings/${id}`, data);
+};
+
+export const deleteTopping = async (id) => {
+  return axiosClient.delete(`/api/catalog/admin/toppings/${id}`);
+};
+

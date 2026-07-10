@@ -1,16 +1,28 @@
 :root {
-  --primary-color: #e30613; /* Màu đỏ MyKingdom */
-  --primary-hover: #c4040e;
-  --secondary-color: #ffc600; /* Màu vàng MyKingdom */
-  --secondary-hover: #e0ae00;
-  --light-bg: #f8f9fa;
-  --dark-text: #212529;
-  --light-text: #fff;
-  --gray-text: #6c757d;
+  /* Brew Moments Brand Colors */
+  --primary-color: #5A3825; /* Coffee Brown */
+  --primary-hover: #4A2E1E;
+  --secondary-color: #D48C5B; /* Warm Orange */
+  --secondary-hover: #C57D4C;
+  --accent-gold: #D4AF37;
+  --accent-green: #2E8B57; /* Loyalty */
+  --accent-red: #E63946; /* Sale */
+  
+  --light-bg: #FAF8F4;
+  --light-cream: #FFFDF9;
+  --light-beige: #F5EBE1;
+  
+  --dark-text: #2E2E2E;
+  --light-text: #FFFFFF;
+  --gray-text: #71717A;
+  
   --card-radius: 20px;
-  --btn-radius: 50px;
-  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  --shadow-premium: 0 10px 30px rgba(227, 6, 19, 0.05), 0 5px 15px rgba(0, 0, 0, 0.03);
+  --btn-radius: 14px; /* Theo yêu cầu 14px */
+  
+  --transition-smooth: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  --shadow-soft: 0 10px 30px rgba(90, 56, 37, 0.06), 0 5px 15px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 15px 35px rgba(90, 56, 37, 0.12), 0 8px 20px rgba(0, 0, 0, 0.08);
+  --shadow-premium: var(--shadow-soft);
 
   /* Admin Dashboard Variables */
   --admin-sidebar-bg: #1f2429;
@@ -64,173 +76,93 @@ body {
   flex-direction: column;
 }
 
-/* Hiệu ứng chuyển động mượt mà cho các card đồ chơi */
-.toy-card {
+/* Hiệu ứng chuyển động mượt mà cho các card */
+.brew-card {
   border: none !important;
   border-radius: var(--card-radius) !important;
   overflow: hidden;
-  background: #fff;
-  box-shadow: var(--shadow-premium);
+  background: var(--light-cream);
+  box-shadow: var(--shadow-soft);
   transition: var(--transition-smooth);
 }
 
-.toy-card:hover {
+.brew-card:hover {
   transform: translateY(-8px);
-  box-shadow: 0 15px 35px rgba(227, 6, 19, 0.15), 0 5px 15px rgba(0, 0, 0, 0.05);
+  box-shadow: var(--shadow-hover);
 }
 
-.toy-badge-discount {
+.brew-badge {
   position: absolute;
   top: 15px;
   left: 15px;
-  background-color: var(--primary-color);
+  background-color: var(--accent-red);
   color: var(--light-text);
   font-weight: 700;
   padding: 6px 12px;
-  border-radius: 30px 10px 30px 10px;
-  font-size: 0.9rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
   z-index: 2;
-  box-shadow: 0 4px 10px rgba(227, 6, 19, 0.3);
+  box-shadow: 0 4px 10px rgba(230, 57, 70, 0.3);
 }
 
-/* Các nút bấm phong cách MyKingdom bo tròn lớn */
-.btn-toy-primary {
-  background-color: var(--primary-color) !important;
+/* Các nút bấm phong cách Brew Moments */
+.btn-brew-primary {
+  background-color: var(--secondary-color) !important;
   color: var(--light-text) !important;
   border: none !important;
-  font-weight: 700 !important;
+  font-weight: 600 !important;
   border-radius: var(--btn-radius) !important;
   padding: 10px 24px !important;
   transition: var(--transition-smooth) !important;
-  box-shadow: 0 4px 15px rgba(227, 6, 19, 0.2);
+  box-shadow: 0 4px 15px rgba(212, 140, 91, 0.2);
 }
 
-.btn-toy-primary:hover {
-  background-color: var(--primary-hover) !important;
-  transform: scale(1.03);
-  box-shadow: 0 6px 20px rgba(227, 6, 19, 0.3);
-}
-
-.btn-toy-secondary {
-  background-color: var(--secondary-color) !important;
-  color: #000 !important;
-  border: none !important;
-  font-weight: 700 !important;
-  border-radius: var(--btn-radius) !important;
-  padding: 10px 24px !important;
-  transition: var(--transition-smooth) !important;
-  box-shadow: 0 4px 15px rgba(255, 198, 0, 0.2);
-}
-
-.btn-toy-secondary:hover {
+.btn-brew-primary:hover {
   background-color: var(--secondary-hover) !important;
-  transform: scale(1.03);
-  box-shadow: 0 6px 20px rgba(255, 198, 0, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 140, 91, 0.3);
 }
 
-/* Mega Menu / Categories style */
-.category-circle {
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  background-color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 12px;
-  box-shadow: var(--shadow-premium);
-  transition: var(--transition-smooth);
-  border: 3px solid transparent;
+.btn-brew-secondary {
+  background-color: transparent !important;
+  color: var(--primary-color) !important;
+  border: 1px solid var(--primary-color) !important;
+  font-weight: 600 !important;
+  border-radius: var(--btn-radius) !important;
+  padding: 10px 24px !important;
+  transition: var(--transition-smooth) !important;
 }
 
-.category-item:hover .dropdown-menu {
-  display: block;
-  margin-top: 0;
+.btn-brew-secondary:hover {
+  background-color: var(--primary-color) !important;
+  color: var(--light-text) !important;
+  transform: translateY(-2px);
 }
 
-.home-menu-item:hover .dropdown-menu {
-  display: block;
-  margin-top: 0;
+/* Glassmorphism */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
-/* Cầu nối vô hình giúp không bị mất hover khi rê chuột từ menu xuống dropdown */
-.home-menu-item .dropdown-menu::before {
-  content: '';
-  position: absolute;
-  top: -20px;
-  left: 0;
-  right: 0;
-  height: 20px;
-  background: transparent;
-}
-
-.position-static-lg {
-  position: static !important;
-}
-
-/* Mega Menu Styles */
-.mega-menu {
-  width: 100%;
-  max-width: 960px;
-  min-height: 400px;
-  left: 50% !important;
-  transform: translateX(-50%) !important;
-  right: auto !important;
-  padding: 0;
-}
-
-.mega-menu-left-item .mega-menu-right-content {
-  display: none;
-}
-
-.mega-menu-left-item:hover .mega-menu-right-content,
-.mega-menu-left-item:first-child .mega-menu-right-content {
-  display: block;
-  z-index: 10;
-}
-
-.mega-menu-left:hover .mega-menu-left-item:first-child:not(:hover) .mega-menu-right-content {
-  display: none;
-}
-
-.mega-menu-left-item > a {
-  color: #333;
-  transition: all 0.2s;
-}
-
-.mega-menu-left-item > a:hover,
-.mega-menu-left-item > a.active {
-  background-color: #ffe6e8;
-  color: #ce1f28;
-}
-
-.mega-menu-left:hover .mega-menu-left-item > a.active:not(:hover) {
-  background-color: transparent;
-  color: #333;
-}
-
-.hover-text-danger:hover {
-  color: #ce1f28 !important;
-}
-
-.category-item:hover .category-circle {
-  border-color: var(--primary-color);
-  transform: scale(1.1) rotate(5deg);
-  box-shadow: 0 10px 25px rgba(227, 6, 19, 0.1);
-}
-
-/* Form input bo tròn viền đỏ khi focus */
-.form-toy-control {
+/* Form input Brew */
+.form-brew-control {
   border-radius: 20px !important;
   padding: 12px 20px !important;
-  border: 2px solid #e2e8f0 !important;
+  border: 1px solid #E2E8F0 !important;
+  background-color: #FFFFFF !important;
   transition: var(--transition-smooth) !important;
 }
 
-.form-toy-control:focus {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 0 0 3px rgba(227, 6, 19, 0.15) !important;
+.form-brew-control:focus {
+  border-color: var(--secondary-color) !important;
+  box-shadow: 0 0 0 3px rgba(212, 140, 91, 0.15) !important;
+  outline: none;
 }
+
+/* Removed mega menu for now */
 
 @keyframes fadeIn {
   from { opacity: 0; }
@@ -304,8 +236,20 @@ body {
 }
 
 
-.neu-input:focus {
+.neu-input:focus, .neu-textarea:focus {
   box-shadow: inset 6px 6px 12px var(--admin-shadow-dark), inset -6px -6px 12px var(--admin-shadow-light);
+}
+
+.neu-textarea {
+  background-color: var(--admin-surface);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  box-shadow: inset 4px 4px 10px var(--admin-shadow-dark), inset -4px -4px 10px var(--admin-shadow-light);
+  padding: 16px 24px;
+  color: var(--admin-text);
+  outline: none;
+  width: 100%;
+  resize: vertical;
 }
 
 .neu-circle {
@@ -367,6 +311,51 @@ body {
   cursor: not-allowed;
 }
 
+.auth-social-btn {
+  background: #ffffff !important;
+  color: var(--auth-text) !important;
+  border: 1.5px solid var(--auth-border) !important;
+  border-radius: 12px !important;
+  font-weight: 700 !important;
+  transition: all 0.3s ease !important;
+}
+
+.auth-social-btn:hover:not(:disabled) {
+  border-color: #c8d3e2 !important;
+  box-shadow: 0 10px 24px rgba(7, 27, 120, 0.08);
+  transform: translateY(-1px);
+}
+
+.auth-social-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.auth-divider {
+  position: relative;
+  text-align: center;
+  margin: 0 0 1.25rem;
+  color: var(--auth-muted);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.auth-divider::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  border-top: 1px solid rgba(122, 132, 152, 0.25);
+}
+
+.auth-divider span {
+  position: relative;
+  display: inline-block;
+  padding: 0 14px;
+  background: var(--auth-white);
+}
+
 .auth-input-container {
   position: relative;
 }
@@ -401,6 +390,12 @@ body {
 .auth-input:focus {
   border-color: var(--auth-primary) !important;
   box-shadow: 0 0 0 3px rgba(217, 8, 47, 0.1) !important;
+}
+
+.auth-input-code {
+  letter-spacing: 0.4rem;
+  font-size: 1.05rem !important;
+  font-weight: 700;
 }
 
 .auth-input.is-invalid {

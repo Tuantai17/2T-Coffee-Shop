@@ -6,9 +6,13 @@ const getStatusBadge = (status) => {
       return <span className="badge bg-warning text-dark px-3 py-2 rounded-pill">Chờ xác nhận</span>;
     case "CONFIRMED":
       return <span className="badge bg-info text-white px-3 py-2 rounded-pill">Đã xác nhận</span>;
-    case "PACKING":
+    case "PREPARING":
       return <span className="badge bg-secondary text-white px-3 py-2 rounded-pill">Đang chuẩn bị</span>;
-    case "SHIPPING":
+    case "READY_FOR_PICKUP":
+      return <span className="badge bg-primary text-white px-3 py-2 rounded-pill">Chờ nhận tại quầy</span>;
+    case "READY_FOR_DELIVERY":
+      return <span className="badge bg-primary text-white px-3 py-2 rounded-pill">Chờ giao hàng</span>;
+    case "DELIVERING":
       return <span className="badge px-3 py-2 rounded-pill" style={{ backgroundColor: "var(--admin-primary)", color: "white" }}>Đang giao</span>;
     case "COMPLETED":
       return <span className="badge bg-success px-3 py-2 rounded-pill">Hoàn thành</span>;
@@ -29,7 +33,7 @@ const getPaymentBadge = (status) => {
   }
 };
 
-function OrderDetailDrawer({ show, order, onClose, onUpdateStatus, onPrint, onExport }) {
+function OrderDetailDrawer({ show, order, loading, error, onRetry, onClose, onUpdateStatus, onPrint, onExport }) {
   const [updating, setUpdating] = useState(false);
 
   if (!show || !order) return null;
@@ -60,7 +64,7 @@ function OrderDetailDrawer({ show, order, onClose, onUpdateStatus, onPrint, onEx
       {/* Drawer */}
       <div 
         className="offcanvas offcanvas-end show shadow-lg border-0" 
-        style={{ width: "100%", maxWidth: "800px", zIndex: 1050, backgroundColor: "var(--admin-bg)" }} 
+        style={{ width: "100%", maxWidth: "1000px", zIndex: 1050, backgroundColor: "var(--admin-bg)" }} 
         tabIndex="-1"
       >
         <div className="offcanvas-header bg-white border-bottom px-4 py-3 shadow-sm z-1">
@@ -82,7 +86,27 @@ function OrderDetailDrawer({ show, order, onClose, onUpdateStatus, onPrint, onEx
           </div>
         </div>
         
-        <div className="offcanvas-body p-4" style={{ overflowY: "auto" }}>
+        <div className="offcanvas-body p-4 position-relative" style={{ overflowY: "auto" }}>
+          {loading && (
+            <div className="position-absolute top-0 start-0 w-100 h-100 d-flex justify-content-center align-items-center bg-white bg-opacity-75 z-2">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Loading...</span>
+              </div>
+            </div>
+          )}
+          
+          {error && (
+            <div className="alert alert-danger d-flex align-items-center mb-4" role="alert">
+              <i className="fa-solid fa-triangle-exclamation me-2"></i>
+              <div>
+                Lỗi khi tải dữ liệu chi tiết! 
+                <button className="btn btn-link btn-sm text-danger text-decoration-none ms-2 p-0 fw-bold" onClick={onRetry}>
+                  Thử lại
+                </button>
+              </div>
+            </div>
+          )}
+
           <div className="row g-4">
             
             {/* Customer & Shipping Info */}
@@ -142,16 +166,30 @@ function OrderDetailDrawer({ show, order, onClose, onUpdateStatus, onPrint, onEx
                         <tr key={index}>
                           <td className="px-4 py-3">
                             <div className="d-flex align-items-center gap-3">
-                              <img src={item.product?.imageUrl || "https://placehold.co/50"} alt="product" className="rounded" style={{ width: "48px", height: "48px", objectFit: "cover" }} />
+                              <img src={item.imageUrl || item.product?.imageUrl || "https://placehold.co/50"} alt="product" className="rounded" style={{ width: "48px", height: "48px", objectFit: "cover" }} />
                               <div>
-                                <div className="fw-semibold" style={{ fontSize: "14px" }}>{item.product?.productName || "Sản phẩm không rõ"}</div>
-                                <div className="small text-muted">SKU: {item.product?.id || "N/A"}</div>
+                                <div className="fw-semibold" style={{ fontSize: "14px" }}>{item.productName || item.product?.productName || "Sản phẩm không rõ"}</div>
+                                <div className="small text-muted mb-1">SKU: {item.productId || item.product?.id || "N/A"}</div>
+                                {(item.variantName || item.options || item.toppings || item.note) && (
+                                  <div className="small p-2 bg-light rounded border border-light" style={{ fontSize: "12px" }}>
+                                    {item.variantName && <div className="mb-1"><span className="fw-semibold">Size:</span> {item.variantName}</div>}
+                                    {item.options && item.options.length > 0 && (
+                                      <div className="mb-1"><span className="fw-semibold">Tùy chọn:</span> {Array.isArray(item.options) ? item.options.join(", ") : item.options}</div>
+                                    )}
+                                    {item.toppings && item.toppings.length > 0 && (
+                                      <div className="mb-1"><span className="fw-semibold">Topping:</span> {Array.isArray(item.toppings) ? item.toppings.join(", ") : item.toppings}</div>
+                                    )}
+                                    {item.note && (
+                                      <div><span className="fw-semibold">Ghi chú:</span> <span className="fst-italic">{item.note}</span></div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 text-center">{formatMoney(item.price)}</td>
+                          <td className="py-3 text-center">{formatMoney(item.unitPrice)}</td>
                           <td className="py-3 text-center fw-semibold">x{item.quantity}</td>
-                          <td className="py-3 px-4 text-end fw-bold text-dark">{formatMoney((item.price || 0) * (item.quantity || 0))}</td>
+                          <td className="py-3 px-4 text-end fw-bold text-dark">{formatMoney((item.unitPrice || 0) * (item.quantity || 0))}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -203,29 +241,18 @@ function OrderDetailDrawer({ show, order, onClose, onUpdateStatus, onPrint, onEx
         {/* Footer Actions */}
         <div className="offcanvas-footer bg-white border-top p-4">
           <div className="d-flex justify-content-between align-items-center">
-            <span className="fw-semibold text-muted">Cập nhật trạng thái:</span>
+            <span className="fw-semibold text-muted">Cập nhật trạng thái nhanh:</span>
             <div className="d-flex gap-2 flex-wrap justify-content-end">
-              {order.status !== "COMPLETED" && order.status !== "CANCELLED" && (
-                <>
-                  <button className="btn btn-outline-info rounded-pill px-3" disabled={updating} onClick={() => handleUpdate("CONFIRMED")}>
-                    Đã xác nhận
-                  </button>
-                  <button className="btn btn-outline-secondary rounded-pill px-3" disabled={updating} onClick={() => handleUpdate("PACKING")}>
-                    Đang chuẩn bị
-                  </button>
-                  <button className="btn btn-outline-primary rounded-pill px-3" disabled={updating} onClick={() => handleUpdate("SHIPPING")}>
-                    Đang giao
-                  </button>
-                  <button className="btn btn-success rounded-pill px-4 fw-bold shadow-sm" disabled={updating} onClick={() => handleUpdate("COMPLETED")}>
-                    Hoàn thành
-                  </button>
-                </>
-              )}
-              {order.status !== "CANCELLED" && order.status !== "COMPLETED" && (
-                <button className="btn btn-outline-danger rounded-pill px-3 ms-2" disabled={updating} onClick={() => handleUpdate("CANCELLED")}>
-                  Hủy đơn
-                </button>
-              )}
+              {order.status === "PENDING_CONFIRMATION" && <button className="btn btn-outline-info rounded-pill" disabled={updating} onClick={() => handleUpdate("CONFIRMED")}>Xác nhận</button>}
+              {order.status === "CONFIRMED" && <button className="btn btn-outline-secondary rounded-pill" disabled={updating} onClick={() => handleUpdate("PREPARING")}>Chuẩn bị</button>}
+              {order.status === "PREPARING" && <button className="btn btn-outline-warning rounded-pill" disabled={updating} onClick={() => handleUpdate("READY_FOR_PICKUP")}>Chờ nhận (Tại quầy)</button>}
+              {order.status === "PREPARING" && <button className="btn btn-outline-warning rounded-pill" disabled={updating} onClick={() => handleUpdate("READY_FOR_DELIVERY")}>Chờ giao (Delivery)</button>}
+              {order.status === "READY_FOR_DELIVERY" && <button className="btn btn-outline-primary rounded-pill" disabled={updating} onClick={() => handleUpdate("DELIVERING")}>Đang giao</button>}
+              {(order.status === "DELIVERING" || order.status === "READY_FOR_PICKUP") && <button className="btn btn-success rounded-pill text-white" disabled={updating} onClick={() => handleUpdate("COMPLETED")}>Hoàn thành</button>}
+              <a href={`/admin/orders/${order.id}/edit`} className="btn btn-primary px-4 rounded-pill">
+                <i className="fa-solid fa-pen-to-square me-2"></i>
+                Quản lý Đơn hàng
+              </a>
             </div>
           </div>
         </div>

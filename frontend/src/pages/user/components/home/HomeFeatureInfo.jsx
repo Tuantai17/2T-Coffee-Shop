@@ -1,37 +1,40 @@
+import { motion } from "framer-motion";
+
 function HomeFeatureInfo() {
+  const features = [
+    { icon: "fa-solid fa-truck-fast", title: "Giao hàng nhanh", desc: "30-45 phút" },
+    { icon: "fa-solid fa-leaf", title: "Nguyên liệu chọn lọc", desc: "Tươi ngon mỗi ngày" },
+    { icon: "fa-solid fa-shield-halved", title: "Thanh toán an toàn", desc: "Bảo mật tuyệt đối" },
+    { icon: "fa-solid fa-medal", title: "Tích điểm dễ dàng", desc: "Nhận nhiều ưu đãi" },
+    { icon: "fa-solid fa-headset", title: "Hỗ trợ 24/7", desc: "Luôn sẵn sàng" },
+  ];
+
   return (
-    <div className="bg-white py-5 mt-5 border-top">
-      <div className="container">
-        <div className="row text-center g-4">
-          <div className="col-12 col-md-4">
-            <div className="mb-3 d-flex justify-content-center">
-              <div className="rounded-circle d-flex align-items-center justify-content-center bg-danger bg-opacity-10" style={{ width: "80px", height: "80px" }}>
-                <i className="fa-solid fa-truck-fast fs-1 text-danger"></i>
+    <div className="container mt-5 pt-3 pb-5">
+      <div className="row g-4 justify-content-center">
+        {features.map((f, idx) => (
+          <motion.div 
+            key={idx} 
+            className="col-6 col-md-4 col-lg-2-4 text-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: idx * 0.1 }}
+          >
+            <div className="d-flex flex-column align-items-center">
+              <div className="text-white d-flex align-items-center justify-content-center rounded-circle mb-3 shadow-sm hover-scale transition-all" style={{ width: "65px", height: "65px", backgroundColor: "var(--secondary-color)", color: "var(--primary-color)" }}>
+                <i className={`${f.icon} fs-3`}></i>
               </div>
+              <h6 className="fw-bold text-dark mb-1">{f.title}</h6>
+              <span className="small text-muted">{f.desc}</span>
             </div>
-            <h5 className="fw-bold text-dark">GIAO HÀNG NHANH CHÓNG</h5>
-            <p className="text-muted px-4">Giao hàng hoả tốc nội thành trong 2 giờ và giao hàng toàn quốc.</p>
-          </div>
-          <div className="col-12 col-md-4">
-            <div className="mb-3 d-flex justify-content-center">
-              <div className="rounded-circle d-flex align-items-center justify-content-center bg-primary bg-opacity-10" style={{ width: "80px", height: "80px" }}>
-                <i className="fa-solid fa-shield-halved fs-1 text-primary"></i>
-              </div>
-            </div>
-            <h5 className="fw-bold text-dark">ĐỒ CHƠI CHÍNH HÃNG</h5>
-            <p className="text-muted px-4">Cam kết 100% đồ chơi chính hãng, kiểm định an toàn chất lượng.</p>
-          </div>
-          <div className="col-12 col-md-4">
-            <div className="mb-3 d-flex justify-content-center">
-              <div className="rounded-circle d-flex align-items-center justify-content-center bg-warning bg-opacity-10" style={{ width: "80px", height: "80px" }}>
-                <i className="fa-solid fa-gift fs-1 text-warning"></i>
-              </div>
-            </div>
-            <h5 className="fw-bold text-dark">TÍCH ĐIỂM ĐỔI QUÀ</h5>
-            <p className="text-muted px-4">Tích điểm thành viên nhận ưu đãi lớn và quà tặng nhân dịp sinh nhật bé.</p>
-          </div>
-        </div>
+          </motion.div>
+        ))}
       </div>
+      <style>{`
+        .col-lg-2-4 { flex: 0 0 auto; width: 20%; }
+        @media (max-width: 992px) { .col-lg-2-4 { width: auto; } }
+      `}</style>
     </div>
   );
 }

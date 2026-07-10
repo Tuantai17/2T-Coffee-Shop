@@ -59,7 +59,7 @@ function HomeMenu() {
                   parentMap.set(String(cat.id), { 
                     id: 'cat_' + cat.id, 
                     name: cat.name, 
-                    path: `/products?category=${cat.slug}`, 
+                    path: `/products?category=${cat.id}`, 
                     icon: cat.imageUrl, 
                     children: [] 
                   });
@@ -107,7 +107,7 @@ function HomeMenu() {
                                   to={child.path} 
                                   className={`text-decoration-none d-flex align-items-center gap-3 px-3 py-2 rounded-pill fw-semibold ${index === 0 ? 'active' : ''}`}
                                 >
-                                  {child.icon && <img src={child.icon} width="24" height="24" alt={child.name} style={{ objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />}
+                                  {child.icon && !child.icon.includes('theme.hstatic.net') && <img src={child.icon} width="24" height="24" alt={child.name} style={{ objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />}
                                   {child.name}
                                 </Link>
                                 
@@ -144,7 +144,7 @@ function HomeMenu() {
                       {displayChildren.map(child => (
                         <li key={child.id}>
                           <Link className="dropdown-item py-2 fw-medium" to={child.path}>
-                            {child.icon && <img src={child.icon} width="16" height="16" alt={child.name} className="me-2" style={{ objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />}
+                            {child.icon && !child.icon.includes('theme.hstatic.net') && <img src={child.icon} width="16" height="16" alt={child.name} className="me-2" style={{ objectFit: 'contain' }} onError={(e) => { e.target.style.display = 'none'; }} />}
                             {child.name}
                           </Link>
                         </li>

@@ -45,5 +45,8 @@ public interface ProductService {
     );
     public Product addProduct(Product product);
     public Product updateProduct(Long id, Product product);
-    public void deleteProduct(Long productId);
+    public void softDeleteProduct(Long productId, String deletedBy, String deleteReason);
+    public void restoreProduct(Long productId);
+    public void permanentlyDeleteProduct(Long productId);
+    public List<Product> getTrashProducts();
 }

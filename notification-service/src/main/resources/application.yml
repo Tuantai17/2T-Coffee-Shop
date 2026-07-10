@@ -1,4 +1,6 @@
 server:
+  error:
+    include-stacktrace: never
   port: 8815
 
 spring:
@@ -6,9 +8,20 @@ spring:
     name: notification-service
   data:
     mongodb:
-      uri: mongodb://localhost:27017/notification_db
+      uri: ${MONGODB_URI:mongodb://localhost:27017/notification_db}
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:false}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS:false}
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: notification-service-group
       auto-offset-reset: earliest
@@ -23,10 +36,23 @@ spring:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
   instance:
     prefer-ip-address: true
 
 app:
   kafka:
     topic: order-events
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{correlationId}] - %msg%n"

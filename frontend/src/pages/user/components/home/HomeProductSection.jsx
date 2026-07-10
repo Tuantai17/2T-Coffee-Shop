@@ -1,126 +1,181 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { applyImageFallback, DEFAULT_IMAGE_FALLBACK, resolveImageUrl } from "../../../../utils/imageFallback";
+import { motion } from "framer-motion";
 
 function HomeProductSection({ title, type, products, loading, viewAllLink, onAddToCart, iconClass }) {
   const [page, setPage] = useState(0);
-  const itemsPerPage = 5; // Desktop 5 products
-  const totalPages = Math.ceil(products.length / itemsPerPage);
+  const itemsPerPage = 5; 
+  const totalPages = Math.ceil((products?.length || 0) / itemsPerPage);
 
   const handlePrevPage = () => setPage(prev => Math.max(prev - 1, 0));
   const handleNextPage = () => setPage(prev => Math.min(prev + 1, totalPages - 1));
 
-  // Tránh lỗi index out of bounds khi products nhỏ hơn itemsPerPage
-  const currentProducts = products.slice(page * itemsPerPage, (page + 1) * itemsPerPage);
+  const currentProducts = products ? products.slice(page * itemsPerPage, (page + 1) * itemsPerPage) : [];
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    show: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+  };
 
   return (
-    <div className="container mt-5">
-      <div className="d-flex justify-content-between align-items-end mb-4 border-bottom pb-2 border-danger border-opacity-25">
+    <div className="container mt-5 pt-3">
+      <div className="d-flex justify-content-between align-items-end mb-4 pb-2">
         <div>
-          <h3 className="fw-extrabold text-danger mb-1" style={{ fontSize: "1.5rem" }}>
-            {iconClass && <i className={`${iconClass} me-2 text-warning`}></i>}
+          <h3 className="fw-bold mb-1" style={{ color: "var(--primary-color)", fontSize: "1.75rem" }}>
             {title}
           </h3>
+          <div style={{ width: "60px", height: "4px", backgroundColor: "var(--secondary-color)", borderRadius: "2px" }}></div>
         </div>
-        <Link to={viewAllLink} className="text-danger fw-bold text-decoration-none hover-opacity">
-          Xem tất cả <i className="fa-solid fa-arrow-right-long ms-1"></i>
+        <Link to={viewAllLink} className="text-decoration-none fw-semibold hover-text-primary" style={{ color: "var(--dark-text)", fontSize: "0.95rem" }}>
+          Xem tất cả <i className="fa-solid fa-chevron-right ms-1 small"></i>
         </Link>
       </div>
 
       <div className="position-relative">
-        {products.length > itemsPerPage && (
+        {products?.length > itemsPerPage && (
           <button
-            className="btn btn-light rounded-circle shadow position-absolute start-0 top-50 translate-middle-y d-none d-md-flex align-items-center justify-content-center border"
-            style={{ width: "40px", height: "40px", zIndex: 10, opacity: page === 0 ? 0.4 : 1, cursor: page === 0 ? "not-allowed" : "pointer", marginLeft: "-20px" }}
+            className="btn rounded-circle shadow-sm position-absolute start-0 top-50 translate-middle-y d-none d-md-flex align-items-center justify-content-center"
+            style={{ width: "45px", height: "45px", zIndex: 10, opacity: page === 0 ? 0 : 1, cursor: page === 0 ? "default" : "pointer", marginLeft: "-22px", backgroundColor: "#fff", border: "1px solid #eaeaea", color: "var(--primary-color)", transition: "all 0.3s" }}
             onClick={handlePrevPage}
             disabled={page === 0}
           >
-            <i className="fa-solid fa-chevron-left text-danger"></i>
+            <i className="fa-solid fa-chevron-left"></i>
           </button>
         )}
 
         {loading ? (
-          <div className="text-center my-5">
-            <div className="spinner-border text-danger" role="status">
+          <div className="text-center my-5 py-5">
+            <div className="spinner-border" style={{ color: "var(--secondary-color)" }} role="status">
               <span className="visually-hidden">Đang tải...</span>
             </div>
           </div>
-        ) : products.length === 0 ? (
-          <div className="text-center py-4 text-muted">Không có sản phẩm nào.</div>
+        ) : products?.length === 0 ? (
+          <div className="text-center py-5 text-muted bg-light rounded-4">Không có sản phẩm nào.</div>
         ) : (
-          <div className="row g-3 flex-nowrap overflow-auto hide-scrollbar pb-3">
+          <motion.div 
+            className="row g-4 flex-nowrap flex-lg-wrap overflow-auto hide-scrollbar pb-3 px-2"
+            variants={containerVariants}
+            initial="hidden"
+            whileInView="show"
+            viewport={{ once: true, amount: 0.2 }}
+          >
             {currentProducts.map((p) => {
               const hasDiscount = p.originalPrice && p.originalPrice > p.price;
               const discountPercentage = hasDiscount ? Math.round(((p.originalPrice - p.price) / p.originalPrice) * 100) : 0;
+              const isOutOfStock = p.status === "OUT_OF_STOCK" || p.availability <= 0 || p.quantity <= 0;
+              
               return (
-                <div className="col-9 col-sm-6 col-md-4 col-lg-2.4" style={{ width: "20%" }} key={p.id}>
-                  <div className="card h-100 border-0 shadow-sm rounded-4 position-relative hover-shadow transition-all" style={{ transition: "transform 0.2s, box-shadow 0.2s" }} onMouseOver={e => e.currentTarget.style.transform = 'translateY(-5px)'} onMouseOut={e => e.currentTarget.style.transform = 'none'}>
-                    {/* Badge giảm giá */}
-                    {hasDiscount && (
-                      <span className="position-absolute top-0 start-0 bg-danger text-white px-2 py-1 m-2 rounded-2 fw-bold" style={{ fontSize: "0.8rem", zIndex: 2 }}>
-                        -{discountPercentage}%
-                      </span>
-                    )}
-                    {type === 'new' && !hasDiscount && (
-                       <span className="position-absolute top-0 start-0 bg-info text-white px-2 py-1 m-2 rounded-2 fw-bold" style={{ fontSize: "0.8rem", zIndex: 2 }}>
-                         Mới
-                       </span>
-                    )}
+                <motion.div 
+                  variants={itemVariants}
+                  className="col-10 col-sm-6 col-md-4 col-lg-2-4" 
+                  style={{ width: window.innerWidth > 992 ? "20%" : "auto", minWidth: "250px" }} 
+                  key={p.id}
+                >
+                  <div className="brew-card h-100 position-relative p-3 d-flex flex-column" style={{ backgroundColor: "#fff", borderRadius: "16px", border: "1px solid #f1f5f9" }}>
+                    {/* Badges */}
+                    {isOutOfStock ? (
+                      <span className="brew-badge bg-secondary">Hết hàng</span>
+                    ) : hasDiscount ? (
+                      <span className="brew-badge">-{discountPercentage}%</span>
+                    ) : type === 'new' ? (
+                      <span className="brew-badge" style={{ backgroundColor: "var(--accent-gold)", color: "#fff" }}>NEW</span>
+                    ) : type === 'hot' ? (
+                      <span className="brew-badge" style={{ backgroundColor: "var(--accent-red)", color: "#fff" }}>HOT</span>
+                    ) : null}
 
-                    <Link to={`/products/${p.id}`} className="position-relative bg-light rounded-top-4 overflow-hidden d-block" style={{ height: "200px" }}>
+                    {/* Favorite btn */}
+                    <button className="btn position-absolute border-0 bg-white rounded-circle shadow-sm d-flex align-items-center justify-content-center text-muted hover-text-primary" style={{ top: "15px", right: "15px", width: "32px", height: "32px", zIndex: 10 }}>
+                      <i className="fa-regular fa-heart"></i>
+                    </button>
+
+                    {/* Image */}
+                    <Link to={`/products/${p.id}`} className="position-relative overflow-hidden rounded-3 mb-3 d-block" style={{ aspectRatio: "1/1", backgroundColor: "#f8f9fa" }}>
                       <img
-                        src={resolveImageUrl(p.imageUrl, "https://images.unsplash.com/photo-1585366119957-e5733f399e7c?w=500")}
-                        className="card-img-top w-100 h-100"
+                        src={resolveImageUrl(p.imageUrl, "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=500")}
+                        className="w-100 h-100 object-fit-cover transition-all"
                         alt={p.name}
-                        style={{ objectFit: "cover" }}
+                        style={{ transition: "transform 0.5s ease" }}
+                        onMouseOver={e => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseOut={e => e.currentTarget.style.transform = 'scale(1)'}
                         onError={(event) => applyImageFallback(event, DEFAULT_IMAGE_FALLBACK)}
                       />
                     </Link>
 
-                    <div className="card-body d-flex flex-column p-3">
+                    {/* Info */}
+                    <div className="d-flex flex-column flex-grow-1">
+                      {/* Rating Mock */}
+                      <div className="d-flex align-items-center mb-1 gap-1" style={{ fontSize: "0.8rem", color: "var(--accent-gold)" }}>
+                        <i className="fa-solid fa-star"></i>
+                        <i className="fa-solid fa-star"></i>
+                        <i className="fa-solid fa-star"></i>
+                        <i className="fa-solid fa-star"></i>
+                        <i className="fa-solid fa-star-half-stroke"></i>
+                        <span className="text-muted ms-1" style={{ fontSize: "0.75rem" }}>(4.8)</span>
+                        <span className="text-muted ms-auto" style={{ fontSize: "0.7rem" }}>Đã bán 1.2k</span>
+                      </div>
+                      
                       <Link to={`/products/${p.id}`} className="text-decoration-none">
-                        <h6 className="card-title fw-bold text-dark mb-2" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '38px', fontSize: "0.95rem" }}>
+                        <h6 className="fw-bold mb-2 text-dark" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', fontSize: "1rem", lineHeight: "1.4" }} onMouseOver={e => e.target.style.color="var(--secondary-color)"} onMouseOut={e => e.target.style.color="var(--dark-text)"}>
                           {p.name}
                         </h6>
                       </Link>
                       
-                      <div className="mb-3 mt-auto">
-                        <span className="text-danger fw-bold fs-6 d-block">
-                          {p.price.toLocaleString("vi-VN")}đ
-                        </span>
-                        {hasDiscount ? (
-                          <span className="text-muted text-decoration-line-through" style={{ fontSize: "0.85rem" }}>
-                            {p.originalPrice.toLocaleString("vi-VN")}đ
-                          </span>
-                        ) : (
-                          <span style={{ fontSize: "0.85rem", visibility: "hidden" }}>0đ</span>
-                        )}
-                      </div>
-
-                      <div className="d-flex gap-2">
-                        <button className="btn btn-danger btn-sm rounded-3 flex-grow-1 fw-bold" onClick={() => onAddToCart(p.id)}>
-                          Mua
+                      <div className="mt-auto pt-2 d-flex align-items-end justify-content-between">
+                        <div>
+                          <div className="fw-bold fs-6" style={{ color: "var(--primary-color)" }}>
+                            {p.price.toLocaleString("vi-VN")}đ
+                          </div>
+                          {hasDiscount && (
+                            <div className="text-muted text-decoration-line-through" style={{ fontSize: "0.8rem" }}>
+                              {p.originalPrice.toLocaleString("vi-VN")}đ
+                            </div>
+                          )}
+                        </div>
+                        
+                        <button 
+                          className="btn btn-sm rounded-circle d-flex align-items-center justify-content-center shadow-sm hover-scale" 
+                          style={{ width: "36px", height: "36px", backgroundColor: "var(--secondary-color)", color: "#fff", border: "none" }}
+                          onClick={() => onAddToCart(p.id)}
+                          disabled={isOutOfStock}
+                        >
+                          <i className="fa-solid fa-plus"></i>
                         </button>
                       </div>
                     </div>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         )}
 
-        {products.length > itemsPerPage && (
+        {products?.length > itemsPerPage && (
           <button
-            className="btn btn-light rounded-circle shadow position-absolute end-0 top-50 translate-middle-y d-none d-md-flex align-items-center justify-content-center border"
-            style={{ width: "40px", height: "40px", zIndex: 10, opacity: page === totalPages - 1 ? 0.4 : 1, cursor: page === totalPages - 1 ? "not-allowed" : "pointer", marginRight: "-20px" }}
+            className="btn rounded-circle shadow-sm position-absolute end-0 top-50 translate-middle-y d-none d-md-flex align-items-center justify-content-center"
+            style={{ width: "45px", height: "45px", zIndex: 10, opacity: page === totalPages - 1 ? 0 : 1, cursor: page === totalPages - 1 ? "default" : "pointer", marginRight: "-22px", backgroundColor: "#fff", border: "1px solid #eaeaea", color: "var(--primary-color)", transition: "all 0.3s" }}
             onClick={handleNextPage}
             disabled={page === totalPages - 1}
           >
-            <i className="fa-solid fa-chevron-right text-danger"></i>
+            <i className="fa-solid fa-chevron-right"></i>
           </button>
         )}
       </div>
+      
+      <style>{`
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .col-lg-2-4 { flex: 0 0 auto; width: 20%; }
+        @media (max-width: 992px) { .col-lg-2-4 { width: auto; } }
+      `}</style>
     </div>
   );
 }

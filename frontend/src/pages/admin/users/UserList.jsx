@@ -133,12 +133,21 @@ function UserList({
                     </td>
                     <td className="py-3">
                       <div className="d-flex align-items-center gap-3">
-                        <div 
-                          className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                          style={{ width: "40px", height: "40px", backgroundColor: getRandomColor(fullName) }}
-                        >
-                          {getInitials(fullName)}
-                        </div>
+                        {user.userDetails?.avatarUrl ? (
+                          <img 
+                            src={user.userDetails.avatarUrl} 
+                            alt="Avatar" 
+                            className="rounded-circle shadow-sm" 
+                            style={{ width: "40px", height: "40px", objectFit: "cover", border: "2px solid white" }}
+                          />
+                        ) : (
+                          <div 
+                            className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                            style={{ width: "40px", height: "40px", backgroundColor: getRandomColor(fullName) }}
+                          >
+                            {getInitials(fullName)}
+                          </div>
+                        )}
                         <div>
                           <div className="fw-bold text-dark d-flex align-items-center gap-2">
                             {fullName} 

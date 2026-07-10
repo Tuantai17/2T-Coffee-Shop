@@ -22,6 +22,21 @@ public class Product {
     @NotNull
     private BigDecimal price;
 
+    @Column (name = "image_url")
+    private String imageUrl;
+
+    @Column (name = "slug")
+    private String slug;
+
+    @Transient
+    private String sku;
+
+    @Transient
+    private String status;
+
+    @Column (name = "availability")
+    private Integer availability;
+
     @OneToMany (mappedBy = "product", cascade = CascadeType.ALL)
     @JsonIgnore
     private List<Item> items;
@@ -50,11 +65,51 @@ public class Product {
         this.price = price;
     }
 
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
+    }
+
+    public String getSlug() {
+        return slug;
+    }
+
+    public void setSlug(String slug) {
+        this.slug = slug;
+    }
+
     public List<Item> getItems() {
         return items;
     }
 
     public void setItems(List<Item> items) {
         this.items = items;
+    }
+
+    public Integer getAvailability() {
+        return availability;
+    }
+
+    public void setAvailability(Integer availability) {
+        this.availability = availability;
+    }
+
+    public String getSku() {
+        return sku;
+    }
+
+    public void setSku(String sku) {
+        this.sku = sku;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
     }
 }

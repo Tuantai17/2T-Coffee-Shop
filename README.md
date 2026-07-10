@@ -118,7 +118,11 @@ graph TD
 
 ### 🛠️ Các Bước Thực Hiện
 
-#### Bước 1: Thiết lập Cơ sở dữ liệu PostgreSQL
+#### Bước 1: Thiết lập Biến môi trường (.env)
+* Sao chép file `.env.example` thành `.env` ở thư mục gốc của dự án.
+* Chỉnh sửa các thông số (như `DB_PASSWORD`, `JWT_SECRET`, `CLOUDINARY_API_SECRET`) cho phù hợp với môi trường của bạn. Docker và các service sẽ tự động đọc từ file `.env` này.
+
+#### Bước 2: Thiết lập Cơ sở dữ liệu PostgreSQL
 
 * Tạo các database mới trong PostgreSQL tương ứng cho các microservices:
   ```sql
@@ -127,10 +131,7 @@ graph TD
   CREATE DATABASE delivery_db;
   CREATE DATABASE revenue_db;
   ```
-* Thông tin kết nối mặc định trong các file `application.properties` và `application.yml` của các dịch vụ:
-  - **Database URL**: `jdbc:postgresql://localhost:5432/<tên_db>`
-  - **Username**: `postgres`
-  - **Password**: `123456`
+* Thông tin kết nối sẽ được đọc tự động từ biến môi trường `${DB_USERNAME}` và `${DB_PASSWORD}` trong file `.env`. (Mặc định thường là postgres / 123456).
 
 #### Bước 2: Khởi chạy các container bằng Docker
 
@@ -162,3 +163,13 @@ graph TD
    npm run dev
    ```
 4. Mở trình duyệt và truy cập theo địa chỉ hiển thị trên terminal (thường là `http://localhost:5173` hoặc `http://localhost:5174`).
+
+### 📚 Tài liệu API (Swagger / OpenAPI)
+Sau khi các service khởi động, bạn có thể xem tài liệu API qua giao diện Swagger UI:
+- **User Service:** http://localhost:8811/swagger-ui.html
+- **Product Catalog Service:** http://localhost:8810/swagger-ui.html
+- **Order Service:** http://localhost:8813/swagger-ui.html
+- **Inventory Service:** http://localhost:8816/swagger-ui.html
+- **Payment Service:** http://localhost:8814/swagger-ui.html
+- **Delivery Service:** http://localhost:8817/swagger-ui.html
+*(Sử dụng nút Authorize trên Swagger để nhập token JWT dưới dạng Bearer auth)*

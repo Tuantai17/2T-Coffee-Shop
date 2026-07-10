@@ -29,6 +29,19 @@ public class UserAddressController {
         );
     }
 
+    @GetMapping("/users/{userId}/addresses/default")
+    public ResponseEntity<UserAddress> getDefaultAddress(@PathVariable("userId") Long userId) {
+        List<UserAddress> addresses = userAddressService.getAddressesByUserId(userId);
+        UserAddress defaultAddress = addresses.stream()
+                .filter(UserAddress::isDefault)
+                .findFirst()
+                .orElse(null);
+        if (defaultAddress != null) {
+            return new ResponseEntity<>(defaultAddress, headerGenerator.getHeadersForSuccessGetMethod(), HttpStatus.OK);
+        }
+        return new ResponseEntity<>(headerGenerator.getHeadersForSuccessGetMethod(), HttpStatus.NO_CONTENT);
+    }
+
     @PostMapping("/users/{userId}/addresses")
     public ResponseEntity<UserAddress> addAddress(
             @PathVariable("userId") Long userId,

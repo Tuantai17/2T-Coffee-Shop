@@ -1,0 +1,80 @@
+# Compiled class file
+*.class
+
+# Log file
+*.log
+
+# BlueJ files
+*.ctxt
+
+# Mobile Tools for Java (J2ME)
+.mtj.tmp/
+
+# Package Files #
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+hs_err_pid*
+
+# Environments
+.env
+.env.local
+
+# IntelliJ
+.idea/
+*.iml
+*.iws
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# Maven
+target/
+
+# Node
+node_modules/
+dist/
+.DS_Store
+
+# ============================
+# Project-specific exclusions
+# ============================
+
+# Documentation folders (not needed in repo)
+docs/
+docx-tailieu/
+
+# Scratch/temp files
+scratch/
+scratch*.json
+scratch*.py
+
+# Backup folders
+backups/
+
+# One-off scripts
+fix_*.py
+
+# Report markdown files at root (keep only README.md)
+PHASE_*.md
+DOCKER_COMPOSE_GUIDE.md
+E2E_TEST_REPORT.md
+FINAL_REQUIREMENT_CHECKLIST.md
+Midterm_Report.md
+SERVICE_DECISION_MATRIX.md
+SYSTEM_REUSE_AUDIT.md
+
+# Test backup folders
+**/test_backups/
+
+# E2E tests (standalone, not part of main build)
+e2e_tests/

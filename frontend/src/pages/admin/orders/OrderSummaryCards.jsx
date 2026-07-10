@@ -1,35 +1,19 @@
 import React, { useMemo } from "react";
 
-function OrderSummaryCards({ orders, loading }) {
+function OrderSummaryCards({ statistics, loading }) {
   const stats = useMemo(() => {
-    let total = 0;
-    let pending = 0;
-    let shipping = 0;
-    let completed = 0;
-    let cancelled = 0;
-    let revenue = 0;
-
-    if (orders && orders.length > 0) {
-      total = orders.length;
-      orders.forEach((o) => {
-        if (o.status === "PENDING_CONFIRMATION" || o.status === "CONFIRMED" || o.status === "PACKING") {
-          pending++;
-        } else if (o.status === "SHIPPING") {
-          shipping++;
-        } else if (o.status === "COMPLETED") {
-          completed++;
-          revenue += o.total || 0;
-        } else if (o.status === "CANCELLED") {
-          cancelled++;
-        } else {
-          // If any other unmapped status
-          if (o.status?.includes("PENDING")) pending++;
-        }
-      });
+    if (statistics) {
+      return {
+        total: statistics.totalOrders || 0,
+        pending: statistics.pendingConfirmation || 0,
+        shipping: statistics.shipping || 0,
+        completed: statistics.completed || 0,
+        cancelled: statistics.cancelled || 0,
+        revenue: statistics.totalRevenue || 0
+      };
     }
-
-    return { total, pending, shipping, completed, cancelled, revenue };
-  }, [orders]);
+    return { total: 0, pending: 0, shipping: 0, completed: 0, cancelled: 0, revenue: 0 };
+  }, [statistics]);
 
   const formatMoney = (val) => {
     return new Intl.NumberFormat("vi-VN", {

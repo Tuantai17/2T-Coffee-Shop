@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import { getUsers } from "../../services/authService";
-import { getAllOrders } from "../../services/orderService";
+import { getAdminOrders } from "../../services/orderService";
 import {
   getBanners,
   getCategories,
@@ -39,13 +39,20 @@ function DashboardPage() {
           await Promise.all([
             getProducts(),
             getCategories(),
-            getAllOrders(),
+            getAdminOrders({ page: 1, size: 100 }),
             getUsers(),
             getBanners({ activeOnly: false }),
             getCollections({ activeOnly: false }),
           ]);
 
-        const orders = Array.isArray(ordersRes.data) ? ordersRes.data : [];
+        const ordersData = ordersRes?.data;
+        const orders = Array.isArray(ordersData)
+          ? ordersData
+          : Array.isArray(ordersData?.orders)
+            ? ordersData.orders
+            : Array.isArray(ordersData?.content)
+              ? ordersData.content
+              : [];
         setOrdersList(orders);
         
         const revenue = orders.reduce((sum, order) => sum + Number(order.total || 0), 0);
@@ -146,7 +153,7 @@ function DashboardPage() {
 
         <div className="row g-4 mb-4">
           <div className="col-xl-8">
-            <DashboardChart loading={loading} />
+            <DashboardChart loading={loading} orders={ordersList} />
           </div>
           <div className="col-xl-4">
             <RecentOrders orders={ordersList} loading={loading} />

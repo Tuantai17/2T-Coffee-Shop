@@ -8,6 +8,7 @@ import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
+import java.time.LocalDateTime;
 
 @Entity
 @Table (name = "products")
@@ -72,29 +73,60 @@ public class Product implements Serializable {
     @Column(name = "tags")
     private String tags;
 
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Variant> variants = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "product_option_groups",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "group_id")
+    )
+    private List<OptionGroup> optionGroups = new ArrayList<>();
+
+    @ManyToMany
+    @JoinTable(
+        name = "product_toppings",
+        joinColumns = @JoinColumn(name = "product_id"),
+        inverseJoinColumns = @JoinColumn(name = "topping_id")
+    )
+    private List<Topping> toppings = new ArrayList<>();
+
+    @Column(name = "is_deleted", nullable = false, columnDefinition = "boolean default false")
+    private Boolean isDeleted = false;
+
+    @Column(name = "deleted_at")
+    private LocalDateTime deletedAt;
+
+    @Column(name = "deleted_by")
+    private String deletedBy;
+
+    @Column(name = "delete_reason")
+    private String deleteReason;
+
+    @Column(name = "on_sale")
+    private Boolean onSale = false;
+
+    @Column(name = "new_arrival")
+    private Boolean newArrival = false;
+
+    @Column(name = "featured")
+    private Boolean featured = false;
+
+    @Column(name = "on_sale_order")
+    private Integer onSaleOrder;
+
+    @Column(name = "new_arrival_order")
+    private Integer newArrivalOrder;
+
+    @Column(name = "featured_order")
+    private Integer featuredOrder;
+
     @Column(name = "age_min")
     private Integer ageMin;
 
     @Column(name = "age_max")
     private Integer ageMax;
-
-    @Column(name = "is_featured")
-    private boolean featured;
-
-    @Column(name = "is_new_arrival")
-    private boolean newArrival;
-
-    @Column(name = "is_on_sale")
-    private boolean onSale;
-
-    @Column(name = "on_sale_order")
-    private Integer onSaleOrder = 0;
-
-    @Column(name = "new_arrival_order")
-    private Integer newArrivalOrder = 0;
-
-    @Column(name = "featured_order")
-    private Integer featuredOrder = 0;
 
 	public Product() {
 
@@ -231,68 +263,28 @@ public class Product implements Serializable {
         this.tags = tags;
     }
 
-    public Integer getAgeMin() {
-        return ageMin;
+    public List<Variant> getVariants() {
+        return variants;
     }
 
-    public void setAgeMin(Integer ageMin) {
-        this.ageMin = ageMin;
+    public void setVariants(List<Variant> variants) {
+        this.variants = variants;
     }
 
-    public Integer getAgeMax() {
-        return ageMax;
+    public List<OptionGroup> getOptionGroups() {
+        return optionGroups;
     }
 
-    public void setAgeMax(Integer ageMax) {
-        this.ageMax = ageMax;
+    public void setOptionGroups(List<OptionGroup> optionGroups) {
+        this.optionGroups = optionGroups;
     }
 
-    public boolean isFeatured() {
-        return featured;
+    public List<Topping> getToppings() {
+        return toppings;
     }
 
-    public void setFeatured(boolean featured) {
-        this.featured = featured;
-    }
-
-    public boolean isNewArrival() {
-        return newArrival;
-    }
-
-    public void setNewArrival(boolean newArrival) {
-        this.newArrival = newArrival;
-    }
-
-    public boolean isOnSale() {
-        return onSale;
-    }
-
-    public void setOnSale(boolean onSale) {
-        this.onSale = onSale;
-    }
-
-    public Integer getOnSaleOrder() {
-        return onSaleOrder;
-    }
-
-    public void setOnSaleOrder(Integer onSaleOrder) {
-        this.onSaleOrder = onSaleOrder;
-    }
-
-    public Integer getNewArrivalOrder() {
-        return newArrivalOrder;
-    }
-
-    public void setNewArrivalOrder(Integer newArrivalOrder) {
-        this.newArrivalOrder = newArrivalOrder;
-    }
-
-    public Integer getFeaturedOrder() {
-        return featuredOrder;
-    }
-
-    public void setFeaturedOrder(Integer featuredOrder) {
-        this.featuredOrder = featuredOrder;
+    public void setToppings(List<Topping> toppings) {
+        this.toppings = toppings;
     }
 
 	@JsonProperty("name")
@@ -315,6 +307,7 @@ public class Product implements Serializable {
 		this.discription = description;
 	}
 
+
 	@JsonProperty("quantity")
 	public int getQuantity() {
 		return availability;
@@ -334,4 +327,60 @@ public class Product implements Serializable {
 	public void setCategoryId(String categoryId) {
 		this.category = categoryId;
 	}
+
+    public boolean isDeleted() {
+        return Boolean.TRUE.equals(isDeleted);
+    }
+
+    public void setDeleted(Boolean deleted) {
+        isDeleted = deleted != null ? deleted : false;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
+    public void setDeletedAt(LocalDateTime deletedAt) {
+        this.deletedAt = deletedAt;
+    }
+
+    public String getDeletedBy() {
+        return deletedBy;
+    }
+
+    public void setDeletedBy(String deletedBy) {
+        this.deletedBy = deletedBy;
+    }
+
+    public String getDeleteReason() {
+        return deleteReason;
+    }
+
+    public void setDeleteReason(String deleteReason) {
+        this.deleteReason = deleteReason;
+    }
+
+    public boolean isOnSale() { return Boolean.TRUE.equals(onSale); }
+    public void setOnSale(Boolean onSale) { this.onSale = onSale != null ? onSale : false; }
+
+    public boolean isNewArrival() { return Boolean.TRUE.equals(newArrival); }
+    public void setNewArrival(Boolean newArrival) { this.newArrival = newArrival != null ? newArrival : false; }
+
+    public boolean isFeatured() { return Boolean.TRUE.equals(featured); }
+    public void setFeatured(Boolean featured) { this.featured = featured != null ? featured : false; }
+
+    public Integer getOnSaleOrder() { return onSaleOrder; }
+    public void setOnSaleOrder(Integer onSaleOrder) { this.onSaleOrder = onSaleOrder; }
+
+    public Integer getNewArrivalOrder() { return newArrivalOrder; }
+    public void setNewArrivalOrder(Integer newArrivalOrder) { this.newArrivalOrder = newArrivalOrder; }
+
+    public Integer getFeaturedOrder() { return featuredOrder; }
+    public void setFeaturedOrder(Integer featuredOrder) { this.featuredOrder = featuredOrder; }
+
+    public Integer getAgeMin() { return ageMin; }
+    public void setAgeMin(Integer ageMin) { this.ageMin = ageMin; }
+
+    public Integer getAgeMax() { return ageMax; }
+    public void setAgeMax(Integer ageMax) { this.ageMax = ageMax; }
 }

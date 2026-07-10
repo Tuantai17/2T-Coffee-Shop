@@ -5,11 +5,20 @@ import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
 import UserLayout from "../../layouts/UserLayout";
 
 // Child Components
-import HomeBanner from "./components/home/HomeBanner";
+import HeroSlider from "./components/home/HeroSlider";
+import QuickOrder from "./components/home/QuickOrder";
 import HomeCategorySlider from "./components/home/HomeCategorySlider";
 import HomeProductSection from "./components/home/HomeProductSection";
+import ComboBanner from "./components/home/ComboBanner";
+import FlashSale from "./components/home/FlashSale";
+import LoyaltySummary from "./components/home/LoyaltySummary";
+import DailyCheckInSummary from "./components/home/DailyCheckInSummary";
+import MiniGameBanner from "./components/home/MiniGameBanner";
+import VoucherSummary from "./components/home/VoucherSummary";
 import HomeNewsSection from "./components/home/HomeNewsSection";
 import HomeFeatureInfo from "./components/home/HomeFeatureInfo";
+import AppDownload from "./components/home/AppDownload";
+import FloatingButtons from "./components/home/FloatingButtons";
 
 function HomePage() {
   const [categories, setCategories] = useState([]);
@@ -33,12 +42,12 @@ function HomePage() {
       // Fetch Hot Products (featured)
       const hotRes = await getProducts({ featured: true, sort: "featured_order" });
       const nextHot = Array.isArray(hotRes.data) ? hotRes.data : [];
-      setHotProducts(nextHot.slice(0, 10)); // Lấy 10 sản phẩm hot
+      setHotProducts(nextHot.slice(0, 10));
 
       // Fetch New Products (newArrival)
       const newRes = await getProducts({ newArrival: true, sort: "new_arrival_order" });
       const nextNew = Array.isArray(newRes.data) ? newRes.data : [];
-      setNewProducts(nextNew.slice(0, 10)); // Lấy 10 sản phẩm mới
+      setNewProducts(nextNew.slice(0, 10));
 
       // Fetch Sale Products (onSale)
       const saleRes = await getProducts({ onSale: true, sort: "on_sale_order" });
@@ -62,6 +71,7 @@ function HomePage() {
     try {
       await addToCart(productId, 1);
       alert("Đã thêm sản phẩm vào giỏ hàng thành công!");
+      window.dispatchEvent(new Event("cartUpdated"));
     } catch (error) {
       alert("Thêm vào giỏ hàng thất bại!");
       console.error(error);
@@ -70,30 +80,33 @@ function HomePage() {
 
   useEffect(() => {
     loadData();
+    window.scrollTo(0, 0);
   }, []);
-
-  const heroBanner = banners[0] || null;
 
   return (
     <UserLayout>
-      {/* Banner Quảng Cáo Lớn */}
-      <HomeBanner banner={heroBanner} />
-
-      {/* Vòng Tròn Danh Mục Nổi Bật */}
+      <HeroSlider banners={banners} />
+      <QuickOrder />
       <HomeCategorySlider categories={categories} />
-
-      {/* Sản Phẩm Hot Nổi Bật */}
+      
       <HomeProductSection 
-        title="SẢN PHẨM HOT" 
+        title="SẢN PHẨM NỔI BẬT" 
         type="hot"
         products={hotProducts} 
         loading={loading} 
         viewAllLink="/products?type=hot" 
         onAddToCart={handleAddToCart}
-        iconClass="fa-solid fa-fire-flame-simple"
       />
-
-      {/* Sản Phẩm Mới */}
+      
+      <HomeProductSection 
+        title="SẢN PHẨM BÁN CHẠY" 
+        type="sale"
+        products={saleProducts} 
+        loading={loading} 
+        viewAllLink="/products?type=sale" 
+        onAddToCart={handleAddToCart}
+      />
+      
       <HomeProductSection 
         title="SẢN PHẨM MỚI" 
         type="new"
@@ -101,25 +114,18 @@ function HomePage() {
         loading={loading} 
         viewAllLink="/products?type=new" 
         onAddToCart={handleAddToCart}
-        iconClass="fa-solid fa-star"
       />
 
-      {/* Sản Phẩm Khuyến Mãi */}
-      <HomeProductSection 
-        title="SẢN PHẨM KHUYẾN MÃI" 
-        type="sale"
-        products={saleProducts} 
-        loading={loading} 
-        viewAllLink="/products?type=sale" 
-        onAddToCart={handleAddToCart}
-        iconClass="fa-solid fa-tag"
-      />
-
-      {/* Tin tức nổi bật */}
+      <ComboBanner />
+      <FlashSale />
+      <LoyaltySummary />
+      <DailyCheckInSummary />
+      <MiniGameBanner />
+      <VoucherSummary />
       <HomeNewsSection />
-
-      {/* Cam kết của MyKingdom */}
       <HomeFeatureInfo />
+      <AppDownload />
+      <FloatingButtons />
     </UserLayout>
   );
 }

@@ -1,6 +1,6 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
-import { getAllOrders, updateOrderStatus } from "../../services/orderService";
+import { getAdminOrders, updateOrderStatus, getAdminOrderDetail } from "../../services/orderService";
 import { exportOrdersToExcel } from "../../services/orderExportService";
 import OrderSummaryCards from "./orders/OrderSummaryCards";
 import OrderFilterBar from "./orders/OrderFilterBar";
@@ -8,123 +8,96 @@ import OrderList from "./orders/OrderList";
 import OrderPagination from "./orders/OrderPagination";
 import OrderDetailDrawer from "./orders/OrderDetailDrawer";
 import OrderPrintView from "./orders/OrderPrintView";
+import CancelOrderModal from "./orders/CancelOrderModal";
+import { useSearchParams } from "react-router-dom";
 
 function AdminOrderPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  // Data state
   const [orders, setOrders] = useState([]);
+  const [statistics, setStatistics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [totalElements, setTotalElements] = useState(0);
   
-  // Filtering and Sorting state
+  // Cancel Modal State
+  const [cancelOrderId, setCancelOrderId] = useState(null);
+  
+  // Filtering and Sorting state (synced with URL)
+  const getFilterFromURL = (key, defaultVal) => searchParams.get(key) || defaultVal;
+  
   const [filters, setFilters] = useState({
-    search: "",
-    status: "",
-    sort: "newest",
-    startDate: "",
-    endDate: ""
+    search: getFilterFromURL("search", ""),
+    status: getFilterFromURL("status", ""),
+    sort: getFilterFromURL("sort", "newest"),
+    startDate: getFilterFromURL("startDate", ""),
+    endDate: getFilterFromURL("endDate", "")
   });
 
   // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
+  const [currentPage, setCurrentPage] = useState(parseInt(getFilterFromURL("page", "1")));
+  const [pageSize, setPageSize] = useState(parseInt(getFilterFromURL("size", "10")));
 
   // Selection state
   const [selectedIds, setSelectedIds] = useState([]);
 
   // Detail View state
   const [detailOrder, setDetailOrder] = useState(null);
+  const [drawerLoading, setDrawerLoading] = useState(false);
+  const [drawerError, setDrawerError] = useState(false);
 
   // Print state
   const [ordersToPrint, setOrdersToPrint] = useState([]);
 
-  const loadOrders = async () => {
+  const loadOrders = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await getAllOrders();
-      setOrders(Array.isArray(response.data) ? response.data : []);
+      const params = {
+        page: currentPage,
+        size: pageSize,
+        keyword: filters.search,
+        status: filters.status,
+        fromDate: filters.startDate,
+        toDate: filters.endDate,
+        sort: filters.sort
+      };
+      
+      const response = await getAdminOrders(params);
+      
+      // Update URL silently
+      setSearchParams(params, { replace: true });
+      
+      if (response.data) {
+        setOrders(response.data.content || []);
+        setTotalElements(response.data.totalElements || 0);
+        setStatistics(response.data.statistics || null);
+      }
     } catch (error) {
       console.error("Lỗi lấy danh sách đơn hàng:", error);
       setOrders([]);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, pageSize, filters, setSearchParams]);
 
   useEffect(() => {
     loadOrders();
-  }, []);
+  }, [loadOrders]);
 
-  // Filter Logic
-  const filteredAndSortedOrders = useMemo(() => {
-    let result = [...orders];
-
-    // 1. Search
-    if (filters.search) {
-      const q = filters.search.toLowerCase().trim();
-      result = result.filter(o => {
-        const idMatch = `#MKD-${String(o.id).padStart(6, '0')}`.toLowerCase().includes(q) || String(o.id).includes(q);
-        const nameMatch = (o.receiverName || o.user?.userName || "").toLowerCase().includes(q);
-        const phoneMatch = (o.phone || "").includes(q);
-        const emailMatch = (o.user?.email || "").toLowerCase().includes(q);
-        return idMatch || nameMatch || phoneMatch || emailMatch;
-      });
-    }
-
-    // 2. Status
-    if (filters.status) {
-      result = result.filter(o => o.status === filters.status);
-    }
-
-    // 3. Date Range
-    if (filters.startDate && filters.endDate) {
-      const start = new Date(filters.startDate);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(filters.endDate);
-      end.setHours(23, 59, 59, 999);
-
-      result = result.filter(o => {
-        if (!o.orderedDate) return false;
-        let date;
-        if (Array.isArray(o.orderedDate)) {
-          const [y, m, d] = o.orderedDate;
-          date = new Date(y, m - 1, d);
-        } else {
-          date = new Date(o.orderedDate);
-        }
-        return date >= start && date <= end;
-      });
-    }
-
-    // 4. Sort
-    result.sort((a, b) => {
-      if (filters.sort === "newest") {
-        return b.id - a.id; // Fallback to id if date is same or hard to compare
-      }
-      if (filters.sort === "oldest") {
-        return a.id - b.id;
-      }
-      if (filters.sort === "totalDesc") {
-        return (b.total || 0) - (a.total || 0);
-      }
-      if (filters.sort === "totalAsc") {
-        return (a.total || 0) - (b.total || 0);
-      }
-      return 0;
-    });
-
-    return result;
-  }, [orders, filters]);
-
-  // Reset pagination when filters change
-  useEffect(() => {
+  // When filters or page size change, reset page to 1
+  const handleFilterChange = (newFilters) => {
+    setFilters(newFilters);
     setCurrentPage(1);
     setSelectedIds([]);
-  }, [filters, pageSize]);
+  };
 
-  // Pagination logic
-  const paginatedOrders = useMemo(() => {
-    const startIndex = (currentPage - 1) * pageSize;
-    return filteredAndSortedOrders.slice(startIndex, startIndex + pageSize);
-  }, [filteredAndSortedOrders, currentPage, pageSize]);
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    setCurrentPage(1);
+    setSelectedIds([]);
+  };
 
   // Actions
   const handleSelectAll = (checked, currentOrders) => {
@@ -155,24 +128,32 @@ function AdminOrderPage() {
       });
       await Promise.all(promises);
       
-      // Update local state without fetching again to feel faster
-      setOrders(prev => prev.map(o => {
-        if (orderIds.includes(o.id)) {
-          return { ...o, status: newStatus };
-        }
-        return o;
-      }));
+      setSelectedIds([]);
+      loadOrders(); // Refresh from server to get accurate statistics
       
       // Update drawer if open
       if (detailOrder && orderIds.includes(detailOrder.id)) {
         setDetailOrder({ ...detailOrder, status: newStatus });
       }
-
-      setSelectedIds([]);
     } catch (error) {
       console.error(error);
       alert("Cập nhật trạng thái thất bại. Vui lòng thử lại!");
-      loadOrders(); // Rollback by reloading
+      loadOrders();
+    }
+  };
+
+  const handleViewDetail = async (order) => {
+    setDetailOrder(order); // Show immediately with basic data
+    setDrawerLoading(true);
+    setDrawerError(false);
+    try {
+      const res = await getAdminOrderDetail(order.id);
+      setDetailOrder(res.data || res);
+    } catch (err) {
+      console.error("Failed to load order details:", err);
+      setDrawerError(true);
+    } finally {
+      setDrawerLoading(false);
     }
   };
 
@@ -187,7 +168,10 @@ function AdminOrderPage() {
 
   const handleExportFilter = async () => {
     setExporting(true);
-    await exportOrdersToExcel(filteredAndSortedOrders, filters, "Bao_cao_don_hang");
+    // Since we paginate on server, if we want to export filtered, we might need a separate API call without pagination.
+    // For now, we export the current page or fetch all? Let's just pass the current orders.
+    // In a real app, this should hit an export API endpoint.
+    await exportOrdersToExcel(orders, filters, "Bao_cao_don_hang");
     setExporting(false);
   };
 
@@ -200,6 +184,15 @@ function AdminOrderPage() {
 
   const handleExportSingle = async (order) => {
     await exportOrdersToExcel([order], null, `Don_hang_MKD-${String(order.id).padStart(6, '0')}`);
+  };
+
+  const handleOpenCancelModal = (orderId) => {
+    setCancelOrderId(orderId);
+  };
+
+  const handleCancelSuccess = () => {
+    setCancelOrderId(null);
+    loadOrders();
   };
 
   return (
@@ -234,9 +227,8 @@ function AdminOrderPage() {
                 Xuất Excel
               </button>
               <ul className="dropdown-menu dropdown-menu-end shadow-sm border-0 rounded-3">
-                <li><button className="dropdown-item small" onClick={handleExportFilter}>Xuất theo bộ lọc ({filteredAndSortedOrders.length})</button></li>
+                <li><button className="dropdown-item small" onClick={handleExportFilter}>Xuất trang hiện tại ({orders.length})</button></li>
                 <li><button className="dropdown-item small" onClick={handleExportSelected} disabled={selectedIds.length === 0}>Xuất đơn đã chọn ({selectedIds.length})</button></li>
-                <li><button className="dropdown-item small" onClick={() => exportOrdersToExcel(orders, null, "Toan_bo_don_hang")}>Xuất toàn bộ hệ thống</button></li>
               </ul>
             </div>
             <button 
@@ -250,49 +242,62 @@ function AdminOrderPage() {
         </div>
 
         {/* Summary Cards */}
-        <OrderSummaryCards orders={orders} loading={loading} />
+        <OrderSummaryCards statistics={statistics} loading={loading} />
 
         {/* Filter Bar */}
         <OrderFilterBar 
           filters={filters} 
-          setFilters={setFilters} 
-          onReset={() => setFilters({ search: "", status: "", sort: "newest", startDate: "", endDate: "" })} 
+          setFilters={handleFilterChange} 
+          onReset={() => handleFilterChange({ search: "", status: "", sort: "newest", startDate: "", endDate: "" })} 
         />
 
         {/* Order Table List */}
         <OrderList 
-          orders={paginatedOrders} 
+          orders={orders} 
           loading={loading}
           selectedIds={selectedIds}
           onSelectAll={handleSelectAll}
           onSelectOne={handleSelectOne}
-          onViewDetail={setDetailOrder}
+          onViewDetail={handleViewDetail}
           onUpdateStatus={handleUpdateStatus}
           onPrint={handlePrint}
           onExportSingle={handleExportSingle}
+          onCancel={handleOpenCancelModal}
         />
 
         {/* Pagination */}
-        {!loading && filteredAndSortedOrders.length > 0 && (
+        {totalElements > 0 && (
           <OrderPagination 
             currentPage={currentPage}
-            totalItems={filteredAndSortedOrders.length}
+            totalItems={totalElements}
             pageSize={pageSize}
-            setPageSize={setPageSize}
+            setPageSize={handlePageSizeChange}
             onPageChange={setCurrentPage}
           />
         )}
       </div>
 
-      {/* Drawer */}
+      {/* Detail Drawer */}
       <OrderDetailDrawer 
         show={!!detailOrder} 
         order={detailOrder} 
-        onClose={() => setDetailOrder(null)} 
+        loading={drawerLoading}
+        error={drawerError}
+        onRetry={() => handleViewDetail(detailOrder)}
+        onClose={() => { setDetailOrder(null); setDrawerError(false); }} 
         onUpdateStatus={handleUpdateStatus}
         onPrint={handlePrint}
         onExport={handleExportSingle}
       />
+
+      {/* Cancel Order Modal */}
+      {cancelOrderId && (
+        <CancelOrderModal
+          orderId={cancelOrderId}
+          onClose={() => setCancelOrderId(null)}
+          onSuccess={handleCancelSuccess}
+        />
+      )}
 
       {/* Hidden Print View */}
       <OrderPrintView ordersToPrint={ordersToPrint} />

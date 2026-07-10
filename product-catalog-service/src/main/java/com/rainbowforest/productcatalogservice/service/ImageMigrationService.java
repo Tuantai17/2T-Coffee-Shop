@@ -38,7 +38,7 @@ public class ImageMigrationService {
             String url = p.getImageUrl();
             if (url != null && !url.contains("cloudinary.com") && url.startsWith("http")) {
                 try {
-                    Map res = cloudinary.uploader().upload(url, ObjectUtils.asMap("folder", "Mykingdom/products"));
+                    Map res = cloudinary.uploader().upload(url, ObjectUtils.asMap("folder", "website_nuoc/products"));
                     p.setImageUrl(res.get("secure_url").toString());
                     productRepository.save(p);
                     count++;
@@ -55,7 +55,7 @@ public class ImageMigrationService {
             String url = c.getImageUrl();
             if (url != null && !url.contains("cloudinary.com") && url.startsWith("http")) {
                 try {
-                    Map res = cloudinary.uploader().upload(url, ObjectUtils.asMap("folder", "Mykingdom/categories"));
+                    Map res = cloudinary.uploader().upload(url, ObjectUtils.asMap("folder", "website_nuoc/categories"));
                     c.setImageUrl(res.get("secure_url").toString());
                     categoryRepository.save(c);
                     count++;
@@ -72,7 +72,7 @@ public class ImageMigrationService {
             String url = b.getImageUrl();
             if (url != null && !url.contains("cloudinary.com") && url.startsWith("http")) {
                 try {
-                    Map res = cloudinary.uploader().upload(url, ObjectUtils.asMap("folder", "Mykingdom/banners"));
+                    Map res = cloudinary.uploader().upload(url, ObjectUtils.asMap("folder", "website_nuoc/banners"));
                     b.setImageUrl(res.get("secure_url").toString());
                     bannerRepository.save(b);
                     count++;

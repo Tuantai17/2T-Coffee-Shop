@@ -3,16 +3,29 @@ package com.rainbowforest.apigateway.config;
 import org.springframework.cloud.gateway.filter.ratelimit.KeyResolver;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import reactor.core.publisher.Mono;
 
 @Configuration
 public class RateLimiterConfig {
 
     @Bean
-    @Primary
+    @org.springframework.context.annotation.Primary
+    public KeyResolver ipKeyResolver() {
+        return exchange -> Mono.just(
+                exchange.getRequest().getRemoteAddress() != null 
+                        ? exchange.getRequest().getRemoteAddress().getAddress().getHostAddress() 
+                        : "unknown"
+        );
+    }
+
+    @Bean
     public KeyResolver userKeyResolver() {
-        // Limit based on Client IP Address
-        return exchange -> Mono.just(exchange.getRequest().getRemoteAddress().getAddress().getHostAddress());
+        return exchange -> {
+            String userId = exchange.getRequest().getHeaders().getFirst("Authorization");
+            if (userId != null) {
+                return Mono.just(userId);
+            }
+            return ipKeyResolver().resolve(exchange);
+        };
     }
 }

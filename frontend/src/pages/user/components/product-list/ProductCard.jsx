@@ -7,12 +7,16 @@ function ProductCard({ product, onAddToCart, viewMode = 'grid' }) {
   const discountPercentage = hasDiscount
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
+  const isOutOfStock = product.status === "OUT_OF_STOCK" || product.availability <= 0 || product.quantity <= 0;
 
   if (viewMode === 'list') {
     return (
       <div className="product-list-card card border-0 mb-3 overflow-hidden neu-card-soft">
         <div className="row g-0 align-items-center p-3">
-          <div className="col-md-3 col-4 position-relative">
+          <div className="col-md-3 col-4 position-relative overflow-hidden rounded-4">
+            {isOutOfStock && (
+              <span className="toy-badge-out-of-stock" style={{ top: '15px', right: '-30px', fontSize: '0.7rem', padding: '3px 30px' }}>Hết hàng</span>
+            )}
             {hasDiscount && (
               <span className="product-badge discount">-{discountPercentage}%</span>
             )}
@@ -69,7 +73,10 @@ function ProductCard({ product, onAddToCart, viewMode = 'grid' }) {
 
   // Grid View
   return (
-    <div className="product-grid-card card h-100 border-0 bg-white position-relative">
+    <div className="product-grid-card card h-100 border-0 bg-white position-relative overflow-hidden">
+      {isOutOfStock && (
+        <span className="toy-badge-out-of-stock">Hết hàng</span>
+      )}
       {hasDiscount && (
         <span className="product-badge discount">-{discountPercentage}%</span>
       )}

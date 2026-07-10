@@ -66,8 +66,10 @@ function OrderFilterBar({ filters, setFilters, onApply, onReset }) {
             <option value="">Tất cả trạng thái</option>
             <option value="PENDING_CONFIRMATION">Chờ xác nhận</option>
             <option value="CONFIRMED">Đã xác nhận</option>
-            <option value="PACKING">Đang chuẩn bị</option>
-            <option value="SHIPPING">Đang giao</option>
+            <option value="PREPARING">Đang chuẩn bị</option>
+            <option value="READY_FOR_PICKUP">Chờ nhận tại quầy</option>
+            <option value="READY_FOR_DELIVERY">Chờ giao hàng</option>
+            <option value="DELIVERING">Đang giao</option>
             <option value="COMPLETED">Hoàn thành</option>
             <option value="CANCELLED">Đã hủy</option>
           </select>

@@ -6,72 +6,230 @@ spring:
     name: api-gateway
   cloud:
     gateway:
+      default-filters:
+        - name: RequestRateLimiter
+          args:
+            redis-rate-limiter.replenishRate: 10
+            redis-rate-limiter.burstCapacity: 20
+            redis-rate-limiter.requestedTokens: 1
+            key-resolver: "#{@ipKeyResolver}"
+        - name: DedupeResponseHeader
+          args:
+            name: Access-Control-Allow-Origin Access-Control-Allow-Credentials Vary
+            strategy: RETAIN_FIRST
       globalcors:
+        add-to-simple-url-handler-mapping: true
         cors-configurations:
           '[/**]':
-            allowedOrigins: "*"
+            allowedOriginPatterns:
+              - "http://localhost:*"
+              - "http://127.0.0.1:*"
             allowedMethods:
               - GET
               - POST
               - PUT
               - DELETE
+              - PATCH
               - OPTIONS
+              - HEAD
             allowedHeaders: "*"
+            exposedHeaders: "*"
+            allowCredentials: true
       routes:
+        # ========== USER SERVICE ==========
+        - id: user-auth
+          uri: lb://user-service
+          predicates:
+            - Path=/api/auth/**
+          filters:
+            - RewritePath=/api/auth/(?<segment>.*), /api/auth/${segment}
+
+        - id: user-auth-legacy
+          uri: lb://user-service
+          predicates:
+            - Path=/api/accounts/api/auth/**
+          filters:
+            - RewritePath=/api/accounts/api/auth/(?<segment>.*), /api/auth/${segment}
+
+        - id: user-registration
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/registration
+          filters:
+            - RewritePath=/api/users/registration, /registration
+
+        - id: user-registration-legacy
+          uri: lb://user-service
+          predicates:
+            - Path=/api/accounts/registration
+          filters:
+            - RewritePath=/api/accounts/registration, /registration
+
+        - id: user-password-reset
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/password-reset/**
+          filters:
+            - RewritePath=/api/users/password-reset/(?<segment>.*), /password-reset/${segment}
+
         - id: user-service
           uri: lb://user-service
           predicates:
-            - Path=/api/accounts/**
+            - Path=/api/users/**
           filters:
-            - StripPrefix=2
-        - id: order-service
-          uri: lb://order-service
+            - RewritePath=/api/users(?<segment>/?.*), /users${segment}
+
+        - id: user-service-legacy
+          uri: lb://user-service
           predicates:
-            - Path=/api/shop/**
+            - Path=/api/accounts/users/**
           filters:
-            - StripPrefix=2
+            - RewritePath=/api/accounts/users/(?<segment>.*), /users/${segment}
+
+        # ========== PRODUCT CATALOG SERVICE ==========
         - id: product-catalog-service
-          uri: lb://product-catalog-service
+          uri: http://product-catalog-service:8810
           predicates:
             - Path=/api/catalog/**
           filters:
             - StripPrefix=2
+
+        - id: news-admin-service
+          uri: http://product-catalog-service:8810
+          predicates:
+            - Path=/api/admin/posts/**, /api/admin/post-categories/**, /api/admin/media/**
+          filters:
+            - StripPrefix=1
+
+        - id: news-public-service
+          uri: http://product-catalog-service:8810
+          predicates:
+            - Path=/api/public/posts/**
+          filters:
+            - StripPrefix=1
+
+        # ========== ORDER SERVICE ==========
+        - id: order-cart
+          uri: lb://order-service
+          predicates:
+            - Path=/api/cart/**
+          filters:
+            - StripPrefix=1
+
+        - id: order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/orders/**
+          filters:
+            - StripPrefix=1
+
+        - id: order-service-legacy-shop
+          uri: lb://order-service
+          predicates:
+            - Path=/api/shop/order/**
+          filters:
+            - StripPrefix=2
+
+        - id: order-service-legacy-shop-root
+          uri: lb://order-service
+          predicates:
+            - Path=/api/shop/order
+          filters:
+            - RewritePath=/api/shop/order, /order
+
+        - id: admin-order-service
+          uri: lb://order-service
+          predicates:
+            - Path=/api/admin/orders/**, /api/admin/refunds/**
+          filters:
+            - StripPrefix=1
+
+        - id: admin-order-service-legacy-shop
+          uri: lb://order-service
+          predicates:
+            - Path=/api/shop/admin/orders/**
+          filters:
+            - StripPrefix=2
+
+        - id: admin-order-service-legacy-shop-root
+          uri: lb://order-service
+          predicates:
+            - Path=/api/shop/admin/orders
+          filters:
+            - RewritePath=/api/shop/admin/orders, /admin/orders
+
+        # ========== PAYMENT SERVICE ==========
         - id: payment-service
           uri: lb://payment-service
           predicates:
             - Path=/api/payments/**
           filters:
-            - StripPrefix=2
+            - StripPrefix=1
+
+        # ========== INVENTORY SERVICE ==========
         - id: inventory-service
           uri: lb://inventory-service
           predicates:
             - Path=/api/inventory/**
           filters:
             - StripPrefix=1
+
+        # ========== DELIVERY SERVICE ==========
         - id: delivery-service
           uri: lb://delivery-service
           predicates:
-            - Path=/api/deliveries/**
+            - Path=/api/delivery/**
           filters:
             - StripPrefix=1
-        - id: revenue-service
-          uri: lb://revenue-service
-          predicates:
-            - Path=/api/revenues/**
-          filters:
-            - StripPrefix=1
+        # ========== NOTIFICATION SERVICE ==========
         - id: notification-service
           uri: lb://notification-service
           predicates:
             - Path=/api/notifications/**
           filters:
             - StripPrefix=1
+
         - id: notification-ws
           uri: lb:ws://notification-service
           predicates:
             - Path=/ws-notifications/**
 
+        # ========== REVENUE SERVICE ==========
+        - id: revenue-service
+          uri: lb://revenue-service
+          predicates:
+            - Path=/api/admin/revenue/**
+          filters:
+            - StripPrefix=1
+
+        # ========== LOYALTY SERVICE ==========
+        - id: loyalty-service
+          uri: lb://loyalty-service
+          predicates:
+            - Path=/api/loyalty/**, /api/admin/loyalty/**, /api/check-ins/**, /api/admin/check-ins/**
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+
+jwt:
+  secret: ${JWT_SECRET:9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d}
+
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{correlationId}] - %msg%n"

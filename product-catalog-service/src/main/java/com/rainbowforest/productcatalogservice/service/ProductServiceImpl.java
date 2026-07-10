@@ -2,6 +2,7 @@ package com.rainbowforest.productcatalogservice.service;
 
 import com.rainbowforest.productcatalogservice.entity.Product;
 import com.rainbowforest.productcatalogservice.repository.ProductRepository;
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -32,34 +33,83 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Cacheable(value = "products", key = "'all'")
     public List<Product> getAllProduct() {
-        return productRepository.findAll(resolveSort("newest"));
+        List<Product> list = productRepository.findAll(resolveSort("newest"));
+        list.forEach(product -> {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        });
+        return list;
     }
 
     @Override
     @Cacheable(value = "products", key = "'category:' + #category")
     public List<Product> getAllProductByCategory(String category) {
-        return productRepository.findAllByCategory(category);
+        List<Product> list = productRepository.findAllByCategoryAndIsDeletedFalse(category);
+        list.forEach(product -> {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        });
+        return list;
     }
 
     @Override
     @Cacheable(value = "products", key = "#id")
     public Product getProductById(Long id) {
-        return productRepository.findById(id).orElse(null);
+        Product product = productRepository.findById(id).orElse(null);
+        if (product != null) {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        }
+        return product;
     }
 
     @Override
     @Cacheable(value = "products", key = "'slug:' + #slug")
     public Product getProductBySlug(String slug) {
-        return productRepository.findBySlug(slug).orElse(null);
+        Product product = productRepository.findBySlugAndIsDeletedFalse(slug).orElse(null);
+        if (product != null) {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        }
+        return product;
     }
 
     @Override
     @Cacheable(value = "products", key = "'name:' + #name")
     public List<Product> getAllProductsByName(String name) {
-        return productRepository.findAllByProductNameContainingIgnoreCase(name);
+        List<Product> products = productRepository.findAllByProductNameContainingIgnoreCaseAndIsDeletedFalse(name);
+        products.forEach(product -> {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        });
+        return products;
     }
 
-    @Override
     @Cacheable(value = "products")
     public List<Product> searchProducts(
             String keyword,
@@ -104,11 +154,20 @@ public class ProductServiceImpl implements ProductService {
                             .thenComparing(Product::getId, Comparator.nullsLast(Long::compareTo))
             );
         }
+        
+        products.forEach(product -> {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        });
+        
         return products;
     }
 
-    @Override
-    @Cacheable(value = "products")
     public Page<Product> searchProductsPaged(
             String keyword,
             String category,
@@ -160,6 +219,16 @@ public class ProductServiceImpl implements ProductService {
         if (start <= end) {
             pageContent = products.subList(start, end);
         }
+
+        pageContent.forEach(product -> {
+            Hibernate.initialize(product.getImageUrls());
+            Hibernate.initialize(product.getVariants());
+            Hibernate.initialize(product.getOptionGroups());
+            if (product.getOptionGroups() != null) {
+                product.getOptionGroups().forEach(og -> Hibernate.initialize(og.getOptions()));
+            }
+            Hibernate.initialize(product.getToppings());
+        });
 
         return new PageImpl<>(pageContent, pageable, products.size());
     }
@@ -221,7 +290,6 @@ public class ProductServiceImpl implements ProductService {
         return null;
     }
 
-    @Override
     @CacheEvict(value = "products", allEntries = true)
     public void deleteProduct(Long productId) {
         Product product = getProductById(productId);
@@ -245,9 +313,45 @@ public class ProductServiceImpl implements ProductService {
         productRepository.deleteById(productId);
     }
 
+    @Override
+    public List<Product> getTrashProducts() {
+        return productRepository.findAllByIsDeletedTrue();
+    }
+
+    @Override
+    public void softDeleteProduct(Long productId, String deletedBy, String deleteReason) {
+        Product product = getProductById(productId);
+        if (product != null) {
+            product.setDeleted(true);
+            product.setDeleteReason(deleteReason);
+            product.setDeletedAt(java.time.LocalDateTime.now());
+            productRepository.save(product);
+        }
+    }
+
+    @Override
+    public void restoreProduct(Long productId) {
+        Product product = getProductById(productId);
+        if (product != null) {
+            product.setDeleted(false);
+            product.setDeleteReason(null);
+            product.setDeletedAt(null);
+            productRepository.save(product);
+        }
+    }
+
+    @Override
+    public void permanentlyDeleteProduct(Long productId) {
+        deleteProduct(productId);
+    }
+
     private void prepareProduct(Product product) {
         if (product == null) {
             return;
+        }
+
+        if (product.getVariants() != null) {
+            product.getVariants().forEach(v -> v.setProduct(product));
         }
 
         if (product.getOnSaleOrder() == null) product.setOnSaleOrder(0);

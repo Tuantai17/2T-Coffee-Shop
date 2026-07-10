@@ -16,7 +16,7 @@ public class FileUploadService {
     private Cloudinary cloudinary;
 
     public String uploadImage(MultipartFile file, String folderName) throws IOException {
-        String targetFolder = (folderName != null && !folderName.trim().isEmpty()) ? "Mykingdom/" + folderName : "Mykingdom/others";
+        String targetFolder = (folderName != null && !folderName.trim().isEmpty()) ? "website_nuoc/" + folderName : "website_nuoc/others";
         Map uploadResult = cloudinary.uploader().upload(file.getBytes(), ObjectUtils.asMap(
                 "folder", targetFolder,
                 "resource_type", "auto"
@@ -49,7 +49,7 @@ public class FileUploadService {
 
     public void deleteProductFolder(String sku) {
         if (sku == null || sku.trim().isEmpty()) return;
-        String folderPath = "Mykingdom/products/" + sku;
+        String folderPath = "website_nuoc/products/" + sku;
         try {
             // Delete all resources inside the folder first
             cloudinary.api().deleteResourcesByPrefix(folderPath + "/", ObjectUtils.emptyMap());

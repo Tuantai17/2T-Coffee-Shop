@@ -1,267 +1,328 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
+import { useLocation } from "react-router-dom";
 import UserLayout from "../../layouts/UserLayout";
 import { getOrdersByUser } from "../../services/orderService";
+import { getUserProfile } from "../../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
+import ProfileSidebar from "./components/profile/ProfileSidebar";
+import OrderDetailModal from "./components/OrderDetailModal";
 
 function statusBadgeClass(status) {
   switch (status) {
     case "COMPLETED":
-      return "bg-success";
+      return { bg: "bg-success-subtle", text: "text-success", icon: "fa-circle-check" };
     case "SHIPPING":
-      return "bg-primary";
+      return { bg: "bg-primary-subtle", text: "text-primary", icon: "fa-truck-fast" };
     case "CANCELLED":
-      return "bg-danger";
+      return { bg: "bg-secondary", text: "text-dark", icon: "fa-circle-xmark" };
     case "PACKING":
-      return "bg-info";
+      return { bg: "bg-info-subtle", text: "text-info", icon: "fa-box-open" };
+    case "PENDING_CONFIRMATION":
+    case "PENDING":
+      return { bg: "bg-primary-subtle", text: "text-primary", icon: "fa-hourglass-half" };
+    case "APPROVED":
+      return { bg: "bg-success-subtle", text: "text-success", icon: "fa-check" };
     default:
-      return "bg-warning text-dark";
+      return { bg: "bg-warning-subtle", text: "text-warning", icon: "fa-clock" };
   }
 }
 
-function paymentBadgeClass(status) {
+function statusText(status) {
   switch (status) {
-    case "PAID":
-      return "bg-success";
-    case "PAYMENT_ON_DELIVERY":
-      return "bg-secondary";
-    case "FAILED":
-      return "bg-danger";
-    default:
-      return "bg-warning text-dark";
+    case "COMPLETED": return "Hoàn thành";
+    case "SHIPPING": return "Đang giao hàng";
+    case "CANCELLED": return "Đã hủy";
+    case "PACKING": return "Đang chuẩn bị";
+    case "PENDING_CONFIRMATION":
+    case "PENDING": return "Chờ duyệt";
+    case "APPROVED": return "Đã duyệt";
+    default: return status;
   }
 }
+
+const TABS = [
+  { id: "ALL", label: "Tất cả", icon: "fa-border-all" },
+  { id: "PENDING_CONFIRMATION", label: "Chờ duyệt", icon: "fa-hourglass-half" },
+  { id: "APPROVED", label: "Đã duyệt", icon: "fa-check" },
+  { id: "PACKING", label: "Đang chuẩn bị", icon: "fa-box-open" },
+  { id: "SHIPPING", label: "Đang giao hàng", icon: "fa-truck-fast" },
+  { id: "COMPLETED", label: "Hoàn thành", icon: "fa-circle-check" },
+  { id: "CANCELLED", label: "Đã hủy", icon: "fa-circle-xmark" },
+];
 
 function OrderHistoryPage() {
+  const [profile, setProfile] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const location = useLocation();
 
-  const loadOrders = async () => {
-    const { userId } = getAuthSession(AUTH_SCOPES.USER);
+  // Filters
+  const [activeTab, setActiveTab] = useState("ALL");
+  const [searchCode, setSearchCode] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
+
+  const { userId } = getAuthSession(AUTH_SCOPES.USER);
+
+  const loadData = useCallback(async () => {
     if (!userId) {
       setLoading(false);
       return;
     }
 
     try {
-      const response = await getOrdersByUser(userId);
-      setOrders(Array.isArray(response.data) ? response.data : []);
+      const [profileRes, orderRes] = await Promise.all([
+        getUserProfile(userId),
+        getOrdersByUser(userId)
+      ]);
+      setProfile(profileRes.data);
+      // Sort newest first
+      const sortedOrders = Array.isArray(orderRes.data) 
+        ? orderRes.data.sort((a, b) => b.id - a.id)
+        : [];
+      setOrders(sortedOrders);
     } catch (error) {
-      console.error("Lỗi lấy lịch sử đơn hàng:", error);
-      setOrders([]);
+      console.error("Lỗi tải dữ liệu:", error);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
-    loadOrders();
-  }, []);
+    loadData();
+  }, [loadData]);
+
+  useEffect(() => {
+    if (location.state?.openOrder && orders.length > 0) {
+      const orderToOpen = orders.find(o => String(o.id) === String(location.state.openOrder));
+      if (orderToOpen) {
+        setSelectedOrder(orderToOpen);
+        // Clear the state so it doesn't reopen if the user refreshes
+        window.history.replaceState({}, document.title);
+      }
+    }
+  }, [location.state?.openOrder, orders]);
+
+  const handleResetFilters = () => {
+    setSearchCode("");
+    setFromDate("");
+    setToDate("");
+    setActiveTab("ALL");
+  };
+
+  const filteredOrders = orders.filter(order => {
+    if (activeTab !== "ALL" && order.status !== activeTab) return false;
+    
+    const formattedCode = `MKD${String(order.id).padStart(8, "0")}`;
+    if (searchCode && !formattedCode.toLowerCase().includes(searchCode.toLowerCase())) return false;
+    
+    if (fromDate || toDate) {
+      const orderDate = new Date(order.orderedDate || Date.now());
+      if (fromDate) {
+        const from = new Date(fromDate);
+        if (orderDate < from) return false;
+      }
+      if (toDate) {
+        const to = new Date(toDate);
+        to.setHours(23, 59, 59, 999);
+        if (orderDate > to) return false;
+      }
+    }
+    
+    return true;
+  });
 
   return (
     <UserLayout>
-      <div className="container mt-4">
-        <div className="d-flex justify-content-between align-items-center mb-4">
-          <div>
-            <span className="badge bg-danger-subtle text-danger rounded-pill px-3 py-2 fw-bold mb-2">
-              Order History
-            </span>
-            <h2 className="fw-bold mb-1">Lịch sử mua hàng</h2>
-            <p className="text-muted mb-0">Theo dõi trạng thái đơn, thanh toán và thông tin giao hàng.</p>
+      <div style={{ backgroundColor: "#FAF8F4", minHeight: "100vh", padding: "30px 0" }}>
+        <div className="container" style={{ maxWidth: "1300px" }}>
+          {loading && !profile ? (
+            <div className="card shadow-sm border-0 rounded-4 py-5 text-center bg-white">
+            <div className="spinner-border text-danger mx-auto mb-3" role="status"></div>
+            <div className="text-muted">Đang tải lịch sử mua hàng...</div>
           </div>
-        </div>
-
-        {loading ? (
-          <div className="text-center my-5">
-            <div className="spinner-border text-primary" role="status">
-              <span className="visually-hidden">Đang tải...</span>
-            </div>
-          </div>
-        ) : orders.length === 0 ? (
-          <div className="alert alert-info text-center py-4 rounded-4">
-            Bạn chưa thực hiện bất kỳ đơn hàng nào.
-          </div>
+        ) : !profile ? (
+          <div className="alert alert-warning rounded-4">Không tìm thấy thông tin tài khoản.</div>
         ) : (
-          <div className="row g-3">
-            {orders.map((order) => (
-              <div className="col-12" key={order.id}>
-                <div className="card shadow-sm border-0 rounded-4 p-4">
-                  <div className="d-flex flex-column flex-lg-row justify-content-between align-items-start gap-3 mb-3">
-                    <div>
-                      <div className="small text-muted">Mã đơn hàng</div>
-                      <div className="fw-bold fs-5">#{order.id}</div>
-                    </div>
-                    <div>
-                      <div className="small text-muted">Ngày đặt</div>
-                      <div className="fw-semibold">
-                        {new Date(order.orderedDate || Date.now()).toLocaleDateString("vi-VN")}
-                      </div>
-                    </div>
-                    <div>
-                      <div className="small text-muted">Người nhận</div>
-                      <div className="fw-semibold">{order.receiverName || order.user?.userName || "Đang cập nhật"}</div>
-                    </div>
-                    <div className="text-lg-end">
-                      <div className="small text-muted">Tổng thanh toán</div>
-                      <div className="fw-bold text-danger fs-5">
-                        {(order.total || 0).toLocaleString("vi-VN")} VNĐ
-                      </div>
-                    </div>
-                  </div>
+          <div className="row g-4">
+            {/* Sidebar */}
+            <div className="col-lg-3">
+              <ProfileSidebar profile={profile} />
+            </div>
 
-                  <div className="d-flex flex-wrap gap-2 mb-3">
-                    <span className={`badge ${statusBadgeClass(order.status)} px-3 py-2 rounded-pill`}>
-                      {order.status}
-                    </span>
-                    <span className={`badge ${paymentBadgeClass(order.paymentStatus)} px-3 py-2 rounded-pill`}>
-                      {order.paymentStatus || "PENDING"}
-                    </span>
-                    <span className="badge bg-light text-dark border px-3 py-2 rounded-pill">
-                      {order.paymentMethod || "COD"}
-                    </span>
-                    {order.voucherCode && (
-                      <span className="badge bg-success-subtle text-success px-3 py-2 rounded-pill">
-                        Voucher: {order.voucherCode}
-                      </span>
-                    )}
-                  </div>
+            {/* Main Content */}
+            <div className="col-lg-9">
+              {/* Áp dụng zoom 75% cho khu vực nội dung bên phải theo yêu cầu để gọn gàng hơn */}
+              <div className="card shadow-sm border-0 rounded-4 p-4 mb-4 bg-white" style={{ zoom: "75%" }}>
+                <h4 className="fw-bold mb-1">Đơn hàng của tôi</h4>
+                <p className="text-muted mb-4 small">Theo dõi toàn bộ đơn hàng đã mua và đang xử lý của bạn.</p>
 
-                  <div className="row">
-                    <div className="col-lg-8">
-                      <p className="mb-2">
-                        <span className="fw-semibold">Sản phẩm: </span>
-                        {order.items && order.items.length > 0
-                          ? order.items
-                              .map((item) => `${item.product ? item.product.productName : "Sản phẩm"} (x${item.quantity})`)
-                              .join(", ")
-                          : "Không có sản phẩm"}
-                      </p>
-                      <p className="mb-0 text-muted">
-                        <span className="fw-semibold text-dark">Giao đến: </span>
-                        {[order.address, order.ward, order.district, order.province].filter(Boolean).join(", ") || "Chưa có địa chỉ"}
-                      </p>
-                    </div>
-                    <div className="col-lg-4 text-lg-end mt-3 mt-lg-0">
-                      <button
-                        className="btn btn-outline-primary rounded-pill px-4 py-2 fw-bold btn-sm"
-                        onClick={() => setSelectedOrder(order)}
-                      >
-                        Xem chi tiết
-                      </button>
-                    </div>
+                {/* Tabs */}
+                <div className="d-flex flex-wrap gap-2 mb-4 pb-3 border-bottom overflow-auto">
+                  {TABS.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`btn btn-sm rounded-pill px-3 py-2 fw-medium d-flex align-items-center gap-2 border ${
+                        activeTab === tab.id 
+                          ? "btn-danger text-danger bg-danger-subtle border-danger" 
+                          : "btn-light text-muted border-light hover-shadow"
+                      }`}
+                      style={{ whiteSpace: "nowrap" }}
+                    >
+                      <i className={`fa-solid ${tab.icon}`}></i> {tab.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Filters */}
+                <div className="row g-3 mb-4">
+                  <div className="col-md-4">
+                    <label className="form-label small text-muted mb-1">Tìm kiếm theo mã đơn hàng</label>
+                    <input 
+                      type="text" 
+                      className="form-control" 
+                      placeholder="Tìm kiếm theo mã đơn hàng..." 
+                      value={searchCode}
+                      onChange={(e) => setSearchCode(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted mb-1">Từ ngày</label>
+                    <input 
+                      type="date" 
+                      className="form-control text-muted" 
+                      value={fromDate}
+                      onChange={(e) => setFromDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-3">
+                    <label className="form-label small text-muted mb-1">Đến ngày</label>
+                    <input 
+                      type="date" 
+                      className="form-control text-muted" 
+                      value={toDate}
+                      onChange={(e) => setToDate(e.target.value)}
+                    />
+                  </div>
+                  <div className="col-md-2 d-flex align-items-end">
+                    <button className="btn btn-outline-secondary w-100" onClick={handleResetFilters}>
+                      Đặt lại
+                    </button>
                   </div>
                 </div>
+
+                {/* Orders Table */}
+                {filteredOrders.length === 0 ? (
+                  <div className="text-center py-5 bg-light rounded-4 border">
+                    <div className="text-muted mb-2"><i className="fa-solid fa-box-open fs-1"></i></div>
+                    <p className="mb-0">Không tìm thấy đơn hàng nào phù hợp.</p>
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table align-middle text-nowrap table-hover" style={{ fontSize: "0.95rem" }}>
+                      <thead>
+                        <tr className="text-muted small">
+                          <th className="fw-medium border-0 pb-3" style={{ minWidth: "120px" }}>Mã đơn hàng</th>
+                          <th className="fw-medium border-0 pb-3" style={{ minWidth: "100px" }}>Ngày đặt</th>
+                          <th className="fw-medium border-0 pb-3" style={{ minWidth: "250px" }}>Sản phẩm</th>
+                          <th className="fw-medium border-0 pb-3" style={{ minWidth: "120px" }}>Tổng tiền</th>
+                          <th className="fw-medium border-0 pb-3" style={{ minWidth: "180px" }}>Phương thức thanh toán</th>
+                          <th className="fw-medium border-0 pb-3 text-center" style={{ minWidth: "120px" }}>Trạng thái</th>
+                          <th className="fw-medium border-0 pb-3 text-center" style={{ minWidth: "100px" }}>Thao tác</th>
+                        </tr>
+                      </thead>
+                      <tbody className="border-top-0">
+                        {filteredOrders.map(order => {
+                          const formattedCode = `MKD${String(order.id).padStart(8, "0")}`;
+                          const orderDateObj = new Date(order.orderedDate || Date.now());
+                          const orderDate = orderDateObj.toLocaleDateString("vi-VN");
+                          let orderTime = "-";
+                          if (Array.isArray(order.orderedDate) && order.orderedDate.length > 3) {
+                             // Assuming [y,m,d,h,m,s]
+                             orderTime = `${String(order.orderedDate[3]).padStart(2, '0')}:${String(order.orderedDate[4]).padStart(2, '0')}`;
+                          } else if (!Array.isArray(order.orderedDate) && String(order.orderedDate).includes("T")) {
+                             orderTime = orderDateObj.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });
+                          }
+                          const mainItem = order.items?.[0];
+                          const extraCount = Math.max(0, (order.items?.length || 0) - 1);
+                          const st = statusBadgeClass(order.status);
+                          
+                          return (
+                            <tr key={order.id} className="border-bottom">
+                              <td className="py-3">
+                                <div className="fw-bold text-dark">{formattedCode}</div>
+                                <button 
+                                  className="btn btn-link p-0 text-primary small text-decoration-none"
+                                  onClick={() => setSelectedOrder(order)}
+                                >
+                                  Xem chi tiết
+                                </button>
+                              </td>
+                              <td className="py-3 text-dark">{orderDate}{orderTime !== "-" && <><br/><span className="text-muted small">{orderTime}</span></>}</td>
+                              <td className="py-3">
+                                <div className="d-flex align-items-center gap-2">
+                                  {mainItem?.product?.imageUrl ? (
+                                    <img 
+                                      src={mainItem.product.imageUrl} 
+                                      alt="Product" 
+                                      className="rounded border" 
+                                      style={{ width: "40px", height: "40px", objectFit: "cover" }} 
+                                    />
+                                  ) : (
+                                    <div className="bg-light rounded border d-flex align-items-center justify-content-center" style={{ width: "40px", height: "40px" }}>
+                                      <i className="fa-solid fa-image text-muted"></i>
+                                    </div>
+                                  )}
+                                  <div style={{ maxWidth: "200px", whiteSpace: "normal" }}>
+                                    <div className="fw-medium text-dark text-truncate" style={{ fontSize: "0.9rem" }}>
+                                      {mainItem?.product?.productName || "Sản phẩm đồ chơi"}
+                                    </div>
+                                    <div className="small text-muted">
+                                      Số lượng: {mainItem?.quantity || 1}
+                                      {extraCount > 0 && <span> và {extraCount} sản phẩm khác</span>}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+                              <td className="py-3 fw-bold text-danger">
+                                {(order.total || 0).toLocaleString("vi-VN")} đ
+                              </td>
+                              <td className="py-3 text-dark">
+                                {order.paymentMethod === "COD" ? "Thanh toán khi nhận hàng (COD)" : (order.paymentMethod || "COD")}
+                              </td>
+                              <td className="py-3 text-center">
+                                <div className={`badge rounded-pill px-3 py-2 ${st.bg} ${st.text} d-inline-flex align-items-center gap-1 border border-light`}>
+                                  <i className={`fa-solid ${st.icon} small`}></i>
+                                  {statusText(order.status)}
+                                </div>
+                              </td>
+                              <td className="py-3 text-center">
+                                <button 
+                                  className="btn btn-outline-secondary rounded-pill btn-sm px-3 fw-medium"
+                                  onClick={() => setSelectedOrder(order)}
+                                >
+                                  Xem chi tiết
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
-            ))}
+            </div>
           </div>
         )}
       </div>
+      </div>
 
+      {/* Modal chi tiết đơn hàng */}
       {selectedOrder && (
-        <div
-          className="d-flex align-items-center justify-content-center"
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100vw",
-            height: "100vh",
-            backgroundColor: "rgba(0, 0, 0, 0.5)",
-            backdropFilter: "blur(8px)",
-            zIndex: 1050,
-          }}
-          onClick={() => setSelectedOrder(null)}
-        >
-          <div
-            className="bg-white p-4 rounded-5 shadow-lg position-relative"
-            style={{ width: "92%", maxWidth: "760px", maxHeight: "88vh", overflowY: "auto" }}
-            onClick={(event) => event.stopPropagation()}
-          >
-            <button
-              className="btn btn-light rounded-circle position-absolute"
-              style={{ top: "20px", right: "20px", width: "40px", height: "40px" }}
-              onClick={() => setSelectedOrder(null)}
-            >
-              <i className="fa-solid fa-xmark"></i>
-            </button>
-
-            <div className="text-center mb-4">
-              <span className="badge bg-danger text-white px-3 py-2 rounded-pill fw-bold mb-2">
-                CHI TIẾT ĐƠN HÀNG
-              </span>
-              <h3 className="fw-bold text-dark mt-2">Mã đơn hàng #{selectedOrder.id}</h3>
-            </div>
-
-            <div className="row g-3 mb-4">
-              <div className="col-md-6">
-                <div className="card border-0 bg-light rounded-4 p-3 h-100">
-                  <div className="small text-muted mb-2">Thông tin người nhận</div>
-                  <div className="fw-semibold">{selectedOrder.receiverName || selectedOrder.user?.userName || "Đang cập nhật"}</div>
-                  <div>{selectedOrder.phone || "Chưa có số điện thoại"}</div>
-                  <div className="text-muted mt-2">
-                    {[selectedOrder.address, selectedOrder.ward, selectedOrder.district, selectedOrder.province]
-                      .filter(Boolean)
-                      .join(", ") || "Chưa có địa chỉ nhận hàng"}
-                  </div>
-                </div>
-              </div>
-              <div className="col-md-6">
-                <div className="card border-0 bg-light rounded-4 p-3 h-100">
-                  <div className="small text-muted mb-2">Thanh toán</div>
-                  <div className="fw-semibold">Phương thức: {selectedOrder.paymentMethod || "COD"}</div>
-                  <div>Trạng thái: {selectedOrder.paymentStatus || "PENDING"}</div>
-                  <div className="mt-2">Voucher: {selectedOrder.voucherCode || "Không có"}</div>
-                  <div>Ghi chú: {selectedOrder.note || "Không có"}</div>
-                </div>
-              </div>
-            </div>
-
-            <h5 className="fw-bold text-dark mb-3">Danh sách sản phẩm</h5>
-            <div className="table-responsive">
-              <table className="table align-middle">
-                <thead className="table-light">
-                  <tr>
-                    <th>Sản phẩm</th>
-                    <th className="text-center">Số lượng</th>
-                    <th className="text-end">Đơn giá</th>
-                    <th className="text-end">Thành tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {selectedOrder.items?.map((item) => (
-                    <tr key={item.id || item.product?.id}>
-                      <td className="fw-semibold">{item.product?.productName || "Sản phẩm đồ chơi"}</td>
-                      <td className="text-center">{item.quantity}</td>
-                      <td className="text-end">{(item.product?.price || 0).toLocaleString("vi-VN")} VNĐ</td>
-                      <td className="text-end fw-bold">
-                        {((item.product?.price || 0) * item.quantity).toLocaleString("vi-VN")} VNĐ
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <div className="card border-0 bg-danger text-white rounded-4 p-3 mt-4">
-              <div className="d-flex justify-content-between mb-2">
-                <span>Tạm tính</span>
-                <span>{(((selectedOrder.total || 0) - (selectedOrder.shippingFee || 0) + (selectedOrder.discountAmount || 0))).toLocaleString("vi-VN")} VNĐ</span>
-              </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Giảm giá</span>
-                <span>-{(selectedOrder.discountAmount || 0).toLocaleString("vi-VN")} VNĐ</span>
-              </div>
-              <div className="d-flex justify-content-between mb-2">
-                <span>Phí vận chuyển</span>
-                <span>{(selectedOrder.shippingFee || 0).toLocaleString("vi-VN")} VNĐ</span>
-              </div>
-              <div className="d-flex justify-content-between align-items-center border-top pt-2 mt-2">
-                <span className="fw-bold fs-5">Tổng thanh toán</span>
-                <span className="fw-extrabold fs-4">{(selectedOrder.total || 0).toLocaleString("vi-VN")} VNĐ</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <OrderDetailModal order={selectedOrder} profile={profile} onClose={() => setSelectedOrder(null)} />
       )}
     </UserLayout>
   );

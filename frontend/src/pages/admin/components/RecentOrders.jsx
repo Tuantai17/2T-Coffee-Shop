@@ -87,8 +87,8 @@ function RecentOrders({ orders, loading }) {
                     <i className="fa-solid fa-box-open"></i>
                   </div>
                   <div>
-                    <div className="fw-bold text-dark mb-1">#{order.id?.substring(0, 10).toUpperCase() || `MKD-000${245 - idx}`}</div>
-                    <div className="small text-muted">{order.customerName || "Khách hàng"} • Hôm nay</div>
+                    <div className="fw-bold text-dark mb-1">#{order.id?.toString().substring(0, 10).toUpperCase() || `MKD-000${245 - idx}`}</div>
+                    <div className="small text-muted">{order.receiverName || order.user?.userName || "Khách vãng lai"} • Hôm nay</div>
                   </div>
                 </div>
                 <div className="text-end d-flex flex-column align-items-end gap-1">

@@ -20,7 +20,7 @@ import java.security.Key;
 @Component
 public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
-    @Value("${jwt.secret:9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d}")
+    @Value("${jwt.secret}")
     private String jwtSecret;
 
     private Key getSigningKey() {
@@ -59,11 +59,18 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
 
             String username = claims.getSubject();
             String role = claims.get("role", String.class);
+            Long userId = claims.get("userId", Long.class);
+
+            // --- ROLE-BASED ACCESS CONTROL ---
+            if (isAdminPath(path) && !"ROLE_ADMIN".equals(role)) {
+                return onError(exchange, "Access Denied: Admin role required", HttpStatus.FORBIDDEN);
+            }
 
             // Add headers for downstream microservices to retrieve user details
             ServerHttpRequest modifiedRequest = request.mutate()
                     .header("X-User-Name", username)
                     .header("X-User-Role", role)
+                    .header("X-User-Id", userId != null ? String.valueOf(userId) : "")
                     .build();
 
             return chain.filter(exchange.mutate().request(modifiedRequest).build());
@@ -73,21 +80,64 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         }
     }
 
+    /**
+     * Paths accessible without authentication.
+     * Updated for beverage shop domain.
+     */
     private boolean isPublicPath(String path, String method) {
-        if (path.startsWith("/api/") || path.startsWith("/ws-notifications")) {
+        if ("OPTIONS".equalsIgnoreCase(method)) {
             return true;
         }
+        // Auth endpoints
+        if (path.startsWith("/api/auth/") || path.startsWith("/api/accounts/api/auth/")) {
+            return true;
+        }
+        // User registration
+        if (path.equals("/api/users/registration") || path.equals("/api/accounts/registration")) {
+            return true;
+        }
+        // Password reset
+        if (path.startsWith("/api/users/password-reset/") || path.startsWith("/api/accounts/api/auth/forgot-password/")) {
+            return true;
+        }
+        // Catalog public GET (browse menu, product details)
+        if (path.startsWith("/api/catalog/") && "GET".equals(method)) {
+            return true;
+        }
+        // Public posts/news
+        if (path.startsWith("/api/public/")) {
+            return true;
+        }
+        // VNPay payment callbacks (server-to-server)
+        if (path.startsWith("/api/payments/vnpay/return") || path.startsWith("/api/payments/vnpay/ipn")) {
+            return true;
+        }
+        // WebSocket notifications
+        if (path.startsWith("/ws-notifications")) {
+            return true;
+        }
+        // Swagger / OpenAPI / Actuator
         if (path.contains("/v3/api-docs") || path.contains("/swagger-ui") || path.contains("/actuator")) {
             return true;
         }
         return false;
     }
 
+    /**
+     * Paths that require ROLE_ADMIN.
+     */
+    private boolean isAdminPath(String path) {
+        return path.startsWith("/api/admin/");
+    }
+
     private Mono<Void> onError(ServerWebExchange exchange, String err, HttpStatus httpStatus) {
         ServerHttpResponse response = exchange.getResponse();
         response.setStatusCode(httpStatus);
         response.getHeaders().add("Content-Type", "application/json");
-        String body = String.format("{\"error\": \"%s\", \"message\": \"%s\"}", httpStatus.getReasonPhrase(), err);
+        String body = String.format(
+                "{\"error\": \"%s\", \"message\": \"%s\", \"status\": %d}",
+                httpStatus.getReasonPhrase(), err, httpStatus.value()
+        );
         return response.writeWith(Mono.just(response.bufferFactory().wrap(body.getBytes())));
     }
 

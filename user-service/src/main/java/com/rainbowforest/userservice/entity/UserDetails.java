@@ -29,6 +29,8 @@ public class UserDetails {
     private String locality;
     @Column (name = "country", length = 30)
     private String country;
+    @Column (name = "avatar_url", length = 255)
+    private String avatarUrl;
 
     @OneToOne(mappedBy = "userDetails")
 	@JsonIgnore 
@@ -123,5 +125,13 @@ public class UserDetails {
 
 	public void setUser(User user) {
 		this.user = user;
+	}
+
+	public String getAvatarUrl() {
+		return avatarUrl;
+	}
+
+	public void setAvatarUrl(String avatarUrl) {
+		this.avatarUrl = avatarUrl;
 	}
 }

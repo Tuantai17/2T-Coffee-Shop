@@ -87,12 +87,21 @@ function UserDetailDrawer({ show, user, onClose, onToggleLock, onRoleChange, cur
         {/* Header */}
         <div className="offcanvas-header bg-white border-bottom px-4 py-3 shadow-sm z-1">
           <div className="d-flex align-items-center gap-3">
-            <div 
-              className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-              style={{ width: "50px", height: "50px", backgroundColor: getRandomColor(fullName), fontSize: "20px" }}
-            >
-              {getInitials(fullName)}
-            </div>
+            {user.userDetails?.avatarUrl ? (
+              <img 
+                src={user.userDetails.avatarUrl} 
+                alt="Avatar" 
+                className="rounded-circle shadow-sm" 
+                style={{ width: "50px", height: "50px", objectFit: "cover", border: "2px solid white" }}
+              />
+            ) : (
+              <div 
+                className="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                style={{ width: "50px", height: "50px", backgroundColor: getRandomColor(fullName), fontSize: "20px", border: "2px solid white" }}
+              >
+                {getInitials(fullName)}
+              </div>
+            )}
             <div>
               <h5 className="offcanvas-title fw-bold text-dark mb-1">
                 {fullName} 

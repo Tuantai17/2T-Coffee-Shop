@@ -6,9 +6,12 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 import org.springframework.cache.annotation.EnableCaching;
 
+import org.springframework.cloud.openfeign.EnableFeignClients;
+
 @SpringBootApplication
 @EnableJpaRepositories
 @EnableCaching
+@EnableFeignClients
 public class ProductCatalogServiceApplication {
     public static void main(String[] args) {
         SpringApplication.run(ProductCatalogServiceApplication.class, args);

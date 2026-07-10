@@ -1,19 +1,99 @@
-import { Link, useNavigate } from "react-router-dom";
-import { logout } from "../services/authService";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { logout, getUserProfile } from "../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../utils/authStorage";
-import HomeMenu from "../pages/user/components/home/HomeMenu";
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import MiniCart from "./MiniCart";
+import { getCart } from "../services/cartService";
+import { motion, AnimatePresence } from "framer-motion";
+import loyaltyApi from "../api/loyaltyApi";
 
 function Navbar() {
   const navigate = useNavigate();
-  const { token, role, email } = getAuthSession(AUTH_SCOPES.USER);
+  const location = useLocation();
+  const { token, role, email, userId } = getAuthSession(AUTH_SCOPES.USER);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+
+  const [cart, setCart] = useState([]);
+  const [showMiniCart, setShowMiniCart] = useState(false);
+  const miniCartHoverTimeout = useRef(null);
+  const cartWrapperRef = useRef(null);
+  const [userAvatar, setUserAvatar] = useState("");
+  const [scrolled, setScrolled] = useState(false);
+  const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+
+  const loadUserProfileData = useCallback(async () => {
+    if (userId) {
+      try {
+        const res = await getUserProfile(userId);
+        if (res.data?.userDetails?.avatarUrl) {
+          setUserAvatar(res.data.userDetails.avatarUrl);
+        } else {
+          setUserAvatar("");
+        }
+      } catch (error) {
+        console.error("Lỗi lấy thông tin user cho Navbar:", error);
+      }
+    }
+  }, [userId]);
+
+  const loadCart = useCallback(async () => {
+    if (!token) return;
+    try {
+      const response = await getCart();
+      setCart(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error("Lỗi tải giỏ hàng cho Navbar:", error);
+      setCart([]);
+    }
+  }, [token]);
+
+  const loadLoyaltyPoints = useCallback(async () => {
+    if (token) {
+      try {
+        const res = await loyaltyApi.getMyLoyaltyAccount();
+        setLoyaltyPoints(res.data?.availablePoints || 0);
+      } catch (error) {
+        console.error("Lỗi lấy điểm loyalty:", error);
+      }
+    }
+  }, [token]);
+
+  useEffect(() => {
+    if (token) {
+      loadCart();
+      loadUserProfileData();
+      loadLoyaltyPoints();
+    }
+    const handleCartUpdate = () => loadCart();
+    const handleProfileUpdate = () => loadUserProfileData();
+    window.addEventListener("cartUpdated", handleCartUpdate);
+    window.addEventListener("profileUpdated", handleProfileUpdate);
+    setShowMiniCart(false);
+
+    const handleScroll = () => {
+      if (window.scrollY > 20) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      window.removeEventListener("cartUpdated", handleCartUpdate);
+      window.removeEventListener("profileUpdated", handleProfileUpdate);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, [loadCart, loadUserProfileData, location.pathname]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setDropdownOpen(false);
+      }
+      if (cartWrapperRef.current && !cartWrapperRef.current.contains(event.target)) {
+        setShowMiniCart(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -28,125 +108,211 @@ function Navbar() {
     navigate("/login");
   };
 
-  return (
-    <header className="sticky-top shadow-sm">
-      {/* Top Utility Bar */}
-      <div className="text-white py-2 px-3" style={{ backgroundColor: "#0b1c55", fontSize: "0.85rem", fontWeight: "500" }}>
-        <div className="container d-flex justify-content-between align-items-center">
-          <div className="d-flex align-items-center gap-2">
-            <span style={{ color: "#ffcf00", fontSize: "1rem" }}>
-              <i className="fa-solid fa-truck-fast"></i>
-            </span>
-            <span>Giao hàng hỏa tốc 4 tiếng</span>
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            <span style={{ color: "#ffcf00", fontSize: "1rem" }}>
-              <i className="fa-solid fa-users"></i>
-            </span>
-            <span>Chương trình thành viên</span>
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            <span style={{ color: "#ffcf00", fontSize: "1rem" }}>
-              <i className="fa-solid fa-circle-dollar-to-slot"></i>
-            </span>
-            <span>Mua hàng trả góp</span>
-          </div>
-          <div className="d-flex align-items-center gap-2">
-            <span style={{ color: "#ffcf00", fontSize: "1rem" }}>
-              <i className="fa-solid fa-store"></i>
-            </span>
-            <span>Hệ thống 200 cửa hàng</span>
-          </div>
-        </div>
-      </div>
+  const handleCartMouseEnter = () => {
+    if (miniCartHoverTimeout.current) clearTimeout(miniCartHoverTimeout.current);
+    setShowMiniCart(true);
+    setDropdownOpen(false);
+  };
 
-      {/* Main Header (Red Background) */}
-      <div style={{ backgroundColor: "#ce1f28" }} className="pt-3 pb-2">
-        <div className="container d-flex flex-column gap-3">
-          {/* Top Row: Logo, Search, User Controls */}
-          <div className="d-flex justify-content-between align-items-center">
-            {/* Logo */}
-            <Link className="navbar-brand text-decoration-none" to="/" style={{ marginRight: "2rem" }}>
-              <span className="fw-extrabold fs-2 text-white position-relative" style={{ fontFamily: "'Fredoka One', 'Plus Jakarta Sans', sans-serif", textShadow: "3px 3px 0px #a1141c, -1px -1px 0px #a1141c, 1px -1px 0px #a1141c, -1px 1px 0px #a1141c, 1px 1px 0px #a1141c", letterSpacing: "1px" }}>
-                My<span style={{ color: "#ffcf00" }}>KINGDOM</span>
+  const handleCartMouseLeave = () => {
+    miniCartHoverTimeout.current = setTimeout(() => {
+      setShowMiniCart(false);
+    }, 200);
+  };
+
+  const totalQuantity = cart.reduce((total, item) => total + (item.quantity || 0), 0);
+
+  const navLinks = [
+    { name: "Trang chủ", path: "/", icon: "fa-solid fa-house" },
+    { name: "Sản phẩm", path: "/products", icon: "fa-solid fa-mug-hot" },
+    { name: "Khuyến mãi", path: "/promotions", icon: "fa-solid fa-tags" },
+    { name: "Voucher", path: "/loyalty/rewards", icon: "fa-solid fa-ticket" },
+    { name: "Tin tức", path: "/news", icon: "fa-regular fa-newspaper" },
+    { name: "Mini Game", path: "/game", icon: "fa-solid fa-gamepad" },
+  ];
+
+  return (
+    <header 
+      className={`sticky-top transition-all duration-300 ${scrolled ? 'glass-effect shadow-sm' : 'bg-white'}`}
+      style={{ zIndex: 1050, height: "80px", borderBottom: scrolled ? "none" : "1px solid #f1f5f9", display: 'flex', alignItems: 'center' }}
+    >
+      <div className="container-fluid px-4">
+        <div className="d-flex justify-content-between align-items-center w-100">
+          
+          {/* Left: Logo & Menu */}
+          <div className="d-flex align-items-center gap-4">
+            <Link className="navbar-brand text-decoration-none d-flex align-items-center gap-2" to="/">
+              <div className="text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: "40px", height: "40px", backgroundColor: "var(--primary-color)" }}>
+                <i className="fa-solid fa-mug-hot fs-5"></i>
+              </div>
+              <span className="fw-bold fs-4" style={{ color: "var(--primary-color)", letterSpacing: "-0.5px" }}>
+                Brew <span style={{ color: "var(--secondary-color)" }}>Moments</span>
               </span>
             </Link>
 
-            {/* Search Bar */}
-            <div className="flex-grow-1 position-relative" style={{ maxWidth: "600px", margin: "0 auto" }}>
-              <div className="input-group">
-                <span className="input-group-text bg-white border-0 rounded-start-pill ps-3 pe-2 text-danger">
-                  <i className="fa-solid fa-magnifying-glass" style={{ color: "#ce1f28" }}></i>
-                </span>
-                <input
-                  type="text"
-                  className="form-control border-0 rounded-end-pill py-2.5 shadow-none"
-                  placeholder="Nhập từ khóa để tìm kiếm (ví dụ: lắp ráp, mô hình, ba lô,...)"
-                  style={{ fontSize: "0.95rem" }}
-                />
+            <nav className="d-none d-xl-flex gap-4 mb-0 list-unstyled align-items-center">
+              {navLinks.map((link, idx) => (
+                <Link 
+                  key={idx} 
+                  to={link.path} 
+                  className={`text-decoration-none fw-semibold d-flex align-items-center gap-2 transition-all ${location.pathname === link.path ? 'text-secondary-brew' : 'text-dark hover-text-primary'}`}
+                  style={{ fontSize: "0.95rem", color: location.pathname === link.path ? "var(--secondary-color)" : "var(--dark-text)" }}
+                >
+                  <i className={`${link.icon} fs-6`}></i>
+                  {link.name}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          {/* Center: Search Bar */}
+          <div className="flex-grow-1 px-4 d-none d-lg-block" style={{ maxWidth: "500px" }}>
+            <div className="position-relative">
+              <input
+                type="text"
+                className="form-control rounded-pill border-0 bg-light pe-5 ps-4 py-2 form-brew-control"
+                placeholder="Tìm món yêu thích..."
+                style={{ fontSize: "0.95rem" }}
+              />
+              <button className="btn position-absolute top-50 end-0 translate-middle-y border-0 text-muted rounded-pill h-100 px-3">
+                <i className="fa-solid fa-magnifying-glass"></i>
+              </button>
+            </div>
+          </div>
+
+          {/* Right: Badges & Profile */}
+          <div className="d-flex align-items-center gap-3">
+            {/* Utility Icons (Notification, etc.) */}
+            <div className="d-none d-md-flex align-items-center gap-3 me-2">
+              <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
+                <i className="fa-regular fa-bell fs-5"></i>
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>3</span>
+              </div>
+              <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
+                <i className="fa-solid fa-ticket fs-5 text-warning"></i>
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>2</span>
               </div>
             </div>
 
-            {/* User Controls */}
-            <div className="d-flex align-items-center gap-4 text-white ms-4">
-              {/* Login / User */}
-              {token ? (
-                <div className="dropdown" ref={dropdownRef} style={{ position: 'relative' }}>
-                  <button 
-                    className="btn text-white fw-semibold d-flex align-items-center gap-2 border-0 p-0 shadow-none" 
-                    type="button" 
-                    onClick={() => setDropdownOpen(!dropdownOpen)}
+            {/* Loyalty Point */}
+            {token && (
+              <div className="d-none d-lg-flex flex-column align-items-end me-2">
+                <span className="text-muted" style={{ fontSize: "0.75rem", fontWeight: "600" }}>Loyalty</span>
+                <span className="fw-bold" style={{ color: "var(--accent-green)", fontSize: "0.9rem" }}>{Number(loyaltyPoints).toLocaleString("vi-VN")} điểm</span>
+              </div>
+            )}
+
+            {/* Cart */}
+            <div 
+              className="position-relative" 
+              ref={cartWrapperRef}
+              onMouseEnter={handleCartMouseEnter}
+              onMouseLeave={handleCartMouseLeave}
+            >
+              <button 
+                className="btn position-relative border-0 bg-transparent p-0 ms-2"
+                onClick={() => {
+                  if (window.innerWidth < 992) {
+                    setShowMiniCart(!showMiniCart);
+                  } else {
+                    navigate("/cart");
+                  }
+                }}
+              >
+                <div className="bg-light rounded-circle d-flex align-items-center justify-content-center text-dark shadow-sm transition-all" style={{ width: "42px", height: "42px" }}>
+                  <i className="fa-solid fa-basket-shopping fs-5"></i>
+                </div>
+                {totalQuantity > 0 && (
+                  <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger shadow-sm border border-white" style={{ fontSize: "0.7rem", transform: "translate(-30%, -30%)!important" }}>
+                    {totalQuantity > 99 ? "99+" : totalQuantity}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showMiniCart && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.2 }}
                   >
-                    <div className="bg-white text-danger rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
-                      <i className="fa-solid fa-user small"></i>
-                    </div>
-                    <span className="d-inline-block text-truncate" style={{ maxWidth: '120px' }} title={email ? email.split('@')[0] : "Tài khoản"}>
+                    <MiniCart 
+                      cart={cart} 
+                      loadCart={loadCart} 
+                      closeCart={() => setShowMiniCart(false)}
+                    />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            {/* User Controls */}
+            {token ? (
+              <div className="dropdown ms-1" ref={dropdownRef}>
+                <button 
+                  className="btn d-flex align-items-center gap-2 border-0 p-0 shadow-none bg-transparent" 
+                  type="button" 
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
+                >
+                  <div className="d-flex flex-column align-items-end d-none d-md-flex">
+                    <span className="text-muted" style={{ fontSize: "0.7rem" }}>Xin chào,</span>
+                    <span className="fw-semibold text-dark text-truncate" style={{ maxWidth: '100px', fontSize: "0.9rem" }}>
                       {email ? email.split('@')[0] : "Tài khoản"}
                     </span>
-                    <i className="fa-solid fa-caret-down small ms-1"></i>
-                  </button>
+                  </div>
+                  {userAvatar ? (
+                    <img 
+                      src={userAvatar} 
+                      alt="User Avatar" 
+                      className="rounded-circle shadow-sm" 
+                      style={{ width: "42px", height: "42px", objectFit: "cover", border: "2px solid #fff" }} 
+                    />
+                  ) : (
+                    <div className="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white shadow-sm" style={{ width: "42px", height: "42px" }}>
+                      <i className="fa-solid fa-user fs-5"></i>
+                    </div>
+                  )}
+                </button>
+                
+                <AnimatePresence>
                   {dropdownOpen && (
-                    <ul className="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-3 show" style={{ padding: '8px', minWidth: '220px', borderRadius: '12px', border: '1px solid #f1f5f9', position: 'absolute', right: 0, top: '100%' }}>
+                    <motion.ul 
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="dropdown-menu dropdown-menu-end border-0 mt-3 show" 
+                      style={{ padding: '8px', minWidth: '220px', borderRadius: '16px', right: 0, top: '100%', zIndex: 1060, boxShadow: 'var(--shadow-soft)' }}
+                    >
                       <li>
-                        <Link to="/profile" className="dropdown-item py-2 fw-semibold rounded d-flex align-items-center gap-2 text-dark auth-dropdown-item" onClick={() => setDropdownOpen(false)}>
-                          <i className="fa-regular fa-user text-muted" style={{ width: '20px', textAlign: 'center' }}></i> Thông tin tài khoản
+                        <Link to="/profile" className="dropdown-item py-2 fw-semibold rounded d-flex align-items-center gap-2 text-dark" onClick={() => setDropdownOpen(false)}>
+                          <i className="fa-regular fa-user text-muted" style={{ width: '20px' }}></i> Tài khoản
+                        </Link>
+                      </li>
+                      <li>
+                        <Link to="/profile/orders" className="dropdown-item py-2 fw-semibold rounded d-flex align-items-center gap-2 text-dark" onClick={() => setDropdownOpen(false)}>
+                          <i className="fa-solid fa-clock-rotate-left text-muted" style={{ width: '20px' }}></i> Lịch sử đơn hàng
                         </Link>
                       </li>
                       <li><hr className="dropdown-divider my-1 border-light" /></li>
                       <li>
-                        <button className="dropdown-item py-2 fw-semibold text-danger rounded d-flex align-items-center gap-2 auth-dropdown-item" onClick={() => { setDropdownOpen(false); handleLogout(); }}>
-                          <i className="fa-solid fa-arrow-right-from-bracket" style={{ width: '20px', textAlign: 'center' }}></i> Đăng xuất
+                        <button className="dropdown-item py-2 fw-semibold text-danger rounded d-flex align-items-center gap-2" onClick={() => { setDropdownOpen(false); handleLogout(); }}>
+                          <i className="fa-solid fa-arrow-right-from-bracket" style={{ width: '20px' }}></i> Đăng xuất
                         </button>
                       </li>
-                    </ul>
+                    </motion.ul>
                   )}
-                </div>
-              ) : (
-                <Link to="/login" className="text-white text-decoration-none d-flex align-items-center gap-2 fw-semibold">
-                  <div className="bg-white text-danger rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
-                    <i className="fa-solid fa-user small"></i>
-                  </div>
-                  <span>Đăng nhập</span>
-                </Link>
-              )}
-
-              {/* Cart */}
-              <Link to="/cart" className="text-white text-decoration-none d-flex align-items-center gap-2 fw-semibold">
-                <i className="fa-solid fa-basket-shopping fs-5"></i>
-                <span>Giỏ hàng</span>
-              </Link>
-
-              {/* Language / Region */}
-              <div className="d-flex align-items-center gap-1 border border-white p-1 rounded" style={{ cursor: "pointer" }}>
-                <img src="https://upload.wikimedia.org/wikipedia/commons/2/21/Flag_of_Vietnam.svg" width="20" height="14" alt="VN" style={{ objectFit: "cover" }} />
-                <i className="fa-solid fa-caret-down" style={{ fontSize: "12px" }}></i>
+                </AnimatePresence>
               </div>
-            </div>
-          </div>
+            ) : (
+              <Link to="/login" className="btn btn-brew-primary ms-2 rounded-pill px-4">
+                Đăng nhập
+              </Link>
+            )}
 
+          </div>
         </div>
       </div>
-      <HomeMenu />
     </header>
   );
 }

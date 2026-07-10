@@ -1,0 +1,1 @@
+ALTER TABLE options ADD COLUMN IF NOT EXISTS display_order INT DEFAULT 0;

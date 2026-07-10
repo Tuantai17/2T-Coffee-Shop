@@ -11,6 +11,24 @@ public class CheckoutRequest {
     private String note;
     private String paymentMethod;
     private String voucherCode;
+    private String email;
+    private String fulfillmentType = "DELIVERY"; // DELIVERY or PICKUP
+
+    public String getFulfillmentType() {
+        return fulfillmentType;
+    }
+
+    public void setFulfillmentType(String fulfillmentType) {
+        this.fulfillmentType = fulfillmentType;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
 
     public String getReceiverName() {
         return receiverName;

@@ -1,22 +1,23 @@
-server:
-  port: 8813
 
 spring:
   application:
     name: order-service
   datasource:
-    url: jdbc:postgresql://localhost:5432/order_db
-    username: postgres
-    password: 123456
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/order_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:123456}
   jpa:
     hibernate:
       ddl-auto: update
     show-sql: true
+  flyway:
+    enabled: false
+    baseline-on-migrate: true
     properties:
       hibernate:
         format_sql: true
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
@@ -32,21 +33,73 @@ spring:
         spring.json.trusted.packages: '*'
         spring.json.use.type.headers: false
         spring.json.value.default.type: com.fasterxml.jackson.databind.JsonNode
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      timeout: 6000ms
   cloud:
     openfeign:
+      circuitbreaker:
+        enabled: false
       client:
         config:
           default:
             connectTimeout: 5000
             readTimeout: 5000
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      inventoryService:
+        registerHealthIndicator: true
+        slidingWindowSize: 5
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        waitDurationInOpenState: 10s
+        failureRateThreshold: 50
+  retry:
+    instances:
+      productClient:
+        maxAttempts: 3
+        waitDuration: 2s
+        retryExceptions:
+          - java.util.concurrent.TimeoutException
+          - java.net.ConnectException
+          - feign.RetryableException
+      loyaltyClient:
+        maxAttempts: 3
+        waitDuration: 2s
+        retryExceptions:
+          - java.util.concurrent.TimeoutException
+          - java.net.ConnectException
+          - feign.RetryableException
+
+server:
+  port: 8813
+  error:
+    include-stacktrace: never
+
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8761/eureka}
   instance:
     prefer-ip-address: true
 
 app:
   kafka:
     topic: order-events
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+
+logging:
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - [%X{correlationId}] - %msg%n"

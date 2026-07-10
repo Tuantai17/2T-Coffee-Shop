@@ -12,6 +12,14 @@ export const getAllOrders = async () => {
   return axiosClient.get("/api/shop/order");
 };
 
+export const getAdminOrders = async (params = {}) => {
+  return axiosClient.get("/api/shop/admin/orders", { params });
+};
+
+export const getAdminOrderDetail = async (id) => {
+  return axiosClient.get(`/api/shop/admin/orders/${id}`);
+};
+
 export const updateOrderStatus = async (orderId, status, paymentStatus) => {
   return axiosClient.put(`/api/shop/order/${orderId}/status`, { status, paymentStatus });
 };
