@@ -17,21 +17,20 @@ spring:
     properties:
       mail:
         smtp:
-          auth: ${MAIL_SMTP_AUTH:false}
+          auth: ${MAIL_SMTP_AUTH:true}
           starttls:
-            enable: ${MAIL_SMTP_STARTTLS:false}
+            enable: ${MAIL_SMTP_STARTTLS:true}
+            required: true
+          connectiontimeout: 10000
+          timeout: 10000
+          writetimeout: 10000
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     consumer:
       group-id: notification-service-group
       auto-offset-reset: earliest
       key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
-      value-deserializer: org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
-      properties:
-        spring.deserializer.value.delegate.class: org.springframework.kafka.support.serializer.JsonDeserializer
-        spring.json.trusted.packages: '*'
-        spring.json.use.type.headers: false
-        spring.json.value.default.type: com.fasterxml.jackson.databind.JsonNode
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
 
 eureka:
   client:
@@ -41,8 +40,16 @@ eureka:
     prefer-ip-address: true
 
 app:
+  mail:
+    enabled: ${MAIL_ENABLED:true}
+    from-name: ${MAIL_FROM_NAME:BrewMoments}
+    reply-to: ${MAIL_REPLY_TO:${MAIL_USERNAME:}}
+  frontend-url: ${APP_FRONTEND_URL:http://localhost:5173}
+  timezone: ${APP_TIME_ZONE:Asia/Ho_Chi_Minh}
   kafka:
-    topic: order-events
+    notification-topic: notification-events
+    order-topic: order-events
+    payment-topic: payment-events
 
 management:
   endpoints:

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import UserLayout from '../../layouts/UserLayout';
 import { getPublicPostBySlug, getRelatedPosts, incrementPostView } from '../../services/newsPublicService';
-import { applyImageFallback, DEFAULT_IMAGE_FALLBACK } from '../../utils/imageFallback';
+import { applyImageFallback, DEFAULT_IMAGE_FALLBACK, resolveImageUrl } from '../../utils/imageFallback';
 
 export default function NewsDetailPage() {
     const { slug } = useParams();
@@ -123,7 +123,7 @@ export default function NewsDetailPage() {
                                         <div key={rel.id} className="d-flex flex-column cursor-pointer group" onClick={() => navigate(`/news/${rel.slug}`)}>
                                             <div className="rounded-3 overflow-hidden mb-2" style={{ height: '180px' }}>
                                                 <img 
-                                                    src={rel.thumbnailUrl} 
+                                                    src={resolveImageUrl(rel.thumbnailUrl)} 
                                                     alt={rel.title}
                                                     className="w-100 h-100 object-fit-cover transition-transform"
                                                     style={{ transition: 'transform 0.3s ease' }}

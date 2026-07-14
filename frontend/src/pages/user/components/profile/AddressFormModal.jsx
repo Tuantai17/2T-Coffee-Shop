@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from "react";
+import Select from "react-select";
 
 function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
   const [form, setForm] = useState({
-    receiverName: "",
-    phoneNumber: "",
-    province: "",
-    district: "",
-    ward: "",
-    addressLine: "",
-    label: "Nhà riêng",
-    default: false,
+    recipientName: "",
+    phone: "",
+    provinceCode: "",
+    provinceName: "",
+    wardCode: "",
+    wardName: "",
+    detailAddress: "",
+    addressType: "HOME",
+    isDefault: false,
     saveToAddressBook: true, // Only useful for checkout
   });
 
   const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
   const [wards, setWards] = useState([]);
-  const [loadingLocations, setLoadingLocations] = useState({ p: false, d: false, w: false });
+  const [loadingLocations, setLoadingLocations] = useState({ p: false, w: false });
   const [error, setError] = useState("");
 
   // Fetch provinces on mount
@@ -30,35 +31,34 @@ function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
     if (show) {
       if (address) {
         setForm({
-          receiverName: address.receiverName || "",
-          phoneNumber: address.phoneNumber || address.phone || "",
-          province: address.province || address.provinceName || "",
-          district: address.district || address.districtName || "",
-          ward: address.ward || address.wardName || "",
-          addressLine: address.addressLine || address.detailAddress || "",
-          label: address.label || address.addressType || "Nhà riêng",
-          default: address.default || address.isDefault || false,
+          recipientName: address.recipientName || address.receiverName || "",
+          phone: address.phone || address.phoneNumber || "",
+          provinceCode: address.provinceCode || "",
+          provinceName: address.provinceName || address.province || "",
+          wardCode: address.wardCode || "",
+          wardName: address.wardName || address.ward || "",
+          detailAddress: address.detailAddress || address.addressLine || "",
+          addressType: address.addressType || address.label || "HOME",
+          isDefault: address.isDefault || address.default || false,
           saveToAddressBook: true,
         });
         
-        // Try to load districts/wards if province/district are pre-selected
-        // In a perfect scenario, we would match codes, but here we match names
-        if (address.province || address.provinceName) {
-           loadDistrictsByProvinceName(address.province || address.provinceName, address.district || address.districtName);
+        if (address.provinceCode) {
+           loadWards(address.provinceCode);
         }
       } else {
         setForm({
-          receiverName: "",
-          phoneNumber: "",
-          province: "",
-          district: "",
-          ward: "",
-          addressLine: "",
-          label: "Nhà riêng",
-          default: false,
+          recipientName: "",
+          phone: "",
+          provinceCode: "",
+          provinceName: "",
+          wardCode: "",
+          wardName: "",
+          detailAddress: "",
+          addressType: "HOME",
+          isDefault: false,
           saveToAddressBook: true,
         });
-        setDistricts([]);
         setWards([]);
       }
       setError("");
@@ -68,7 +68,7 @@ function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
   const fetchProvinces = async () => {
     try {
       setLoadingLocations(prev => ({ ...prev, p: true }));
-      const res = await fetch("https://provinces.open-api.vn/api/p/");
+      const res = await fetch("https://provinces.open-api.vn/api/v2/p/");
       const data = await res.json();
       setProvinces(data);
     } catch (err) {
@@ -78,64 +78,12 @@ function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
     }
   };
 
-  const loadDistrictsByProvinceName = async (provinceName, presetDistrict) => {
-    try {
-      setLoadingLocations(prev => ({ ...prev, d: true }));
-      // Fetch all provinces with districts to find the matching one
-      const res = await fetch("https://provinces.open-api.vn/api/?depth=2");
-      const allData = await res.json();
-      const matchedProv = allData.find(p => p.name === provinceName);
-      if (matchedProv) {
-        setDistricts(matchedProv.districts || []);
-        if (presetDistrict) {
-            const matchedDist = matchedProv.districts.find(d => d.name === presetDistrict);
-            if(matchedDist) {
-                loadWardsByDistrictCode(matchedDist.code);
-            }
-        }
-      }
-    } catch (err) {
-      console.error("Lỗi tải quận huyện:", err);
-    } finally {
-      setLoadingLocations(prev => ({ ...prev, d: false }));
-    }
-  };
-
-  const loadDistricts = async (provinceCode) => {
-    try {
-      setLoadingLocations(prev => ({ ...prev, d: true }));
-      const res = await fetch(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
-      const data = await res.json();
-      setDistricts(data.districts || []);
-      setWards([]); // Reset wards when province changes
-      setForm(prev => ({ ...prev, district: "", ward: "" }));
-    } catch (err) {
-      console.error("Lỗi tải quận huyện:", err);
-    } finally {
-      setLoadingLocations(prev => ({ ...prev, d: false }));
-    }
-  };
-
-  const loadWardsByDistrictCode = async (districtCode) => {
+  const loadWards = async (provinceCode) => {
     try {
       setLoadingLocations(prev => ({ ...prev, w: true }));
-      const res = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+      const res = await fetch(`https://provinces.open-api.vn/api/v2/p/${provinceCode}?depth=2`);
       const data = await res.json();
       setWards(data.wards || []);
-    } catch (err) {
-      console.error("Lỗi tải phường xã:", err);
-    } finally {
-      setLoadingLocations(prev => ({ ...prev, w: false }));
-    }
-  };
-
-  const loadWards = async (districtCode) => {
-    try {
-      setLoadingLocations(prev => ({ ...prev, w: true }));
-      const res = await fetch(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
-      const data = await res.json();
-      setWards(data.wards || []);
-      setForm(prev => ({ ...prev, ward: "" }));
     } catch (err) {
       console.error("Lỗi tải phường xã:", err);
     } finally {
@@ -152,53 +100,91 @@ function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
     setError("");
   };
 
-  const handleProvinceChange = (e) => {
-    const provinceName = e.target.value;
-    setForm(prev => ({ ...prev, province: provinceName }));
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    const code = selectedOption.getAttribute('data-code');
-    if (code) {
-      loadDistricts(code);
+  const handleProvinceChange = (selectedOption) => {
+    if (selectedOption) {
+      setForm(prev => ({ 
+        ...prev, 
+        provinceCode: selectedOption.value, 
+        provinceName: selectedOption.label,
+        wardCode: "", 
+        wardName: "" 
+      }));
+      loadWards(selectedOption.value);
     } else {
-      setDistricts([]);
+      setForm(prev => ({ ...prev, provinceCode: "", provinceName: "", wardCode: "", wardName: "" }));
       setWards([]);
     }
     setError("");
   };
 
-  const handleDistrictChange = (e) => {
-    const districtName = e.target.value;
-    setForm(prev => ({ ...prev, district: districtName }));
-    const selectedOption = e.target.options[e.target.selectedIndex];
-    const code = selectedOption.getAttribute('data-code');
-    if (code) {
-      loadWards(code);
+  const handleWardChange = (selectedOption) => {
+    if (selectedOption) {
+        setForm(prev => ({ ...prev, wardCode: selectedOption.value, wardName: selectedOption.label }));
     } else {
-      setWards([]);
+        setForm(prev => ({ ...prev, wardCode: "", wardName: "" }));
     }
     setError("");
+  };
+
+  const provinceOptions = provinces.map(p => ({ value: p.code, label: p.name }));
+  const wardOptions = wards.map(w => ({ value: w.code, label: w.name }));
+
+  const selectedProvince = provinceOptions.find(opt => opt.value === form.provinceCode) || null;
+  const selectedWard = wardOptions.find(opt => opt.value === form.wardCode) || null;
+
+  const selectStyles = {
+    control: (base, state) => ({
+      ...base,
+      borderRadius: "0.5rem",
+      borderColor: state.isFocused ? "#86b7fe" : "#dee2e6",
+      boxShadow: state.isFocused ? "0 0 0 0.25rem rgba(13,110,253,.25)" : "none",
+      minHeight: "38px",
+      padding: "2px",
+      fontSize: "0.875rem",
+      "&:hover": {
+        borderColor: state.isFocused ? "#86b7fe" : "#dee2e6",
+      },
+    }),
+    menu: (base) => ({
+      ...base,
+      zIndex: 9999,
+      borderRadius: "0.5rem",
+      boxShadow: "0 0.5rem 1rem rgba(0, 0, 0, 0.15)",
+      fontSize: "0.875rem",
+    }),
+    menuPortal: (base) => ({ ...base, zIndex: 9999 }),
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!form.receiverName.trim()) {
+    if (!form.recipientName.trim()) {
       setError("Vui lòng nhập họ và tên người nhận."); return;
     }
-    if (!form.phoneNumber.trim()) {
+    if (!form.phone.trim()) {
       setError("Vui lòng nhập số điện thoại."); return;
     }
-    if (!/^[0-9+]{9,15}$/.test(form.phoneNumber.replace(/\s+/g, ""))) {
+    if (!/^[0-9+]{9,15}$/.test(form.phone.replace(/\s+/g, ""))) {
       setError("Số điện thoại không hợp lệ."); return;
     }
-    if (!form.province || !form.district || !form.ward) {
-      setError("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Phường/Xã."); return;
+    if (!form.provinceCode || !form.wardCode) {
+      setError("Vui lòng chọn đầy đủ Tỉnh/Thành, Phường/Xã."); return;
     }
-    if (!form.addressLine.trim()) {
+    if (!form.detailAddress.trim()) {
       setError("Vui lòng nhập địa chỉ chi tiết."); return;
     }
     
-    // Add isDefault mapped value for Java backend compatibility
-    onSave({ ...form, isDefault: form.default });
+    const payload = {
+      recipientName: form.recipientName,
+      phone: form.phone,
+      addressType: form.addressType,
+      provinceCode: String(form.provinceCode),
+      provinceName: form.provinceName,
+      wardCode: String(form.wardCode),
+      wardName: form.wardName,
+      detailAddress: form.detailAddress,
+      isDefault: form.isDefault
+    };
+    onSave(payload);
   };
 
   if (!show) return null;
@@ -222,72 +208,70 @@ function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
                   <label className="form-label small fw-bold text-dark d-block">Loại địa chỉ</label>
                   <div className="d-flex gap-3 flex-wrap">
                     <div className="form-check">
-                      <input className="form-check-input" type="radio" name="label" id="typeHome" value="Nhà riêng" checked={form.label === "Nhà riêng"} onChange={handleChange} />
+                      <input className="form-check-input" type="radio" name="addressType" id="typeHome" value="HOME" checked={form.addressType === "HOME"} onChange={handleChange} />
                       <label className="form-check-label small" htmlFor="typeHome"><i className="fa-solid fa-house me-1 text-muted"></i> Nhà riêng</label>
                     </div>
                     <div className="form-check">
-                      <input className="form-check-input" type="radio" name="label" id="typeWork" value="Công ty" checked={form.label === "Công ty"} onChange={handleChange} />
+                      <input className="form-check-input" type="radio" name="addressType" id="typeWork" value="OFFICE" checked={form.addressType === "OFFICE"} onChange={handleChange} />
                       <label className="form-check-label small" htmlFor="typeWork"><i className="fa-solid fa-briefcase me-1 text-muted"></i> Công ty</label>
                     </div>
                     <div className="form-check">
-                      <input className="form-check-input" type="radio" name="label" id="typeOther" value="Khác" checked={form.label !== "Nhà riêng" && form.label !== "Công ty"} onChange={handleChange} />
+                      <input className="form-check-input" type="radio" name="addressType" id="typeOther" value="OTHER" checked={form.addressType !== "HOME" && form.addressType !== "OFFICE"} onChange={handleChange} />
                       <label className="form-check-label small" htmlFor="typeOther"><i className="fa-solid fa-location-dot me-1 text-muted"></i> Khác</label>
                     </div>
                   </div>
-                  {form.label !== "Nhà riêng" && form.label !== "Công ty" && (
-                     <input type="text" name="label" className="form-control rounded-3 mt-2 form-control-sm" placeholder="Nhập tên loại địa chỉ (VD: Nhà người thân)" value={form.label} onChange={handleChange} />
-                  )}
                 </div>
 
                 <div className="row g-3 mb-4">
                   <div className="col-md-6">
                     <label className="form-label small fw-bold text-dark">Họ và tên người nhận <span className="text-danger">*</span></label>
-                    <input type="text" name="receiverName" className="form-control rounded-3" placeholder="Nhập họ và tên" value={form.receiverName} onChange={handleChange} />
+                    <input type="text" name="recipientName" className="form-control rounded-3" placeholder="Nhập họ và tên" value={form.recipientName} onChange={handleChange} />
                   </div>
                   <div className="col-md-6">
                     <label className="form-label small fw-bold text-dark">Số điện thoại <span className="text-danger">*</span></label>
-                    <input type="tel" name="phoneNumber" className="form-control rounded-3" placeholder="Nhập số điện thoại" value={form.phoneNumber} onChange={handleChange} />
+                    <input type="tel" name="phone" className="form-control rounded-3" placeholder="Nhập số điện thoại" value={form.phone} onChange={handleChange} />
                   </div>
                 </div>
                 
                 <div className="row g-3 mb-4">
-                  <div className="col-md-4">
+                  <div className="col-md-6">
                     <label className="form-label small fw-bold text-dark">Tỉnh / Thành phố <span className="text-danger">*</span></label>
-                    <select name="province" className="form-select rounded-3" value={form.province} onChange={handleProvinceChange} disabled={loadingLocations.p}>
-                      <option value="">Chọn Tỉnh/Thành</option>
-                      {provinces.map(p => (
-                        <option key={p.code} value={p.name} data-code={p.code}>{p.name}</option>
-                      ))}
-                    </select>
+                    <Select
+                      options={provinceOptions}
+                      value={selectedProvince}
+                      onChange={handleProvinceChange}
+                      isDisabled={loadingLocations.p}
+                      placeholder="Chọn Tỉnh/Thành"
+                      styles={selectStyles}
+                      menuPortalTarget={document.body}
+                      isClearable
+                      noOptionsMessage={() => "Không tìm thấy"}
+                    />
                   </div>
-                  <div className="col-md-4">
-                    <label className="form-label small fw-bold text-dark">Quận / Huyện <span className="text-danger">*</span></label>
-                    <select name="district" className="form-select rounded-3" value={form.district} onChange={handleDistrictChange} disabled={!form.province || loadingLocations.d}>
-                      <option value="">Chọn Quận/Huyện</option>
-                      {districts.map(d => (
-                        <option key={d.code} value={d.name} data-code={d.code}>{d.name}</option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="col-md-4">
+                  <div className="col-md-6">
                     <label className="form-label small fw-bold text-dark">Phường / Xã <span className="text-danger">*</span></label>
-                    <select name="ward" className="form-select rounded-3" value={form.ward} onChange={handleChange} disabled={!form.district || loadingLocations.w}>
-                      <option value="">Chọn Phường/Xã</option>
-                      {wards.map(w => (
-                        <option key={w.code} value={w.name}>{w.name}</option>
-                      ))}
-                    </select>
+                    <Select
+                      options={wardOptions}
+                      value={selectedWard}
+                      onChange={handleWardChange}
+                      isDisabled={!form.provinceCode || loadingLocations.w}
+                      placeholder="Chọn Phường/Xã"
+                      styles={selectStyles}
+                      menuPortalTarget={document.body}
+                      isClearable
+                      noOptionsMessage={() => "Không tìm thấy"}
+                    />
                   </div>
                 </div>
                 
                 <div className="mb-4">
                   <label className="form-label small fw-bold text-dark">Địa chỉ chi tiết <span className="text-danger">*</span></label>
-                  <input type="text" name="addressLine" className="form-control rounded-3" placeholder="Số nhà, tên đường, tòa nhà..." value={form.addressLine} onChange={handleChange} />
+                  <input type="text" name="detailAddress" className="form-control rounded-3" placeholder="Số nhà, tên đường, tòa nhà..." value={form.detailAddress} onChange={handleChange} />
                 </div>
                 
                 <div className="mb-4 d-flex flex-column gap-2">
                   <div className="form-check">
-                    <input className="form-check-input" type="checkbox" id="isDefault" name="default" checked={form.default} onChange={handleChange} />
+                    <input className="form-check-input" type="checkbox" id="isDefault" name="isDefault" checked={form.isDefault} onChange={handleChange} />
                     <label className="form-check-label fw-medium ms-1" htmlFor="isDefault">
                       Đặt làm địa chỉ mặc định
                     </label>

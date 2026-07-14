@@ -1,7 +1,45 @@
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
+import checkinApi from "../../../../api/checkinApi";
+import { useNavigate } from "react-router-dom";
+import { getAuthSession, AUTH_SCOPES } from "../../../../utils/authStorage";
 
-function DailyCheckInSummary({ checkInData }) {
+function DailyCheckInSummary() {
   const days = [1, 2, 3, 4, 5, 6, 7];
+  const [checkInData, setCheckInData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const { token } = getAuthSession(AUTH_SCOPES.USER);
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+
+    checkinApi.getCheckinStatus()
+      .then(res => {
+        setCheckInData(res.data);
+        setLoading(false);
+      })
+      .catch(err => {
+        console.error("Lỗi lấy dữ liệu điểm danh:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  const handleCheckIn = () => {
+    if (!checkInData || !checkInData.program) return;
+    checkinApi.performCheckin(checkInData.program.id)
+      .then(res => {
+        setCheckInData(prev => ({
+          ...prev,
+          currentStreak: (prev?.currentStreak || 0) + 1,
+          checkedInToday: true
+        }));
+      })
+      .catch(err => console.error("Lỗi điểm danh:", err));
+  };
 
   return (
     <div className="container mt-5 pt-3">
@@ -23,15 +61,30 @@ function DailyCheckInSummary({ checkInData }) {
             ))
           ) : (
             // Dữ liệu thật sẽ render ở đây
-            <div></div>
+            days.map(day => {
+              const isChecked = day <= checkInData.currentStreak;
+              const isToday = day === checkInData.currentStreak + (checkInData.checkedInToday ? 0 : 1);
+              return (
+              <div key={day} className="text-center px-2 d-flex flex-column align-items-center" style={{ minWidth: "80px" }}>
+                <div className="text-muted small fw-bold mb-2">Ngày {day}</div>
+                <div className={`rounded-circle mb-2 d-flex align-items-center justify-content-center ${isChecked ? 'bg-success text-white' : 'bg-light border'}`} style={{ width: "50px", height: "50px" }}>
+                  {isChecked ? <i className="fa-solid fa-check"></i> : <span className="text-muted">{day === 7 ? <i className="fa-solid fa-gift text-danger"></i> : '+10'}</span>}
+                </div>
+                {isToday && <div className="badge bg-warning text-dark">Hôm nay</div>}
+              </div>
+            )})
           )}
         </div>
 
-        <div className="text-center mt-4 placeholder-glow">
-          {!checkInData ? (
+        <div className="text-center mt-4">
+          {loading ? (
             <button className="btn btn-secondary disabled rounded-pill px-5 fw-bold py-3 placeholder col-4 border-0"></button>
+          ) : checkInData?.checkedInToday ? (
+             <button onClick={() => navigate("/profile")} className="btn btn-success rounded-pill px-5 fw-bold shadow-sm py-2">
+               <i className="fa-solid fa-check me-2"></i> Đã điểm danh
+             </button>
           ) : (
-            <button className="btn btn-brew-primary rounded-pill px-5 fw-bold hover-scale shadow-sm py-2">
+            <button onClick={handleCheckIn} className="btn btn-warning rounded-pill px-5 fw-bold text-white shadow-sm py-2" style={{ backgroundColor: "#FF8E53", borderColor: "#FF8E53" }}>
               Điểm danh hôm nay
             </button>
           )}

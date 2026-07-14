@@ -76,6 +76,86 @@ public class LoyaltyEngineService {
     }
 
     @Transactional
+    public void addPointsFromCheckin(Long userId, long pointsToEarn, Long programId, String description) {
+        if (pointsToEarn <= 0) return;
+        
+        String lockKey = LOCK_PREFIX + userId;
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(10));
+        if (Boolean.FALSE.equals(acquired)) {
+            throw new RuntimeException("Could not acquire lock for user " + userId);
+        }
+
+        try {
+            LoyaltyAccount account = getOrCreateAccount(userId);
+
+            account.setAvailablePoints(account.getAvailablePoints() + pointsToEarn);
+            account.setLifetimeEarnedPoints(account.getLifetimeEarnedPoints() + pointsToEarn);
+            
+            evaluateTierUpgrade(account);
+            accountRepository.save(account);
+
+            PointTransaction transaction = PointTransaction.builder()
+                    .transactionCode(UUID.randomUUID().toString())
+                    .userId(userId)
+                    .type("EARN")
+                    .source("CHECKIN")
+                    .points(pointsToEarn)
+                    .balanceBefore(account.getAvailablePoints() - pointsToEarn)
+                    .balanceAfter(account.getAvailablePoints())
+                    .referenceType("CHECKIN_PROGRAM")
+                    .referenceId(String.valueOf(programId))
+                    .status("COMPLETED")
+                    .description(description != null ? description : "Cộng điểm từ điểm danh hàng ngày")
+                    .build();
+            transactionRepository.save(transaction);
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
+    }
+
+    @Transactional
+    public void subtractPointsFromCheckinRollback(Long userId, long pointsToRollback, Long historyId) {
+        if (pointsToRollback <= 0) return;
+        
+        String lockKey = LOCK_PREFIX + userId;
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(10));
+        if (Boolean.FALSE.equals(acquired)) {
+            throw new RuntimeException("Could not acquire lock for user " + userId);
+        }
+
+        try {
+            LoyaltyAccount account = accountRepository.findByUserId(userId).orElse(null);
+            if (account == null) return;
+
+            long actualDeduction = Math.min(account.getAvailablePoints(), pointsToRollback);
+            if (actualDeduction <= 0) return;
+
+            account.setAvailablePoints(account.getAvailablePoints() - actualDeduction);
+            account.setLifetimeEarnedPoints(Math.max(0, account.getLifetimeEarnedPoints() - actualDeduction));
+            
+            evaluateTierUpgrade(account);
+            accountRepository.save(account);
+
+            PointTransaction transaction = PointTransaction.builder()
+                    .transactionCode(UUID.randomUUID().toString())
+                    .userId(userId)
+                    .type("REVERSE")
+                    .source("CHECKIN")
+                    .points(actualDeduction)
+                    .balanceBefore(account.getAvailablePoints() + actualDeduction)
+                    .balanceAfter(account.getAvailablePoints())
+                    .referenceType("CHECKIN_HISTORY")
+                    .referenceId(String.valueOf(historyId))
+                    .status("COMPLETED")
+                    .description("Thu hồi điểm do Admin xóa lịch sử điểm danh")
+                    .build();
+            transactionRepository.save(transaction);
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
+    }
+
+    @Transactional
     public void processOrderCancelledOrRefunded(Long userId, Long orderId, long refundAmount) {
         String lockKey = LOCK_PREFIX + userId;
         Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(10));
@@ -127,7 +207,7 @@ public class LoyaltyEngineService {
                     .reservedPoints(0L)
                     .lifetimeEarnedPoints(0L)
                     .lifetimeUsedPoints(0L)
-                    .currentTierCode("MEMBER")
+                    .currentTierCode("SILVER")
                     .build();
             return accountRepository.save(newAccount);
         });

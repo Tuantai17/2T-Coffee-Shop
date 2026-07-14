@@ -1,0 +1,544 @@
+/* Base Colors and Typography matching Wireframe */
+:root {
+  --mg-primary: #4a2618;
+  --mg-primary-light: #6e3a24;
+  --mg-primary-dark: #2a140a;
+  --mg-accent: #f07a24;
+  --mg-accent-hover: #e06812;
+  --mg-gold: #f6b52f;
+  --mg-gold-light: #ffd395;
+  --mg-bg: #fcfcfc;
+  --mg-bg-card: #ffffff;
+  --mg-bg-card-alt: #fcf7f1;
+  --mg-border: #f0e4da;
+  --mg-text-main: #4a2e1e;
+  --mg-text-muted: #8a776a;
+}
+
+body.minigame-active {
+  background-color: var(--mg-bg);
+}
+
+/* =========================================
+   HERO / BANNER
+   ========================================= */
+.minigame-hero {
+  position: relative;
+  background: radial-gradient(circle at top right, rgba(255, 184, 82, 0.22), transparent 28%),
+              linear-gradient(135deg, var(--mg-primary) 0%, var(--mg-primary-dark) 100%);
+  color: #fff;
+  border-radius: 24px;
+  padding: 32px;
+  overflow: hidden;
+  box-shadow: 0 20px 40px rgba(42, 20, 10, 0.15);
+}
+
+.minigame-hero-art {
+  position: absolute;
+  top: 0;
+  right: 0;
+  height: 100%;
+  width: 50%;
+  background-size: cover;
+  background-position: right center;
+  opacity: 0.6;
+  mask-image: linear-gradient(to right, transparent, black);
+  -webkit-mask-image: linear-gradient(to right, transparent, black);
+}
+
+.minigame-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--mg-gold-light);
+  font-weight: 700;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 12px;
+}
+
+.minigame-hero h1 {
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 800;
+  margin-bottom: 12px;
+  line-height: 1.2;
+  position: relative;
+  z-index: 2;
+}
+
+.minigame-hero p {
+  color: rgba(255, 255, 255, 0.85);
+  max-width: 60%;
+  font-size: 16px;
+  position: relative;
+  z-index: 2;
+}
+
+/* =========================================
+   CARDS & PANELS
+   ========================================= */
+.mg-card {
+  background: var(--mg-bg-card);
+  border: 1px solid var(--mg-border);
+  border-radius: 20px;
+  padding: 24px;
+  box-shadow: 0 8px 24px rgba(74, 38, 24, 0.04);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.mg-card-alt {
+  background: var(--mg-bg-card-alt);
+  border-radius: 20px;
+  padding: 24px;
+}
+
+.mg-card-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--mg-text-main);
+  margin-bottom: 16px;
+}
+
+/* =========================================
+   GAME CENTER CARD
+   ========================================= */
+.gc-card {
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid var(--mg-border);
+  box-shadow: 0 10px 30px rgba(0,0,0,0.03);
+  height: 100%;
+  transition: transform 0.2s, box-shadow 0.2s;
+  text-decoration: none !important;
+}
+
+.gc-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 16px 40px rgba(0,0,0,0.08);
+}
+
+.gc-banner {
+  height: 180px;
+  width: 100%;
+  object-fit: cover;
+}
+
+.gc-body {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.gc-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.gc-thumb {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  object-fit: cover;
+}
+
+.gc-title {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--mg-text-main);
+  margin: 0;
+}
+
+.gc-type {
+  font-size: 13px;
+  color: var(--mg-accent);
+  font-weight: 600;
+}
+
+.gc-meta {
+  display: flex;
+  gap: 16px;
+  margin: 16px 0;
+  padding: 12px;
+  background: var(--mg-bg-card-alt);
+  border-radius: 12px;
+}
+
+.gc-meta-item {
+  flex: 1;
+  text-align: center;
+}
+
+.gc-meta-label {
+  display: block;
+  font-size: 12px;
+  color: var(--mg-text-muted);
+}
+
+.gc-meta-val {
+  display: block;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--mg-text-main);
+  margin-top: 4px;
+}
+
+/* =========================================
+   BUTTONS
+   ========================================= */
+.btn-mg-primary {
+  background: var(--mg-accent);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  padding: 10px 24px;
+  font-weight: 700;
+  transition: background 0.2s;
+}
+
+.btn-mg-primary:hover {
+  background: var(--mg-accent-hover);
+  color: #fff;
+}
+
+.btn-mg-outline {
+  background: transparent;
+  color: var(--mg-accent);
+  border: 2px solid var(--mg-accent);
+  border-radius: 999px;
+  padding: 8px 22px;
+  font-weight: 700;
+  transition: all 0.2s;
+}
+
+.btn-mg-outline:hover {
+  background: var(--mg-accent);
+  color: #fff;
+}
+
+/* =========================================
+   GAMEPLAY - STATE: COUNTDOWN
+   ========================================= */
+.mg-countdown-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(42, 20, 10, 0.85);
+  z-index: 100;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(4px);
+  border-radius: 20px;
+}
+
+.mg-countdown-number {
+  font-size: 120px;
+  font-weight: 900;
+  color: var(--mg-gold);
+  text-shadow: 0 4px 20px rgba(246, 181, 47, 0.5);
+  animation: popIn 1s ease-in-out infinite;
+}
+
+@keyframes popIn {
+  0% { transform: scale(0.5); opacity: 0; }
+  40% { transform: scale(1.1); opacity: 1; }
+  60% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.2); opacity: 0; }
+}
+
+/* =========================================
+   GAMEPLAY - HEADER
+   ========================================= */
+.mg-play-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 16px 24px;
+  background: var(--mg-primary);
+  border-radius: 20px;
+  color: #fff;
+}
+
+.mg-play-header-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--mg-gold-light);
+}
+
+.mg-play-stats {
+  display: flex;
+  gap: 24px;
+}
+
+.mg-stat-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255,255,255,0.1);
+  padding: 8px 16px;
+  border-radius: 12px;
+}
+
+.mg-stat-box i {
+  color: var(--mg-gold);
+}
+
+.mg-stat-val {
+  font-size: 18px;
+  font-weight: 800;
+}
+
+/* =========================================
+   GAMEPLAY - MEMORY MATCH
+   ========================================= */
+.mg-board-container {
+  position: relative;
+  background: var(--mg-bg-card-alt);
+  border-radius: 24px;
+  padding: 24px;
+  border: 1px solid var(--mg-border);
+  min-height: 400px;
+}
+
+.memory-grid {
+  display: grid;
+  gap: 12px;
+  margin: 0 auto;
+  max-width: 600px;
+}
+.memory-grid-44 { grid-template-columns: repeat(4, 1fr); }
+.memory-grid-54 { grid-template-columns: repeat(5, 1fr); }
+.memory-grid-66 { grid-template-columns: repeat(6, 1fr); }
+
+.memory-card {
+  aspect-ratio: 1 / 1;
+  border: none;
+  border-radius: 16px;
+  background: linear-gradient(135deg, var(--mg-primary) 0%, #753920 100%);
+  color: #fff7ed;
+  font-size: clamp(24px, 5vw, 42px);
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+  transition: transform 0.2s, background 0.2s;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  overflow: hidden;
+}
+
+.memory-card:disabled {
+  cursor: default;
+}
+
+.memory-card:not(:disabled):hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 15px rgba(0,0,0,0.15);
+}
+
+.memory-card.is-open {
+  background: linear-gradient(135deg, #ffd395 0%, #f39b37 100%);
+  color: var(--mg-primary);
+  transform: rotateY(180deg);
+}
+
+.memory-card.is-matched {
+  background: linear-gradient(135deg, #18864b 0%, #44b36f 100%);
+  color: #fff;
+  transform: rotateY(180deg) scale(0.95);
+  opacity: 0.8;
+}
+
+.memory-card-content {
+  transform: rotateY(180deg);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.memory-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+/* =========================================
+   GAMEPLAY - LUCKY SPIN
+   ========================================= */
+.lucky-spin-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+}
+
+.lucky-wheel-wrap {
+  position: relative;
+  width: min(100%, 380px);
+  aspect-ratio: 1 / 1;
+}
+
+.lucky-wheel {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 12px solid var(--mg-primary);
+  box-shadow: 0 16px 32px rgba(0,0,0,0.15);
+  transition: transform 4s cubic-bezier(0.12, 0.93, 0.28, 1);
+}
+
+.lucky-wheel-pointer {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 16px solid transparent;
+  border-right: 16px solid transparent;
+  border-top: 30px solid var(--mg-accent);
+  z-index: 10;
+  filter: drop-shadow(0 4px 4px rgba(0,0,0,0.2));
+}
+
+.lucky-wheel-segment {
+  position: absolute;
+  inset: 0;
+  transform-origin: 50% 50%;
+  clip-path: polygon(50% 50%, 100% 0, 100% 100%);
+}
+
+.lucky-wheel-segment span {
+  position: absolute;
+  top: 15%;
+  left: 60%;
+  width: 110px;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  text-align: left;
+}
+
+/* =========================================
+   REWARD DIALOG
+   ========================================= */
+.mg-reward-modal .modal-content {
+  background: var(--mg-primary);
+  color: #fff;
+  border: 2px solid var(--mg-gold);
+  border-radius: 24px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.5);
+}
+
+.mg-reward-icon {
+  font-size: 80px;
+  color: var(--mg-gold);
+  margin-bottom: 20px;
+  animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0); }
+}
+
+.mg-reward-box {
+  background: rgba(255,255,255,0.1);
+  border: 1px dashed var(--mg-gold);
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 24px;
+}
+
+.mg-reward-title {
+  color: var(--mg-gold-light);
+  font-size: 24px;
+  font-weight: 800;
+  margin: 0 0 8px;
+}
+
+/* =========================================
+   LOADING SKELETON
+   ========================================= */
+.mg-skeleton {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeletonLoading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeletonLoading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* =========================================
+   HISTORY & PROFILE
+   ========================================= */
+.mg-history-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--mg-border);
+}
+
+.mg-history-item:last-child {
+  border-bottom: none;
+}
+
+.mg-history-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--mg-bg-card-alt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--mg-accent);
+  font-size: 20px;
+}
+
+/* =========================================
+   RESPONSIVE
+   ========================================= */
+@media (max-width: 768px) {
+  .minigame-hero {
+    padding: 24px;
+  }
+  .minigame-hero h1 {
+    font-size: 24px;
+  }
+  .minigame-hero-art {
+    width: 100%;
+    mask-image: linear-gradient(to top, transparent, black);
+    -webkit-mask-image: linear-gradient(to top, transparent, black);
+  }
+  .mg-play-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .memory-grid {
+    gap: 8px;
+  }
+  .memory-card {
+    border-radius: 10px;
+  }
+}

@@ -80,7 +80,8 @@ function AddressPage() {
       loadData(); // Refresh list
     } catch (err) {
       console.error("Lỗi lưu địa chỉ:", err);
-      alert("Đã xảy ra lỗi khi lưu địa chỉ.");
+      const errorMsg = err.response?.data?.message || err.response?.data?.error || "Đã xảy ra lỗi khi lưu địa chỉ.";
+      alert(errorMsg);
     } finally {
       setIsSaving(false);
     }

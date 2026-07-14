@@ -29,6 +29,8 @@ const getPaymentBadge = (status) => {
     case "PENDING":
     case "PAYMENT_ON_DELIVERY": return <span className="badge bg-warning bg-opacity-10 text-warning border border-warning">Chưa thanh toán</span>;
     case "FAILED": return <span className="badge bg-danger bg-opacity-10 text-danger border border-danger">Thất bại</span>;
+    case "CANCELLED": return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">Đã hủy</span>;
+    case "REFUNDED": return <span className="badge bg-info bg-opacity-10 text-info border border-info">Đã hoàn tiền</span>;
     default: return <span className="badge bg-secondary bg-opacity-10 text-secondary border border-secondary">{status}</span>;
   }
 };

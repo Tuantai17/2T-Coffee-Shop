@@ -191,7 +191,7 @@ public class VoucherService {
         return userVoucherRepository.save(userVoucher);
     }
 
-    private UserVoucher issueVoucherToUser(Long userId, VoucherDefinition definition) {
+    public UserVoucher issueVoucherToUser(Long userId, VoucherDefinition definition) {
         definition.setClaimedQuantity((definition.getClaimedQuantity() != null ? definition.getClaimedQuantity() : 0) + 1);
         voucherDefinitionRepository.save(definition);
 

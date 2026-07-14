@@ -6,6 +6,7 @@ import MiniCart from "./MiniCart";
 import { getCart } from "../services/cartService";
 import { motion, AnimatePresence } from "framer-motion";
 import loyaltyApi from "../api/loyaltyApi";
+import UserNotificationDropdown from "./UserNotificationDropdown";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -66,7 +67,10 @@ function Navbar() {
       loadLoyaltyPoints();
     }
     const handleCartUpdate = () => loadCart();
-    const handleProfileUpdate = () => loadUserProfileData();
+    const handleProfileUpdate = () => {
+      loadUserProfileData();
+      loadLoyaltyPoints();
+    };
     window.addEventListener("cartUpdated", handleCartUpdate);
     window.addEventListener("profileUpdated", handleProfileUpdate);
     setShowMiniCart(false);
@@ -129,6 +133,7 @@ function Navbar() {
     { name: "Voucher", path: "/loyalty/rewards", icon: "fa-solid fa-ticket" },
     { name: "Tin tức", path: "/news", icon: "fa-regular fa-newspaper" },
     { name: "Mini Game", path: "/game", icon: "fa-solid fa-gamepad" },
+    { name: "Liên hệ", path: "/contact", icon: "fa-solid fa-envelope" },
   ];
 
   return (
@@ -182,12 +187,17 @@ function Navbar() {
 
           {/* Right: Badges & Profile */}
           <div className="d-flex align-items-center gap-3">
+            {/* Mobile utilities */}
+            <div className="d-flex d-md-none align-items-center gap-3 ms-auto me-3">
+              <UserNotificationDropdown />
+              <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
+                <i className="fa-solid fa-ticket fs-5 text-warning"></i>
+              </div>
+            </div>
+
             {/* Utility Icons (Notification, etc.) */}
             <div className="d-none d-md-flex align-items-center gap-3 me-2">
-              <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
-                <i className="fa-regular fa-bell fs-5"></i>
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>3</span>
-              </div>
+              <UserNotificationDropdown />
               <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
                 <i className="fa-solid fa-ticket fs-5 text-warning"></i>
                 <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>2</span>

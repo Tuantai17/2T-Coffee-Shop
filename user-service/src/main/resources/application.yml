@@ -19,6 +19,7 @@ spring:
     port: ${MAIL_PORT:587}
     username: ${MAIL_USERNAME:}
     password: ${MAIL_PASSWORD:}
+
     properties:
       mail:
         smtp:
@@ -26,11 +27,11 @@ spring:
           starttls:
             enable: ${MAIL_SMTP_STARTTLS:true}
   flyway:
-    enabled: false
+    enabled: true
     baseline-on-migrate: true
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     show-sql: true
     properties:
       hibernate:
@@ -53,11 +54,12 @@ eureka:
 app:
   kafka:
     order-topic: order-events
+    notification-topic: notification-events
   password-reset:
     otp-expiration-minutes: 5
     reset-token-expiration-minutes: 10
-    sender-name: MyKingdom
-    expose-dev-otp: ${APP_PASSWORD_RESET_EXPOSE_DEV_OTP:true}
+    sender-name: BrewMoments
+    expose-dev-otp: ${APP_PASSWORD_RESET_EXPOSE_DEV_OTP:false}
 
 jwt:
   secret: ${JWT_SECRET:9a4f2c8d3b7a1e5f8g9h0i1j2k3l4m5n6o7p8q9r0s1t2u3v4w5x6y7z8a9b0c1d}

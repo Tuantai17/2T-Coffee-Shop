@@ -41,9 +41,9 @@ public class GameEventConsumer {
 
     @KafkaListener(topics = "loyalty-events", groupId = "loyalty-game-group")
     @Transactional
-    public void consumeGameEvent(String message) {
+    public void consumeGameEvent(com.fasterxml.jackson.databind.JsonNode messageNode) {
         try {
-            Map<String, Object> event = objectMapper.readValue(message, new TypeReference<Map<String, Object>>(){});
+            Map<String, Object> event = objectMapper.convertValue(messageNode, new TypeReference<Map<String, Object>>(){});
             String eventId = (String) event.get("eventId");
             String eventType = (String) event.get("eventType");
             

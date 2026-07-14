@@ -31,7 +31,9 @@ public class SecurityConfig {
                     "/registration",
                     "/api/auth/login",
                     "/api/auth/forgot-password/**",
-                    "/users/**"
+                    "/users/**",
+                    "/ws-support/**",
+                    "/ws-support/info/**"
                 ).permitAll()
                 .anyRequest().permitAll()
             );

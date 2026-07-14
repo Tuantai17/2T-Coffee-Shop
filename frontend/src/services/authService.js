@@ -50,8 +50,8 @@ export const logout = (scope = AUTH_SCOPES.USER) => {
   clearAuthSession(scope);
 };
 
-export const getUserProfile = async (userId) => {
-  return axiosClient.get(`/api/users/${userId}`);
+export const getUserProfile = async (userId, config = {}) => {
+  return axiosClient.get(`/api/users/${userId}`, config);
 };
 
 export const getUsers = async () => {

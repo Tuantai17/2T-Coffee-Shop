@@ -12,6 +12,39 @@ import WaitingForRestockBanner from "./WaitingForRestockBanner";
 import OrderCancelledBanner from "./OrderCancelledBanner";
 import CancelOrderModal from "./CancelOrderModal";
 
+const formatOrderDateTime = (orderedDate) => {
+  if (!orderedDate) {
+    return "-";
+  }
+
+  if (Array.isArray(orderedDate)) {
+    const [year, month, day, hour = 0, minute = 0, second = 0] = orderedDate;
+    const localDate = new Date(year, (month || 1) - 1, day || 1, hour, minute, second);
+    return Number.isNaN(localDate.getTime()) ? "-" : localDate.toLocaleString("vi-VN");
+  }
+
+  const parsedDate = new Date(orderedDate);
+  return Number.isNaN(parsedDate.getTime()) ? "-" : parsedDate.toLocaleString("vi-VN");
+};
+
+const getPaymentStatusLabel = (status) => {
+  switch (String(status || "").toUpperCase()) {
+    case "PAID":
+      return "Đã thanh toán";
+    case "PAYMENT_ON_DELIVERY":
+    case "PENDING":
+      return "Chưa thanh toán";
+    case "FAILED":
+      return "Thất bại";
+    case "CANCELLED":
+      return "Đã hủy";
+    case "REFUNDED":
+      return "Đã hoàn tiền";
+    default:
+      return status || "Chưa thanh toán";
+  }
+};
+
 const OrderEditPage = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
@@ -136,7 +169,7 @@ const OrderEditPage = () => {
                selectedStatus === "COMPLETED" ? "Hoàn thành" : selectedStatus}
             </span>
             <div className="text-muted mt-2 small">
-              <i className="bi bi-clock me-1"></i> {new Date(order.createdAt).toLocaleString('vi-VN')}
+              <i className="bi bi-clock me-1"></i> {formatOrderDateTime(order.orderedDate)}
             </div>
           </div>
           <div>
@@ -254,7 +287,7 @@ const OrderEditPage = () => {
                 </div>
                 <div className="d-flex justify-content-between mb-3 align-items-center">
                   <span className="text-muted">Trạng thái thanh toán</span>
-                  <span className="badge bg-light text-dark border">{order.paymentStatus || 'Chưa thanh toán'}</span>
+                  <span className="badge bg-light text-dark border">{getPaymentStatusLabel(order.paymentStatus)}</span>
                 </div>
                 <hr className="my-2 opacity-10" />
                 <div className="d-flex justify-content-between mb-2">

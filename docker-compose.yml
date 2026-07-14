@@ -60,9 +60,10 @@ services:
       - ecommerce-network
     healthcheck:
       test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 15s
+      retries: 10
+      start_period: 30s
 
   redis:
     image: redis:7-alpine
@@ -91,6 +92,7 @@ services:
   kafka:
     image: confluentinc/cp-kafka:7.4.0
     container_name: kafka
+    restart: on-failure
     depends_on:
       - zookeeper
     ports:
@@ -106,9 +108,10 @@ services:
       - ecommerce-network
     healthcheck:
       test: ["CMD", "nc", "-z", "localhost", "9092"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      interval: 15s
+      timeout: 10s
+      retries: 20
+      start_period: 60s
 
   # ==========================================
   # MICROSERVICES
@@ -119,7 +122,7 @@ services:
     ports:
       - "8761:8761"
     environment:
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     networks:
       - ecommerce-network
     healthcheck:
@@ -138,7 +141,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -160,9 +163,18 @@ services:
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-123456}
       - JWT_SECRET=${JWT_SECRET}
-      - JAVA_OPTS=-Xmx256m
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-true}
+      - MAIL_SMTP_STARTTLS=${MAIL_SMTP_STARTTLS:-true}
+      - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
     networks:
       - ecommerce-network
@@ -180,7 +192,7 @@ services:
       - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-123456}
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -200,7 +212,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -221,7 +233,7 @@ services:
       - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-123456}
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -239,7 +251,17 @@ services:
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-123456}
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      - JAVA_OPTS=-Xmx256m
+      - VNPAY_TMN_CODE=${VNPAY_TMN_CODE}
+      - VNPAY_HASH_SECRET=${VNPAY_HASH_SECRET}
+      - VNPAY_PAYMENT_URL=${VNPAY_PAYMENT_URL}
+      - VNPAY_RETURN_URL=${VNPAY_RETURN_URL}
+      - VNPAY_IPN_URL=${VNPAY_IPN_URL}
+      - FRONTEND_PUBLIC_URL=${FRONTEND_PUBLIC_URL}
+      - VNPAY_VERSION=${VNPAY_VERSION}
+      - VNPAY_COMMAND=${VNPAY_COMMAND}
+      - VNPAY_ORDER_TYPE=${VNPAY_ORDER_TYPE}
+      - VNPAY_LOCALE=${VNPAY_LOCALE}
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -258,7 +280,7 @@ services:
       - SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE=0
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-123456}
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -278,7 +300,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -303,7 +325,7 @@ services:
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - JWT_SECRET=${JWT_SECRET}
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -321,7 +343,13 @@ services:
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:-http://eureka-server:8761/eureka}
       - SPRING_DATA_MONGODB_URI=${SPRING_DATA_MONGODB_URI:-mongodb://mongodb:27017/notification_db}
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      - JAVA_OPTS=-Xmx256m
+      - MAIL_HOST=${MAIL_HOST}
+      - MAIL_PORT=${MAIL_PORT}
+      - MAIL_USERNAME=${MAIL_USERNAME}
+      - MAIL_PASSWORD=${MAIL_PASSWORD}
+      - MAIL_SMTP_AUTH=${MAIL_SMTP_AUTH:-true}
+      - MAIL_SMTP_STARTTLS=${MAIL_SMTP_STARTTLS:-true}
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -343,7 +371,7 @@ services:
       - DB_USERNAME=${DB_USERNAME:-postgres}
       - DB_PASSWORD=${DB_PASSWORD:-123456}
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy
@@ -365,7 +393,7 @@ services:
       - KAFKA_BOOTSTRAP_SERVERS=${KAFKA_BOOTSTRAP_SERVERS:-kafka:29092}
       - SPRING_DATA_REDIS_HOST=redis
       - SPRING_DATA_REDIS_PORT=6379
-      - JAVA_OPTS=-Xmx256m
+      - JAVA_OPTS=-Xms64m -Xmx128m -Xss256k -XX:MaxMetaspaceSize=128m -Duser.timezone=Asia/Ho_Chi_Minh
     depends_on:
       eureka-server:
         condition: service_healthy

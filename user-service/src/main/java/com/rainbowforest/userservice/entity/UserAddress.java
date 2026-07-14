@@ -17,8 +17,11 @@ public class UserAddress {
     @Column(name = "receiver_name")
     private String receiverName;
 
-    @Column(name = "phone_number")
+    @Column(name = "phone")
     private String phoneNumber;
+
+    @Column(name = "address")
+    private String address;
 
     @Column(name = "address_line")
     private String addressLine;
@@ -26,11 +29,17 @@ public class UserAddress {
     @Column(name = "ward")
     private String ward;
 
+    @Column(name = "ward_code")
+    private String wardCode;
+
     @Column(name = "district")
     private String district;
 
     @Column(name = "province")
     private String province;
+
+    @Column(name = "province_code")
+    private String provinceCode;
 
     @Column(name = "is_default")
     private boolean isDefault;
@@ -73,11 +82,13 @@ public class UserAddress {
     }
 
     public String getAddressLine() {
-        return addressLine;
+        return hasText(addressLine) ? addressLine : address;
     }
 
     public void setAddressLine(String addressLine) {
-        this.addressLine = addressLine;
+        String normalizedAddress = normalize(addressLine);
+        this.addressLine = normalizedAddress;
+        this.address = normalizedAddress;
     }
 
     public String getWard() {
@@ -86,6 +97,14 @@ public class UserAddress {
 
     public void setWard(String ward) {
         this.ward = ward;
+    }
+
+    public String getWardCode() {
+        return wardCode;
+    }
+
+    public void setWardCode(String wardCode) {
+        this.wardCode = wardCode;
     }
 
     public String getDistrict() {
@@ -104,6 +123,14 @@ public class UserAddress {
         this.province = province;
     }
 
+    public String getProvinceCode() {
+        return provinceCode;
+    }
+
+    public void setProvinceCode(String provinceCode) {
+        this.provinceCode = provinceCode;
+    }
+
     public boolean isDefault() {
         return isDefault;
     }
@@ -118,5 +145,28 @@ public class UserAddress {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void syncAddressColumns() {
+        if (!hasText(addressLine) && hasText(address)) {
+            addressLine = normalize(address);
+        }
+        if (!hasText(address) && hasText(addressLine)) {
+            address = normalize(addressLine);
+        }
+    }
+
+    private String normalize(String value) {
+        if (value == null) {
+            return null;
+        }
+        String trimmed = value.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private boolean hasText(String value) {
+        return value != null && !value.trim().isEmpty();
     }
 }

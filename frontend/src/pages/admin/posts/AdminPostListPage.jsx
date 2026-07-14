@@ -10,6 +10,7 @@ import {
     deleteAdminPost,
     getAdminPostCategories 
 } from '../../../services/newsAdminService';
+import { applyImageFallback, resolveImageUrl } from '../../../utils/imageFallback';
 
 export default function AdminPostListPage() {
     const [posts, setPosts] = useState([]);
@@ -208,8 +209,12 @@ export default function AdminPostListPage() {
                                         <tr key={post.id}>
                                             <td className="ps-3"><input type="checkbox" className="form-check-input" /></td>
                                             <td>
-                                                <img src={post.thumbnailUrl || 'https://via.placeholder.com/80x50'} alt="thumbnail" 
-                                                     style={{width: '80px', height: '50px', objectFit: 'cover', borderRadius: '4px'}} />
+                                                <img
+                                                    src={resolveImageUrl(post.thumbnailUrl, 'https://via.placeholder.com/80x50')}
+                                                    alt="thumbnail"
+                                                    style={{width: '80px', height: '50px', objectFit: 'cover', borderRadius: '4px'}}
+                                                    onError={(e) => applyImageFallback(e, 'https://via.placeholder.com/80x50')}
+                                                />
                                             </td>
                                             <td>
                                                 <div className="fw-bold text-truncate" style={{maxWidth: '250px'}} title={post.title}>{post.title}</div>

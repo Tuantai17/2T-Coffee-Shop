@@ -14,11 +14,9 @@ function AdminHeader() {
 
   return (
     <header 
-      className="d-flex justify-content-between align-items-center mb-4"
+      className="d-flex justify-content-between align-items-center"
       style={{
         padding: "16px 24px",
-        position: "sticky",
-        top: "24px",
         zIndex: 10,
         backgroundColor: "var(--admin-surface)",
         borderRadius: "var(--admin-radius-lg)",

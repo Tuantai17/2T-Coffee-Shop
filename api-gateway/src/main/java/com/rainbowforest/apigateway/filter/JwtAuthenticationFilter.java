@@ -108,12 +108,19 @@ public class JwtAuthenticationFilter implements GlobalFilter, Ordered {
         if (path.startsWith("/api/public/")) {
             return true;
         }
+        // Store contact and messages
+        if (path.equals("/api/store-contact") && "GET".equals(method)) {
+            return true;
+        }
+        if (path.equals("/api/contacts") && "POST".equals(method)) {
+            return true;
+        }
         // VNPay payment callbacks (server-to-server)
         if (path.startsWith("/api/payments/vnpay/return") || path.startsWith("/api/payments/vnpay/ipn")) {
             return true;
         }
-        // WebSocket notifications
-        if (path.startsWith("/ws-notifications")) {
+        // WebSocket notifications & support chat
+        if (path.startsWith("/ws-notifications") || path.startsWith("/ws-support")) {
             return true;
         }
         // Swagger / OpenAPI / Actuator

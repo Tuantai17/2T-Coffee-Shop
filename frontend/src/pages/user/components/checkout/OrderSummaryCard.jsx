@@ -2,6 +2,8 @@ import React from 'react';
 import { formatPrice } from '../../../../utils/formatPrice';
 import { resolveImageUrl, applyImageFallback, DEFAULT_IMAGE_FALLBACK } from '../../../../utils/imageFallback';
 import { Link } from 'react-router-dom';
+import VoucherBox from '../cart/VoucherBox';
+import LoyaltyPointBox from '../cart/LoyaltyPointBox';
 
 function OrderSummaryCard({ 
   cart, 
@@ -12,7 +14,13 @@ function OrderSummaryCard({
   grandTotal, 
   loadingSubmit, 
   onSubmit, 
-  loyaltyPointsEarned 
+  loyaltyPointsEarned,
+  appliedVoucher,
+  onApplyVoucherCode,
+  onOpenVoucherModal,
+  onRemoveVoucher,
+  totalPoints = 0,
+  onApplyPoints
 }) {
   return (
     <div className="card shadow-sm border-0 rounded-4 p-0 bg-white sticky-top mb-4" style={{ top: "80px", zIndex: 1, boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
@@ -28,8 +36,9 @@ function OrderSummaryCard({
             {cart.map((item) => {
               const product = item.product || {};
               const imageUrl = item.productImageUrl || product.imageUrl;
+              const cartItemKey = item.cartItemId || item.id || `${item.productId || product.id}-${item.variantId || "no-variant"}-${item.optionsSnapshot || ""}-${item.toppingsSnapshot || ""}`;
               return (
-                <div key={item.id || product.id} className="d-flex gap-3 align-items-start">
+                <div key={cartItemKey} className="d-flex gap-3 align-items-start">
                   <div className="rounded-3 overflow-hidden border bg-white flex-shrink-0" style={{ width: "60px", height: "60px" }}>
                     <img 
                       src={resolveImageUrl(imageUrl, DEFAULT_IMAGE_FALLBACK)} 
@@ -71,7 +80,7 @@ function OrderSummaryCard({
         
         {discount > 0 && (
           <div className="d-flex justify-content-between mb-2 small text-danger">
-            <span>Giảm giá Voucher</span>
+            <span>Giảm giá Voucher ({appliedVoucher?.voucherCode || appliedVoucher?.code})</span>
             <span className="fw-medium">-{formatPrice(discount)}</span>
           </div>
         )}
@@ -82,6 +91,21 @@ function OrderSummaryCard({
             <span className="fw-medium">-{formatPrice(pointDiscount)}</span>
           </div>
         )}
+
+        <hr style={{ borderColor: "#f0ebe5" }} />
+
+        {/* Voucher */}
+        <VoucherBox
+          appliedVoucher={appliedVoucher}
+          onApplyCode={onApplyVoucherCode}
+          onOpenModal={onOpenVoucherModal}
+          onRemoveVoucher={onRemoveVoucher}
+        />
+
+        {/* Loyalty Points */}
+        <LoyaltyPointBox totalPoints={totalPoints} onApplyPoints={onApplyPoints} />
+
+        <hr style={{ borderColor: "#f0ebe5" }} />
 
         <div className="d-flex justify-content-between mb-3 small pb-3 border-bottom">
           <span className="text-muted flex-grow-1">Phí giao hàng</span>

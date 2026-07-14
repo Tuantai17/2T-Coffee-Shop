@@ -61,10 +61,15 @@ public class AdminOrderServiceImpl implements AdminOrderService {
     public Order updateOrderStatus(Long orderId, String newStatus, String performedBy) {
         Order order = orderRepository.findById(orderId).orElseThrow(() -> new RuntimeException("Order not found"));
         String oldStatus = order.getStatus();
+        boolean paidVnpayOrder = "VNPAY".equalsIgnoreCase(order.getPaymentMethod())
+                && "PAID".equalsIgnoreCase(order.getPaymentStatus());
         
         // Luồng kiểm tra cơ bản
         if ("COMPLETED".equals(oldStatus) && !"CANCELLED".equals(newStatus)) {
             throw new RuntimeException("Không thể chuyển trạng thái từ Hoàn thành");
+        }
+        if (paidVnpayOrder && "PENDING_CONFIRMATION".equalsIgnoreCase(newStatus)) {
+            throw new RuntimeException("Đơn VNPay đã thanh toán không thể chuyển về Chờ xác nhận");
         }
         
         // Nếu chuyển sang Đang giao, kiểm tra xem có sự cố nào chưa giải quyết không
@@ -77,6 +82,9 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         }
 
         order.setStatus(newStatus);
+        if ("CONFIRMED".equals(newStatus) && order.getConfirmedAt() == null) {
+            order.setConfirmedAt(LocalDateTime.now());
+        }
         Order savedOrder = orderRepository.save(order);
 
         logActivity(orderId, "STATUS_CHANGE", "Cập nhật trạng thái đơn hàng", oldStatus, newStatus, performedBy);

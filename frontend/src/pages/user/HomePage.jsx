@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { getProducts, getCategories, getBanners } from "../../services/productService";
 import { addToCart } from "../../services/cartService";
+import { getPublicPosts } from "../../services/newsPublicService";
+import { resolveImageUrl } from "../../utils/imageFallback";
 import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
 import UserLayout from "../../layouts/UserLayout";
 
@@ -9,15 +11,11 @@ import HeroSlider from "./components/home/HeroSlider";
 import QuickOrder from "./components/home/QuickOrder";
 import HomeCategorySlider from "./components/home/HomeCategorySlider";
 import HomeProductSection from "./components/home/HomeProductSection";
-import ComboBanner from "./components/home/ComboBanner";
-import FlashSale from "./components/home/FlashSale";
 import LoyaltySummary from "./components/home/LoyaltySummary";
 import DailyCheckInSummary from "./components/home/DailyCheckInSummary";
 import MiniGameBanner from "./components/home/MiniGameBanner";
-import VoucherSummary from "./components/home/VoucherSummary";
 import HomeNewsSection from "./components/home/HomeNewsSection";
 import HomeFeatureInfo from "./components/home/HomeFeatureInfo";
-import AppDownload from "./components/home/AppDownload";
 import FloatingButtons from "./components/home/FloatingButtons";
 
 function HomePage() {
@@ -26,14 +24,25 @@ function HomePage() {
   const [hotProducts, setHotProducts] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
   const [saleProducts, setSaleProducts] = useState([]);
+  const [latestNews, setLatestNews] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
     setLoading(true);
     try {
-      // Fetch Banners
+      // Fetch Banners — chỉ HOME_HERO, active; backend đã sort sortOrder ASC
       const bannersRes = await getBanners({ position: "HOME_HERO", activeOnly: true });
-      setBanners(Array.isArray(bannersRes.data) ? bannersRes.data : []);
+      const bannerList = Array.isArray(bannersRes.data) ? bannersRes.data : [];
+      // Phòng thủ: lọc active + sort lại theo sortOrder (HeroSlider cũng sort)
+      const ordered = bannerList
+        .filter((b) => b && b.active !== false && (b.imageUrl || b.imgUrl || b.desktopImageUrl || b.bannerUrl))
+        .sort((a, b) => {
+          const oa = Number(a.sortOrder ?? a.displayOrder ?? 0);
+          const ob = Number(b.sortOrder ?? b.displayOrder ?? 0);
+          if (oa !== ob) return oa - ob;
+          return Number(a.id ?? 0) - Number(b.id ?? 0);
+        });
+      setBanners(ordered);
 
       // Fetch Categories
       const catRes = await getCategories();
@@ -53,6 +62,23 @@ function HomePage() {
       const saleRes = await getProducts({ onSale: true, sort: "on_sale_order" });
       const nextSale = Array.isArray(saleRes.data) ? saleRes.data : [];
       setSaleProducts(nextSale.slice(0, 10));
+
+      // Fetch Latest News
+      try {
+        const newsRes = await getPublicPosts({ page: 0, size: 3 });
+        if (newsRes && newsRes.data && newsRes.data.content) {
+            const formattedNews = newsRes.data.content.map(p => ({
+                id: p.slug,
+                title: p.title,
+                img: resolveImageUrl(p.thumbnailUrl),
+                date: new Date(p.publishedAt || p.createdAt).toLocaleDateString('vi-VN'),
+                cat: p.categoryName || 'Tin tức',
+            }));
+            setLatestNews(formattedNews);
+        }
+      } catch (err) {
+        console.error("Lỗi lấy tin tức trang chủ:", err);
+      }
 
     } catch (error) {
       console.error("Lỗi lấy dữ liệu trang chủ:", error);
@@ -116,15 +142,11 @@ function HomePage() {
         onAddToCart={handleAddToCart}
       />
 
-      <ComboBanner />
-      <FlashSale />
       <LoyaltySummary />
       <DailyCheckInSummary />
       <MiniGameBanner />
-      <VoucherSummary />
-      <HomeNewsSection />
+      <HomeNewsSection news={latestNews} />
       <HomeFeatureInfo />
-      <AppDownload />
       <FloatingButtons />
     </UserLayout>
   );

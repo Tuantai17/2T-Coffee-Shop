@@ -33,7 +33,7 @@ public class ProductServiceImpl implements ProductService {
     @Override
     @Cacheable(value = "products", key = "'all'")
     public List<Product> getAllProduct() {
-        List<Product> list = productRepository.findAll(resolveSort("newest"));
+        List<Product> list = productRepository.findAll(resolveSort("newest")).stream().filter(p -> !p.isDeleted()).collect(Collectors.toList());
         list.forEach(product -> {
             Hibernate.initialize(product.getImageUrls());
             Hibernate.initialize(product.getVariants());
@@ -133,6 +133,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = productRepository.findAll(resolveSort(sort))
                 .stream()
+                .filter(product -> !product.isDeleted())
                 .filter(product -> matchesKeyword(product, normalizedKeyword))
                 .filter(product -> matchesExact(product.getCategory(), normalizedCategory))
                 .filter(product -> matchesExactIgnoreCase(product.getBrand(), normalizedBrand))
@@ -192,6 +193,7 @@ public class ProductServiceImpl implements ProductService {
 
         List<Product> products = productRepository.findAll(resolveSort(sort))
                 .stream()
+                .filter(product -> !product.isDeleted())
                 .filter(product -> matchesKeyword(product, normalizedKeyword))
                 .filter(product -> matchesExact(product.getCategory(), normalizedCategory))
                 .filter(product -> matchesExactIgnoreCase(product.getBrand(), normalizedBrand))
@@ -269,7 +271,14 @@ public class ProductServiceImpl implements ProductService {
             product.setCategory(productDetails.getCategory());
             product.setAvailability(productDetails.getAvailability());
             product.setImageUrl(productDetails.getImageUrl());
-            product.setImageUrls(productDetails.getImageUrls());
+            if (product.getImageUrls() != null) {
+                product.getImageUrls().clear();
+                if (productDetails.getImageUrls() != null) {
+                    product.getImageUrls().addAll(productDetails.getImageUrls());
+                }
+            } else {
+                product.setImageUrls(productDetails.getImageUrls());
+            }
             product.setSlug(productDetails.getSlug());
             product.setSku(productDetails.getSku());
             product.setBrand(productDetails.getBrand());
@@ -319,6 +328,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true)
     public void softDeleteProduct(Long productId, String deletedBy, String deleteReason) {
         Product product = getProductById(productId);
         if (product != null) {
@@ -330,6 +340,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true)
     public void restoreProduct(Long productId) {
         Product product = getProductById(productId);
         if (product != null) {
@@ -341,6 +352,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @CacheEvict(value = "products", allEntries = true)
     public void permanentlyDeleteProduct(Long productId) {
         deleteProduct(productId);
     }

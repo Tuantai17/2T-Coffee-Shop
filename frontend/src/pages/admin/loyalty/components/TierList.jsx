@@ -42,7 +42,7 @@ function TierList({ tiers, loading, onEdit, onDelete, onUpdateOrder }) {
               <th className="border-0 text-muted fw-bold py-3 ps-4" style={{ fontSize: "11px", width: "40px" }}></th>
               <th className="border-0 text-muted fw-bold py-3" style={{ fontSize: "11px" }}>Hạng</th>
               <th className="border-0 text-muted fw-bold py-3 text-center" style={{ fontSize: "11px" }}>Trạng thái</th>
-              <th className="border-0 text-muted fw-bold py-3 text-center" style={{ fontSize: "11px" }}>Điều kiện điểm</th>
+              <th className="border-0 text-muted fw-bold py-3 text-center" style={{ fontSize: "11px" }}>Điều kiện chi tiêu</th>
               <th className="border-0 text-muted fw-bold py-3 text-center" style={{ fontSize: "11px" }}>Màu sắc</th>
               <th className="border-0 text-muted fw-bold py-3" style={{ fontSize: "11px" }}>Quyền lợi chính</th>
               <th className="border-0 text-muted fw-bold py-3 text-center" style={{ fontSize: "11px" }}>Số thành viên</th>
@@ -98,7 +98,7 @@ function TierList({ tiers, loading, onEdit, onDelete, onUpdateOrder }) {
                     )}
                   </td>
                   <td className="text-center fw-medium text-dark" style={{ fontSize: "12px" }}>
-                    {tier.min ? `${tier.min.toLocaleString()} điểm` : '0 điểm'}
+                    {tier.min ? `${tier.min.toLocaleString()} VNĐ` : '0 VNĐ'}
                     {tier.minCompletedOrders > 0 && <div className="text-muted" style={{ fontSize: "10px" }}>và {tier.minCompletedOrders} đơn</div>}
                   </td>
                   <td className="text-center">

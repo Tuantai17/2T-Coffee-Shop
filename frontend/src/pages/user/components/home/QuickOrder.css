@@ -1,0 +1,32 @@
+/* Khối giao hàng — dưới banner, không phá layout hero */
+
+.home-quick-order {
+  position: relative;
+  z-index: 10;
+  width: 100%;
+  /* Mobile + mặc định: hoàn toàn dưới banner */
+  margin-top: 16px;
+  margin-bottom: 8px;
+}
+
+.home-quick-order__card {
+  border-radius: 20px;
+}
+
+/* Desktop: overlap nhẹ 16–20px (không 50px) */
+@media (min-width: 992px) {
+  .home-quick-order {
+    margin-top: -16px;
+    margin-bottom: 12px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .home-quick-order {
+    margin-top: -20px;
+  }
+}
+
+.home-quick-order__pane {
+  min-width: 0;
+}

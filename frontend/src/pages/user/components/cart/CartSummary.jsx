@@ -1,17 +1,9 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { formatPrice } from '../../../../utils/formatPrice';
-import VoucherBox from './VoucherBox';
-import LoyaltyPointBox from './LoyaltyPointBox';
 
 function CartSummary({
   items = [],
-  appliedVoucher,
-  onApplyVoucherCode,
-  onOpenVoucherModal,
-  onRemoveVoucher,
-  appliedPoints = 0,
-  onApplyPoints,
   isCheckingOut = false,
   onCheckout,
 }) {
@@ -20,19 +12,10 @@ function CartSummary({
   const itemCount = items.reduce((sum, it) => sum + (it.quantity || 0), 0);
   const subtotal = items.reduce((sum, it) => sum + (it.subTotal || it.unitPrice * it.quantity || 0), 0);
 
-  // Mock discount calculations
+  // Mock discount calculations (product discount)
   const productDiscount = 0;
-  let voucherDiscount = 0;
-  if (appliedVoucher) {
-    if (appliedVoucher.type === 'percent') {
-      voucherDiscount = Math.min(subtotal * appliedVoucher.discount / 100, 30000);
-    } else if (appliedVoucher.type === 'fixed') {
-      voucherDiscount = appliedVoucher.discount;
-    }
-  }
-  const pointDiscount = appliedPoints * 10;
   const shippingFee = subtotal >= 100000 ? 0 : 20000;
-  const total = Math.max(0, subtotal - productDiscount - voucherDiscount - pointDiscount + shippingFee);
+  const total = Math.max(0, subtotal - productDiscount + shippingFee);
   const loyaltyEarned = Math.floor(total / 1000);
 
   return (
@@ -53,18 +36,6 @@ function CartSummary({
             <span className="fw-semibold" style={{ color: "#22c55e" }}>-{formatPrice(productDiscount)}</span>
           </div>
         )}
-        {voucherDiscount > 0 && (
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Voucher ({appliedVoucher.code})</span>
-            <span className="fw-semibold" style={{ color: "#22c55e" }}>-{formatPrice(voucherDiscount)}</span>
-          </div>
-        )}
-        {pointDiscount > 0 && (
-          <div className="d-flex justify-content-between mb-2">
-            <span className="text-muted">Điểm ({appliedPoints} điểm)</span>
-            <span className="fw-semibold" style={{ color: "#22c55e" }}>-{formatPrice(pointDiscount)}</span>
-          </div>
-        )}
         <div className="d-flex justify-content-between mb-2">
           <span className="text-muted d-flex align-items-center gap-1">
             Phí giao hàng
@@ -73,19 +44,6 @@ function CartSummary({
           <span className="fw-semibold">{shippingFee > 0 ? formatPrice(shippingFee) : 'Miễn phí'}</span>
         </div>
       </div>
-
-      <hr style={{ borderColor: "#f0ebe5" }} />
-
-      {/* Voucher */}
-      <VoucherBox
-        appliedVoucher={appliedVoucher}
-        onApplyCode={onApplyVoucherCode}
-        onOpenModal={onOpenVoucherModal}
-        onRemoveVoucher={onRemoveVoucher}
-      />
-
-      {/* Loyalty Points */}
-      <LoyaltyPointBox onApplyPoints={onApplyPoints} />
 
       <hr style={{ borderColor: "#f0ebe5" }} />
 

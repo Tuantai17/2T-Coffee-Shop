@@ -43,9 +43,9 @@ public class LoyaltySeedConfig {
                         .evaluationMonths(6)
                         .dailyCheckinPoints(5L)
                         .dailySpinCount(1)
-                        .upgradeVoucherValue(15000L)
+                        .upgradeVoucherValue(30000L)
                         .birthdayVoucherValue(20000L)
-                        .monthlyFreeshipCount(1)
+                        .monthlyFreeshipCount(0)
                         .prioritySupport(false)
                         .displayOrder(1)
                         .active(true)
@@ -56,11 +56,11 @@ public class LoyaltySeedConfig {
                         .minimumCompletedOrders(8)
                         .minimumEligibleSpending(1500000L)
                         .evaluationMonths(6)
-                        .dailyCheckinPoints(8L)
+                        .dailyCheckinPoints(10L)
                         .dailySpinCount(2)
                         .upgradeVoucherValue(30000L)
                         .birthdayVoucherValue(50000L)
-                        .monthlyFreeshipCount(2)
+                        .monthlyFreeshipCount(1)
                         .prioritySupport(false)
                         .displayOrder(2)
                         .active(true)
@@ -71,11 +71,11 @@ public class LoyaltySeedConfig {
                         .minimumCompletedOrders(15)
                         .minimumEligibleSpending(4000000L)
                         .evaluationMonths(6)
-                        .dailyCheckinPoints(12L)
+                        .dailyCheckinPoints(15L)
                         .dailySpinCount(3)
-                        .upgradeVoucherValue(60000L)
+                        .upgradeVoucherValue(50000L)
                         .birthdayVoucherValue(80000L)
-                        .monthlyFreeshipCount(4)
+                        .monthlyFreeshipCount(2)
                         .prioritySupport(true)
                         .displayOrder(3)
                         .active(true)
@@ -88,9 +88,9 @@ public class LoyaltySeedConfig {
                         .evaluationMonths(6)
                         .dailyCheckinPoints(20L)
                         .dailySpinCount(5)
-                        .upgradeVoucherValue(100000L)
+                        .upgradeVoucherValue(60000L)
                         .birthdayVoucherValue(150000L)
-                        .monthlyFreeshipCount(8)
+                        .monthlyFreeshipCount(3)
                         .prioritySupport(true)
                         .displayOrder(4)
                         .active(true)
@@ -98,8 +98,21 @@ public class LoyaltySeedConfig {
         );
 
         for (MembershipTier tier : tiers) {
-            if (tierRepository.findByCode(tier.getCode()).isEmpty()) {
+            java.util.Optional<MembershipTier> existingOpt = tierRepository.findByCode(tier.getCode());
+            if (existingOpt.isEmpty()) {
                 tierRepository.save(tier);
+            } else {
+                MembershipTier existing = existingOpt.get();
+                existing.setMinimumCompletedOrders(tier.getMinimumCompletedOrders());
+                existing.setMinimumEligibleSpending(tier.getMinimumEligibleSpending());
+                existing.setEvaluationMonths(tier.getEvaluationMonths());
+                existing.setDailyCheckinPoints(tier.getDailyCheckinPoints());
+                existing.setDailySpinCount(tier.getDailySpinCount());
+                existing.setUpgradeVoucherValue(tier.getUpgradeVoucherValue());
+                existing.setBirthdayVoucherValue(tier.getBirthdayVoucherValue());
+                existing.setMonthlyFreeshipCount(tier.getMonthlyFreeshipCount());
+                existing.setPrioritySupport(tier.getPrioritySupport());
+                tierRepository.save(existing);
             }
         }
     }
@@ -182,6 +195,65 @@ public class LoyaltySeedConfig {
                         .active(true)
                         .validFrom(now.minusDays(7))
                         .validTo(now.plusMonths(6))
+                        .build(),
+                VoucherDefinition.builder()
+                        .code("TIER_UPGRADE_30K")
+                        .name("Voucher giam 30.000d")
+                        .description("Voucher len hang / thang")
+                        .type("FIXED_AMOUNT")
+                        .discountAmount(30000L)
+                        .minOrderValue(0L)
+                        .pointsRequired(0L)
+                        .maxClaimsPerUser(12)
+                        .totalQuantity(10000)
+                        .claimedQuantity(0)
+                        .active(true)
+                        .validFrom(now.minusDays(1))
+                        .validTo(now.plusYears(5))
+                        .build(),
+                VoucherDefinition.builder()
+                        .code("TIER_UPGRADE_50K")
+                        .name("Voucher giam 50.000d")
+                        .description("Voucher len hang / thang")
+                        .type("FIXED_AMOUNT")
+                        .discountAmount(50000L)
+                        .minOrderValue(0L)
+                        .pointsRequired(0L)
+                        .maxClaimsPerUser(12)
+                        .totalQuantity(10000)
+                        .claimedQuantity(0)
+                        .active(true)
+                        .validFrom(now.minusDays(1))
+                        .validTo(now.plusYears(5))
+                        .build(),
+                VoucherDefinition.builder()
+                        .code("TIER_UPGRADE_60K")
+                        .name("Voucher giam 60.000d")
+                        .description("Voucher len hang / thang")
+                        .type("FIXED_AMOUNT")
+                        .discountAmount(60000L)
+                        .minOrderValue(0L)
+                        .pointsRequired(0L)
+                        .maxClaimsPerUser(12)
+                        .totalQuantity(10000)
+                        .claimedQuantity(0)
+                        .active(true)
+                        .validFrom(now.minusDays(1))
+                        .validTo(now.plusYears(5))
+                        .build(),
+                VoucherDefinition.builder()
+                        .code("TIER_FREESHIP")
+                        .name("Freeship dac quyen")
+                        .description("Voucher freeship / thang")
+                        .type("FREE_SHIPPING")
+                        .minOrderValue(0L)
+                        .pointsRequired(0L)
+                        .maxClaimsPerUser(100)
+                        .totalQuantity(50000)
+                        .claimedQuantity(0)
+                        .active(true)
+                        .validFrom(now.minusDays(1))
+                        .validTo(now.plusYears(5))
                         .build()
         );
 
@@ -239,6 +311,22 @@ public class LoyaltySeedConfig {
         for (LoyaltyAccount account : accounts) {
             if (accountRepository.findByUserId(account.getUserId()).isEmpty()) {
                 accountRepository.save(account);
+            }
+        }
+        
+        // TEMPORARY: Reset user 1 points for testing
+        accountRepository.findByUserId(1L).ifPresent(acc -> {
+            acc.setAvailablePoints(0L);
+            acc.setLifetimeEarnedPoints(0L);
+            accountRepository.save(acc);
+        });
+        
+        // FIX: Update any existing accounts with 'MEMBER' tier to 'SILVER'
+        List<LoyaltyAccount> allAccounts = accountRepository.findAll();
+        for (LoyaltyAccount acc : allAccounts) {
+            if ("MEMBER".equals(acc.getCurrentTierCode())) {
+                acc.setCurrentTierCode("SILVER");
+                accountRepository.save(acc);
             }
         }
     }

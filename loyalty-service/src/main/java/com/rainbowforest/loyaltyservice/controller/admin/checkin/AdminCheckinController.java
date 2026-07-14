@@ -1,20 +1,19 @@
 package com.rainbowforest.loyaltyservice.controller.admin.checkin;
 
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinConfig;
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinCalendarEvent;
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinMission;
-import com.rainbowforest.loyaltyservice.domain.checkin.MysteryBox;
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinAchievement;
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinFaq;
-import com.rainbowforest.loyaltyservice.domain.checkin.UserCheckinStreak;
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinRecord;
-import com.rainbowforest.loyaltyservice.domain.checkin.CheckinRewardCycle;
-import java.util.List;
+import com.rainbowforest.loyaltyservice.domain.checkin.*;
+import com.rainbowforest.loyaltyservice.dto.checkin.AdminCheckinHistoryItem;
+import com.rainbowforest.loyaltyservice.dto.checkin.AdminCheckinProgramDetailResponse;
+import com.rainbowforest.loyaltyservice.dto.checkin.AdminCheckinProgramPayload;
 import com.rainbowforest.loyaltyservice.service.checkin.CheckinAdminService;
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -28,212 +27,99 @@ public class AdminCheckinController {
     public ResponseEntity<Map<String, Object>> getDashboard() {
         return ResponseEntity.ok(adminService.getDashboardStats());
     }
-    
 
-    @GetMapping("/reward-cycles")
-    public ResponseEntity<List<CheckinRewardCycle>> getAllRewardCycles() {
-        return ResponseEntity.ok(adminService.getAllRewardCycles());
+    // --- Programs ---
+    @GetMapping("/programs")
+    public ResponseEntity<List<Map<String, Object>>> getAllPrograms(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) String status
+    ) {
+        return ResponseEntity.ok(adminService.getAllPrograms(search, status));
     }
 
-    @GetMapping("/reward-cycles/{id}")
-    public ResponseEntity<CheckinRewardCycle> getRewardCycle(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getRewardCycle(id));
+    @GetMapping("/programs/{id}")
+    public ResponseEntity<AdminCheckinProgramDetailResponse> getProgram(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getProgram(id));
     }
 
-    @PostMapping("/reward-cycles")
-    public ResponseEntity<CheckinRewardCycle> createRewardCycle(@RequestBody CheckinRewardCycle cycle) {
-        return ResponseEntity.ok(adminService.createRewardCycle(cycle));
+    @PostMapping("/programs")
+    public ResponseEntity<AdminCheckinProgramDetailResponse> createProgram(@RequestBody AdminCheckinProgramPayload program) {
+        return ResponseEntity.ok(adminService.createProgram(program));
     }
 
-    @PutMapping("/reward-cycles/{id}")
-    public ResponseEntity<CheckinRewardCycle> updateRewardCycle(@PathVariable Long id, @RequestBody CheckinRewardCycle cycle) {
-        return ResponseEntity.ok(adminService.updateRewardCycle(id, cycle));
+    @PutMapping("/programs/{id}")
+    public ResponseEntity<AdminCheckinProgramDetailResponse> updateProgram(@PathVariable Long id, @RequestBody AdminCheckinProgramPayload program) {
+        return ResponseEntity.ok(adminService.updateProgram(id, program));
     }
 
-    @DeleteMapping("/reward-cycles/{id}")
-    public ResponseEntity<Void> deleteRewardCycle(@PathVariable Long id) {
-        adminService.deleteRewardCycle(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PatchMapping("/reward-cycles/{id}/status")
-    public ResponseEntity<CheckinRewardCycle> updateRewardCycleStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(adminService.updateRewardCycleStatus(id, payload.get("status")));
-    }
-
-
-    @GetMapping("/calendar-events")
-    public ResponseEntity<List<CheckinCalendarEvent>> getAllCalendarEvents() {
-        return ResponseEntity.ok(adminService.getAllCalendarEvents());
-    }
-
-    @GetMapping("/calendar-events/{id}")
-    public ResponseEntity<CheckinCalendarEvent> getCalendarEvent(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getCalendarEvent(id));
-    }
-
-    @PostMapping("/calendar-events")
-    public ResponseEntity<CheckinCalendarEvent> createCalendarEvent(@RequestBody CheckinCalendarEvent event) {
-        return ResponseEntity.ok(adminService.createCalendarEvent(event));
-    }
-
-    @PutMapping("/calendar-events/{id}")
-    public ResponseEntity<CheckinCalendarEvent> updateCalendarEvent(@PathVariable Long id, @RequestBody CheckinCalendarEvent event) {
-        return ResponseEntity.ok(adminService.updateCalendarEvent(id, event));
-    }
-
-    @DeleteMapping("/calendar-events/{id}")
-    public ResponseEntity<Void> deleteCalendarEvent(@PathVariable Long id) {
-        adminService.deleteCalendarEvent(id);
+    @DeleteMapping("/programs/{id}")
+    public ResponseEntity<Void> deleteProgram(@PathVariable Long id) {
+        adminService.deleteProgram(id);
         return ResponseEntity.ok().build();
     }
 
-
-    @GetMapping("/missions")
-    public ResponseEntity<List<CheckinMission>> getAllMissions() {
-        return ResponseEntity.ok(adminService.getAllMissions());
+    @PatchMapping("/programs/{id}/status")
+    public ResponseEntity<Map<String, Object>> updateProgramStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
+        return ResponseEntity.ok(adminService.updateProgramStatus(id, payload.get("status")));
     }
 
-    @GetMapping("/missions/{id}")
-    public ResponseEntity<CheckinMission> getMission(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getMission(id));
+    @PostMapping("/programs/{id}/duplicate")
+    public ResponseEntity<Map<String, Object>> duplicateProgram(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.duplicateProgram(id));
     }
 
-    @PostMapping("/missions")
-    public ResponseEntity<CheckinMission> createMission(@RequestBody CheckinMission mission) {
-        return ResponseEntity.ok(adminService.createMission(mission));
+    // --- Rewards ---
+    @GetMapping("/programs/{id}/rewards")
+    public ResponseEntity<List<CheckinProgramReward>> getProgramRewards(@PathVariable Long id) {
+        return ResponseEntity.ok(adminService.getProgramRewards(id));
     }
 
-    @PutMapping("/missions/{id}")
-    public ResponseEntity<CheckinMission> updateMission(@PathVariable Long id, @RequestBody CheckinMission mission) {
-        return ResponseEntity.ok(adminService.updateMission(id, mission));
+    @PutMapping("/programs/{id}/rewards")
+    public ResponseEntity<List<CheckinProgramReward>> saveProgramRewards(@PathVariable Long id, @RequestBody List<CheckinProgramReward> rewards) {
+        return ResponseEntity.ok(adminService.saveProgramRewards(id, rewards));
     }
 
-    @DeleteMapping("/missions/{id}")
-    public ResponseEntity<Void> deleteMission(@PathVariable Long id) {
-        adminService.deleteMission(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PatchMapping("/missions/{id}/status")
-    public ResponseEntity<CheckinMission> updateMissionStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(adminService.updateMissionStatus(id, payload.get("status")));
+    // --- Settings ---
+    @GetMapping("/settings")
+    public ResponseEntity<CheckinSetting> getSettings() {
+        return ResponseEntity.ok(adminService.getSettings());
     }
 
-
-    @GetMapping("/mystery-boxes")
-    public ResponseEntity<List<MysteryBox>> getAllMysteryBoxes() {
-        return ResponseEntity.ok(adminService.getAllMysteryBoxes());
+    @PutMapping("/settings")
+    public ResponseEntity<CheckinSetting> updateSettings(@RequestBody CheckinSetting settings) {
+        return ResponseEntity.ok(adminService.saveSettings(settings));
     }
 
-    @GetMapping("/mystery-boxes/{id}")
-    public ResponseEntity<MysteryBox> getMysteryBox(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getMysteryBox(id));
-    }
-
-    @PostMapping("/mystery-boxes")
-    public ResponseEntity<MysteryBox> createMysteryBox(@RequestBody MysteryBox box) {
-        return ResponseEntity.ok(adminService.createMysteryBox(box));
-    }
-
-    @PutMapping("/mystery-boxes/{id}")
-    public ResponseEntity<MysteryBox> updateMysteryBox(@PathVariable Long id, @RequestBody MysteryBox box) {
-        return ResponseEntity.ok(adminService.updateMysteryBox(id, box));
-    }
-
-    @DeleteMapping("/mystery-boxes/{id}")
-    public ResponseEntity<Void> deleteMysteryBox(@PathVariable Long id) {
-        adminService.deleteMysteryBox(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PatchMapping("/mystery-boxes/{id}/status")
-    public ResponseEntity<MysteryBox> updateMysteryBoxStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(adminService.updateMysteryBoxStatus(id, payload.get("status")));
-    }
-
-
-    @GetMapping("/achievements")
-    public ResponseEntity<List<CheckinAchievement>> getAllAchievements() {
-        return ResponseEntity.ok(adminService.getAllAchievements());
-    }
-
-    @GetMapping("/achievements/{id}")
-    public ResponseEntity<CheckinAchievement> getAchievement(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getAchievement(id));
-    }
-
-    @PostMapping("/achievements")
-    public ResponseEntity<CheckinAchievement> createAchievement(@RequestBody CheckinAchievement achievement) {
-        return ResponseEntity.ok(adminService.createAchievement(achievement));
-    }
-
-    @PutMapping("/achievements/{id}")
-    public ResponseEntity<CheckinAchievement> updateAchievement(@PathVariable Long id, @RequestBody CheckinAchievement achievement) {
-        return ResponseEntity.ok(adminService.updateAchievement(id, achievement));
-    }
-
-    @DeleteMapping("/achievements/{id}")
-    public ResponseEntity<Void> deleteAchievement(@PathVariable Long id) {
-        adminService.deleteAchievement(id);
-        return ResponseEntity.ok().build();
-    }
-    
-    @PatchMapping("/achievements/{id}/status")
-    public ResponseEntity<CheckinAchievement> updateAchievementStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(adminService.updateAchievementStatus(id, payload.get("status")));
-    }
-
-
-    @GetMapping("/users")
-    public ResponseEntity<List<UserCheckinStreak>> getAllUserStreaks() {
-        return ResponseEntity.ok(adminService.getAllUserStreaks());
-    }
-    
+    // --- History ---
     @GetMapping("/history")
-    public ResponseEntity<List<CheckinRecord>> getAllCheckinRecords() {
-        return ResponseEntity.ok(adminService.getAllCheckinRecords());
+    public ResponseEntity<List<AdminCheckinHistoryItem>> getHistory(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long programId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        return ResponseEntity.ok(adminService.getAllHistory(search, programId, status, fromDate, toDate));
     }
 
-
-    @GetMapping("/faq")
-    public ResponseEntity<List<CheckinFaq>> getAllFaqs() {
-        return ResponseEntity.ok(adminService.getAllFaqs());
+    @GetMapping("/history/export")
+    public ResponseEntity<byte[]> exportHistory(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Long programId,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate
+    ) {
+        byte[] data = adminService.exportHistoryCsv(search, programId, status, fromDate, toDate);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=checkin-history.csv")
+                .contentType(MediaType.parseMediaType("text/csv; charset=UTF-8"))
+                .body(data);
     }
 
-    @GetMapping("/faq/{id}")
-    public ResponseEntity<CheckinFaq> getFaq(@PathVariable Long id) {
-        return ResponseEntity.ok(adminService.getFaq(id));
-    }
-
-    @PostMapping("/faq")
-    public ResponseEntity<CheckinFaq> createFaq(@RequestBody CheckinFaq faq) {
-        return ResponseEntity.ok(adminService.createFaq(faq));
-    }
-
-    @PutMapping("/faq/{id}")
-    public ResponseEntity<CheckinFaq> updateFaq(@PathVariable Long id, @RequestBody CheckinFaq faq) {
-        return ResponseEntity.ok(adminService.updateFaq(id, faq));
-    }
-
-    @DeleteMapping("/faq/{id}")
-    public ResponseEntity<Void> deleteFaq(@PathVariable Long id) {
-        adminService.deleteFaq(id);
+    @DeleteMapping("/history/{id}")
+    public ResponseEntity<Void> deleteHistoryRecord(@PathVariable Long id) {
+        adminService.deleteHistoryRecord(id);
         return ResponseEntity.ok().build();
-    }
-    
-    @PatchMapping("/faq/{id}/status")
-    public ResponseEntity<CheckinFaq> updateFaqStatus(@PathVariable Long id, @RequestBody Map<String, String> payload) {
-        return ResponseEntity.ok(adminService.updateFaqStatus(id, payload.get("status")));
-    }
-
-    @GetMapping("/config")
-    public ResponseEntity<CheckinConfig> getConfig() {
-        return ResponseEntity.ok(adminService.getConfig());
-    }
-    
-    @PutMapping("/config")
-    public ResponseEntity<CheckinConfig> updateConfig(@RequestBody CheckinConfig config) {
-        return ResponseEntity.ok(adminService.saveConfig(config));
     }
 }

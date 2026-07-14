@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Đừng Quên Điểm Danh!</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); padding: 30px 20px; text-align: center; }
+        .header h1 { color: #fff; margin: 0; font-size: 24px; }
+        .content { padding: 40px 30px; text-align: center; }
+        .btn { display: inline-block; background-color: #ec4899; color: #fff; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 14px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BrewMoments - Quà Điểm Danh</h1>
+        </div>
+        <div class="content">
+            <p>Chào <strong th:text="${recipientName}">Bạn</strong>,</p>
+            <p>Hôm nay bạn chưa điểm danh để nhận quà từ hệ thống BrewMoments đó! Đừng bỏ lỡ những điểm thưởng và voucher hấp dẫn hàng ngày nhé.</p>
+            <a href="http://localhost:5173/profile?tab=checkin" class="btn">Điểm Danh Ngay</a>
+        </div>
+        <div class="footer">
+            &copy; 2026 BrewMoments. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

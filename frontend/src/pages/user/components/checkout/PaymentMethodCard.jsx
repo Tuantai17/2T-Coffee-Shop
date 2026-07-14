@@ -64,21 +64,6 @@ function PaymentMethodCard({ paymentMethod, onChangePayment }) {
           </label>
         </div>
 
-        {/* Placeholders */}
-        <div className="col-sm-4 col-6">
-          <div className="card p-3 rounded-4 border bg-light h-100" style={{ opacity: 0.6, cursor: "not-allowed" }}>
-            <div className="d-flex flex-column align-items-center text-center h-100 justify-content-center gap-2">
-              <div className="bg-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "32px", height: "32px" }}>
-                <img src="/images/momo.png" alt="MoMo" style={{ width: "20px" }} onError={(e) => {e.target.src = 'https://upload.wikimedia.org/wikipedia/vi/f/fe/MoMo_Logo.png'}} />
-              </div>
-              <div>
-                <div className="fw-bold text-muted" style={{ fontSize: "12px" }}>MoMo</div>
-                <div className="text-muted" style={{ fontSize: "10px" }}>Sắp mở</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div className="col-sm-4 col-6">
           <div className="card p-3 rounded-4 border bg-light h-100" style={{ opacity: 0.6, cursor: "not-allowed" }}>
             <div className="d-flex flex-column align-items-center text-center h-100 justify-content-center gap-2">

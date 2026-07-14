@@ -12,7 +12,7 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
     originalPrice: "",
     quantity: "",
     imageUrl: "",
-    imageUrls: "",
+    imageUrls: [],
     description: "",
     featured: false,
     newArrival: false,
@@ -42,7 +42,7 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
         originalPrice: initialData.originalPrice || "",
         quantity: initialData.quantity || initialData.availability || "",
         imageUrl: initialData.imageUrl || "",
-        imageUrls: Array.isArray(initialData.imageUrls) ? initialData.imageUrls.join(", ") : initialData.imageUrls || "",
+        imageUrls: Array.isArray(initialData.imageUrls) ? initialData.imageUrls : (initialData.imageUrls ? initialData.imageUrls.split(",").map(s => s.trim()).filter(Boolean) : []),
         description: initialData.description || initialData.discription || "",
         featured: Boolean(initialData.featured),
         newArrival: Boolean(initialData.newArrival),
@@ -67,7 +67,7 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
       // Reset form
       setFormData({
         name: "", slug: "", sku: "", categoryId: "", status: "ACTIVE",
-        price: "", originalPrice: "", quantity: "", imageUrl: "", imageUrls: "",
+        price: "", originalPrice: "", quantity: "", imageUrl: "", imageUrls: [],
         description: "", featured: false, newArrival: false, onSale: false, onSaleOrder: 0, newArrivalOrder: 0, featuredOrder: 0,
         variants: [], optionGroups: [], toppings: [], showUrlInput: false,
       });
@@ -173,12 +173,9 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
         const newLocalUrls = files.map(file => URL.createObjectURL(file));
         setPreviewGallery(prev => [...prev, ...newLocalUrls]);
         
-        const uploadedUrls = [];
         const targetFolder = formData.sku ? `products/${formData.sku}` : `products/temp_${Date.now()}`;
-        for (const file of files) {
-          const url = await uploadService.uploadImage(file, targetFolder);
-          uploadedUrls.push(url);
-        }
+        const uploadPromises = files.map(file => uploadService.uploadImage(file, targetFolder));
+        const uploadedUrls = await Promise.all(uploadPromises);
         
         setPreviewGallery(prev => {
           // Replace local previews with actual uploaded URLs
@@ -187,10 +184,10 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
           return updated;
         });
         
-        setFormData(prev => {
-          const currentUrls = prev.imageUrls ? prev.imageUrls.split(",").map(s=>s.trim()).filter(Boolean) : [];
-          return { ...prev, imageUrls: [...currentUrls, ...uploadedUrls].join(", ") };
-        });
+        setFormData(prev => ({
+          ...prev, 
+          imageUrls: [...(Array.isArray(prev.imageUrls) ? prev.imageUrls : []), ...uploadedUrls]
+        }));
       } catch (error) {
         alert("Có lỗi xảy ra khi tải gallery ảnh lên Cloudinary!");
       } finally {
@@ -201,11 +198,10 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
 
   const removeGalleryImage = (indexToRemove) => {
     setPreviewGallery(prev => prev.filter((_, idx) => idx !== indexToRemove));
-    setFormData(prev => {
-      const currentUrls = prev.imageUrls ? prev.imageUrls.split(",").map(s=>s.trim()).filter(Boolean) : [];
-      const updatedUrls = currentUrls.filter((_, idx) => idx !== indexToRemove);
-      return { ...prev, imageUrls: updatedUrls.join(", ") };
-    });
+    setFormData(prev => ({
+      ...prev,
+      imageUrls: (Array.isArray(prev.imageUrls) ? prev.imageUrls : []).filter((_, idx) => idx !== indexToRemove)
+    }));
   };
 
   const handleAddVariant = () => {
@@ -439,7 +435,11 @@ function ProductFormModal({ show, onClose, categories, toppings = [], optionGrou
                         </div>
                         <div className="col-md-6">
                           <label className="form-label small text-muted mb-1">URL Gallery (cách nhau bởi dấu phẩy)</label>
-                          <input type="text" className="form-control rounded-0 w-100 form-control-sm" placeholder="Nhập các đường dẫn gallery..." name="imageUrls" value={formData.imageUrls} onChange={(e) => {handleChange(e); if(e.target.value.trim()) setPreviewGallery(e.target.value.split(",").map(u=>u.trim()).filter(Boolean))}} />
+                          <input type="text" className="form-control rounded-0 w-100 form-control-sm" placeholder="Nhập các đường dẫn gallery..." name="imageUrls" value={Array.isArray(formData.imageUrls) ? formData.imageUrls.join(", ") : formData.imageUrls} onChange={(e) => {
+                            const arr = e.target.value.split(",").map(u=>u.trim()).filter(Boolean);
+                            setFormData(prev => ({ ...prev, imageUrls: arr }));
+                            setPreviewGallery(arr);
+                          }} />
                         </div>
                       </div>
                     </div>

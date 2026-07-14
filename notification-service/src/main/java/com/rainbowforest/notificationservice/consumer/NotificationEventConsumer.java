@@ -17,12 +17,15 @@ public class NotificationEventConsumer {
     private NotificationService notificationService;
 
     @Autowired
+    private com.rainbowforest.notificationservice.service.EmailNotificationHandler emailNotificationHandler;
+
+    @Autowired
     private ProcessedEventRepository processedEventRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
 
-    @KafkaListener(topics = {"order-events", "user-events", "payment-events", "loyalty-events"}, groupId = "notification-group")
+    @KafkaListener(topics = {"order-events", "user-events", "payment-events", "loyalty-events", "notification-events"}, groupId = "notification-group")
     public void processEvent(String message) {
         try {
             JsonNode root = objectMapper.readTree(message);
@@ -40,28 +43,40 @@ public class NotificationEventConsumer {
             }
 
             JsonNode payload = root.path("payload");
+            JsonNode emailPayload = root.has("payload") ? payload : root;
             
             switch (eventType) {
                 case "ORDER_CREATED":
                     handleOrderCreated(payload);
+                    emailNotificationHandler.processEmailEvent(emailPayload, eventId, eventType);
                     break;
                 case "ORDER_CONFIRMED":
                     handleOrderConfirmed(payload);
+                    emailNotificationHandler.processEmailEvent(emailPayload, eventId, "ORDER_STATUS_CHANGED");
                     break;
                 case "ORDER_SHIPPING":
                     handleOrderShipping(payload);
+                    emailNotificationHandler.processEmailEvent(emailPayload, eventId, "ORDER_STATUS_CHANGED");
                     break;
                 case "USER_REGISTERED":
                     handleUserRegistered(payload);
                     break;
                 case "PAYMENT_SUCCESS":
                     handlePaymentSuccess(payload);
+                    emailNotificationHandler.processEmailEvent(emailPayload, eventId, eventType);
                     break;
                 case "CHECKIN_REWARD_GRANTED":
                     handleCheckinReward(payload);
                     break;
                 case "MINIGAME_REWARD_GRANTED":
                     handleGameReward(payload);
+                    break;
+                case "USER_FORGOT_PASSWORD_OTP":
+                case "USER_PASSWORD_RESET_SUCCESS":
+                case "USER_PASSWORD_CHANGED":
+                case "DAILY_CHECKIN_REMINDER":
+                    // Only email for these events
+                    emailNotificationHandler.processEmailEvent(emailPayload, eventId, eventType);
                     break;
                 default:
                     System.out.println("Unhandled event type for notification: " + eventType);
@@ -78,9 +93,7 @@ public class NotificationEventConsumer {
         Long orderId = payload.path("orderId").asLong();
         String title = "Đơn hàng mới #" + orderId;
         String message = "Đơn hàng #" + orderId + " của bạn đã được tạo thành công và đang chờ xác nhận.";
-        String email = payload.path("email").asText(null); // Assuming email is in payload or we can fetch it, actually let's just pass null to mock for now
-        
-        notificationService.createAndSendNotification(userId, email, "ORDER_CREATED", title, message, "ORDER", String.valueOf(orderId));
+        notificationService.createAndSendNotification(userId, null, "ORDER_CREATED", title, message, "ORDER", String.valueOf(orderId));
     }
 
     private void handleOrderConfirmed(JsonNode payload) {
@@ -88,9 +101,7 @@ public class NotificationEventConsumer {
         Long orderId = payload.path("orderId").asLong();
         String title = "Đơn hàng #" + orderId + " đã được xác nhận";
         String message = "Đơn hàng của bạn đã được xác nhận và đang được chuẩn bị.";
-        String email = payload.path("email").asText(null); 
-        
-        notificationService.createAndSendNotification(userId, email, "ORDER_CONFIRMED", title, message, "ORDER", String.valueOf(orderId));
+        notificationService.createAndSendNotification(userId, null, "ORDER_CONFIRMED", title, message, "ORDER", String.valueOf(orderId));
     }
     
     private void handleOrderShipping(JsonNode payload) {
@@ -98,18 +109,14 @@ public class NotificationEventConsumer {
         Long orderId = payload.path("orderId").asLong();
         String title = "Đơn hàng #" + orderId + " đang được giao";
         String message = "Đơn hàng của bạn đã được giao cho đơn vị vận chuyển.";
-        String email = payload.path("email").asText(null); 
-        
-        notificationService.createAndSendNotification(userId, email, "ORDER_SHIPPING", title, message, "ORDER", String.valueOf(orderId));
+        notificationService.createAndSendNotification(userId, null, "ORDER_SHIPPING", title, message, "ORDER", String.valueOf(orderId));
     }
 
     private void handleUserRegistered(JsonNode payload) {
         Long userId = payload.path("userId").asLong();
         String title = "Chào mừng bạn!";
         String message = "Cảm ơn bạn đã đăng ký tài khoản.";
-        String email = payload.path("email").asText(null); 
-        
-        notificationService.createAndSendNotification(userId, email, "USER_REGISTERED", title, message, "USER", String.valueOf(userId));
+        notificationService.createAndSendNotification(userId, null, "USER_REGISTERED", title, message, "USER", String.valueOf(userId));
     }
 
     private void handlePaymentSuccess(JsonNode payload) {

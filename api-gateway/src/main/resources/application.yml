@@ -9,8 +9,8 @@ spring:
       default-filters:
         - name: RequestRateLimiter
           args:
-            redis-rate-limiter.replenishRate: 10
-            redis-rate-limiter.burstCapacity: 20
+            redis-rate-limiter.replenishRate: 50
+            redis-rate-limiter.burstCapacity: 100
             redis-rate-limiter.requestedTokens: 1
             key-resolver: "#{@ipKeyResolver}"
         - name: DedupeResponseHeader
@@ -86,6 +86,25 @@ spring:
           filters:
             - RewritePath=/api/accounts/users/(?<segment>.*), /users/${segment}
 
+        # ========== SUPPORT SERVICE ==========
+        - id: support-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/support/**, /api/admin/support/**
+        
+        - id: support-ws
+          uri: lb:ws://user-service
+          predicates:
+            - Path=/ws-support/**
+
+        # ========== SHOP CART (LEGACY) ==========
+        - id: shop-cart-legacy
+          uri: lb://order-service
+          predicates:
+            - Path=/api/shop/cart, /api/shop/cart/**
+          filters:
+            - RewritePath=/api/shop/cart(?<segment>/?.*), /cart$\{segment}
+
         # ========== PRODUCT CATALOG SERVICE ==========
         - id: product-catalog-service
           uri: http://product-catalog-service:8810
@@ -105,6 +124,20 @@ spring:
           uri: http://product-catalog-service:8810
           predicates:
             - Path=/api/public/posts/**
+          filters:
+            - StripPrefix=1
+
+        - id: contact-public-service
+          uri: http://product-catalog-service:8810
+          predicates:
+            - Path=/api/store-contact, /api/contacts
+          filters:
+            - StripPrefix=1
+
+        - id: contact-admin-service
+          uri: http://product-catalog-service:8810
+          predicates:
+            - Path=/api/admin/store-contact, /api/admin/contacts/**
           filters:
             - StripPrefix=1
 
@@ -186,8 +219,6 @@ spring:
           uri: lb://notification-service
           predicates:
             - Path=/api/notifications/**
-          filters:
-            - StripPrefix=1
 
         - id: notification-ws
           uri: lb:ws://notification-service
@@ -201,6 +232,17 @@ spring:
             - Path=/api/admin/revenue/**
           filters:
             - StripPrefix=1
+
+        # ========== MINI-GAME SERVICE ==========
+        - id: mini-game-public
+          uri: lb://mini-game-service
+          predicates:
+            - Path=/api/games/**
+
+        - id: mini-game-admin
+          uri: lb://mini-game-service
+          predicates:
+            - Path=/api/admin/mini-games/**
 
         # ========== LOYALTY SERVICE ==========
         - id: loyalty-service

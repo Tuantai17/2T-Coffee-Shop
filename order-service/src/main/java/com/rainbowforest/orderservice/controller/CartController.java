@@ -76,4 +76,11 @@ public class CartController {
                 headerGenerator.getHeadersForError(),
                 HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<java.util.Map<String, String>> handleException(Exception e) {
+        java.util.Map<String, String> response = new java.util.HashMap<>();
+        response.put("message", e.getMessage());
+        return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
 }

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Cập Nhật Trạng Thái Đơn Hàng</title>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7f6; margin: 0; padding: 0; color: #333; }
+        .container { max-width: 600px; margin: 40px auto; background: #fff; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.05); overflow: hidden; }
+        .header { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); padding: 30px 20px; text-align: center; }
+        .header h1 { color: #fff; margin: 0; font-size: 24px; }
+        .content { padding: 40px 30px; text-align: center; }
+        .status-box { font-size: 18px; font-weight: bold; color: #2563eb; margin: 20px 0; padding: 15px; border: 2px solid #2563eb; border-radius: 8px; display: inline-block; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 14px; color: #888; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>BrewMoments - Cập Nhật Trạng Thái</h1>
+        </div>
+        <div class="content">
+            <p>Chào <strong th:text="${recipientName}">Bạn</strong>,</p>
+            <p>Trạng thái đơn hàng <strong>#<span th:text="${orderCode}">0000</span></strong> của bạn đã được cập nhật thành:</p>
+            
+            <div class="status-box" th:text="${status}">Đang giao hàng</div>
+            
+            <p>Bạn có thể theo dõi tiến trình đơn hàng trong mục Quản lý đơn hàng trên website của chúng tôi.</p>
+        </div>
+        <div class="footer">
+            &copy; 2026 BrewMoments. All rights reserved.
+        </div>
+    </div>
+</body>
+</html>

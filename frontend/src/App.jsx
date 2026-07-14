@@ -19,6 +19,9 @@ import AddressPage from "./pages/user/AddressPage";
 import OrderSuccessPage from "./pages/user/OrderSuccessPage";
 import LoyaltyRewardsPage from "./pages/user/LoyaltyRewardsPage";
 import LoyaltyRewardSuccessPage from "./pages/user/LoyaltyRewardSuccessPage";
+import PaymentResultPage from "./pages/user/PaymentResultPage";
+import GameCenterPage from "./pages/user/GameCenterPage";
+import MiniGamePlayPage from "./pages/user/MiniGamePlayPage";
 
 // Admin Pages
 import DashboardPage from "./pages/admin/DashboardPage";
@@ -49,24 +52,22 @@ import AdminPostEditPage from "./pages/admin/posts/AdminPostEditPage";
 import AdminPostPreviewPage from "./pages/admin/posts/AdminPostPreviewPage";
 import AdminPostCategoryPage from "./pages/admin/posts/AdminPostCategoryPage";
 
-// Admin Check-in Pages
-import CheckInDashboardPage from "./pages/admin/checkin/CheckInDashboardPage";
-import CheckInConfigurationPage from "./pages/admin/checkin/CheckInConfigurationPage";
-import RewardCycleListPage from "./pages/admin/checkin/RewardCycleListPage";
-import RewardCycleDetailPage from "./pages/admin/checkin/RewardCycleDetailPage";
-import CheckInCalendarPage from "./pages/admin/checkin/CheckInCalendarPage";
-import MissionManagementPage from "./pages/admin/checkin/MissionManagementPage";
-import RewardManagementPage from "./pages/admin/checkin/RewardManagementPage";
-import AchievementManagementPage from "./pages/admin/checkin/AchievementManagementPage";
-import CheckInUserListPage from "./pages/admin/checkin/CheckInUserListPage";
-import CheckInUserDetailPage from "./pages/admin/checkin/CheckInUserDetailPage";
-import CheckInHistoryPage from "./pages/admin/checkin/CheckInHistoryPage";
-import CheckInFaqPage from "./pages/admin/checkin/CheckInFaqPage";
+// Admin Check-in (single-page module with tabs)
+import CheckInManagementPage from "./pages/admin/checkin/CheckInManagementPage";
+import MiniGameManagementPage from "./pages/admin/minigame/MiniGameManagementPage";
 
 
-// Public News Pages
+// Public News & Contact Pages
 import NewsPage from "./pages/user/NewsPage";
 import NewsDetailPage from "./pages/user/NewsDetailPage";
+import ContactPage from "./pages/user/ContactPage";
+
+// Admin Contacts
+import AdminStoreContactPage from "./pages/admin/contacts/AdminStoreContactPage";
+import AdminContactListPage from "./pages/admin/contacts/AdminContactListPage";
+
+// Admin Support Chat
+import AdminSupportPage from "./pages/admin/support/AdminSupportPage";
 
 // Security
 import ProtectedRoute from "./components/ProtectedRoute";
@@ -95,6 +96,9 @@ function App() {
         
         <Route path="/news" element={<NewsPage />} />
         <Route path="/news/:slug" element={<NewsDetailPage />} />
+        
+        <Route path="/contact" element={<ContactPage />} />
+        <Route path="/lien-he" element={<ContactPage />} />
 
         {/* User Protected Routes */}
         <Route
@@ -126,6 +130,14 @@ function App() {
           element={
             <ProtectedRoute>
               <OrderHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/payment/vnpay/result"
+          element={
+            <ProtectedRoute>
+              <PaymentResultPage />
             </ProtectedRoute>
           }
         />
@@ -175,6 +187,32 @@ function App() {
           element={
             <ProtectedRoute>
               <AddressPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/profile/minigame"
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Mini-Game User Routes */}
+        <Route
+          path="/games"
+          element={
+            <ProtectedRoute>
+              <GameCenterPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/games/:slug"
+          element={
+            <ProtectedRoute>
+              <MiniGamePlayPage />
             </ProtectedRoute>
           }
         />
@@ -404,20 +442,70 @@ function App() {
             </ProtectedRoute>
           }
         />
-      
-        {/* Admin Checkin Routes */}
-        <Route path="/admin/check-in/dashboard" element={<ProtectedRoute adminOnly={true}><CheckInDashboardPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/configuration" element={<ProtectedRoute adminOnly={true}><CheckInConfigurationPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/reward-cycles" element={<ProtectedRoute adminOnly={true}><RewardCycleListPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/reward-cycles/:id" element={<ProtectedRoute adminOnly={true}><RewardCycleDetailPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/calendar" element={<ProtectedRoute adminOnly={true}><CheckInCalendarPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/missions" element={<ProtectedRoute adminOnly={true}><MissionManagementPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/rewards" element={<ProtectedRoute adminOnly={true}><RewardManagementPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/achievements" element={<ProtectedRoute adminOnly={true}><AchievementManagementPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/users" element={<ProtectedRoute adminOnly={true}><CheckInUserListPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/users/:userId" element={<ProtectedRoute adminOnly={true}><CheckInUserDetailPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/history" element={<ProtectedRoute adminOnly={true}><CheckInHistoryPage /></ProtectedRoute>} />
-        <Route path="/admin/check-in/faq" element={<ProtectedRoute adminOnly={true}><CheckInFaqPage /></ProtectedRoute>} />
+        
+        {/* Admin Contact Management */}
+        <Route
+          path="/admin/store-contact"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminStoreContactPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/contacts"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminContactListPage />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Admin Support Chat */}
+        <Route
+          path="/admin/support"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <AdminSupportPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Mini-Game Management */}
+        <Route
+          path="/admin/mini-games"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <MiniGameManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/mini-games/*"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <MiniGameManagementPage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Admin Check-in: single-page module (tabs: dashboard / programs / history / settings) */}
+        <Route
+          path="/admin/check-in"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <CheckInManagementPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/check-in/*"
+          element={
+            <ProtectedRoute adminOnly={true}>
+              <CheckInManagementPage />
+            </ProtectedRoute>
+          }
+        />
 
       </Routes>
     </BrowserRouter>

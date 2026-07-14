@@ -25,7 +25,8 @@ public class PasswordResetServiceImpl implements PasswordResetService {
     private final UserRepository userRepository;
     private final PasswordResetOtpRepository passwordResetOtpRepository;
     private final PasswordEncoder passwordEncoder;
-    private final EmailService emailService;
+    private final org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate;
+    private final String notificationTopic;
     private final int otpExpirationMinutes;
     private final int resetTokenExpirationMinutes;
     private final boolean exposeDevOtp;
@@ -34,15 +35,17 @@ public class PasswordResetServiceImpl implements PasswordResetService {
             UserRepository userRepository,
             PasswordResetOtpRepository passwordResetOtpRepository,
             PasswordEncoder passwordEncoder,
-            EmailService emailService,
+            org.springframework.kafka.core.KafkaTemplate<String, Object> kafkaTemplate,
+            @Value("${app.kafka.notification-topic:notification-events}") String notificationTopic,
             @Value("${app.password-reset.otp-expiration-minutes:5}") int otpExpirationMinutes,
             @Value("${app.password-reset.reset-token-expiration-minutes:10}") int resetTokenExpirationMinutes,
-            @Value("${app.password-reset.expose-dev-otp:true}") boolean exposeDevOtp
+            @Value("${app.password-reset.expose-dev-otp:false}") boolean exposeDevOtp
     ) {
         this.userRepository = userRepository;
         this.passwordResetOtpRepository = passwordResetOtpRepository;
         this.passwordEncoder = passwordEncoder;
-        this.emailService = emailService;
+        this.kafkaTemplate = kafkaTemplate;
+        this.notificationTopic = notificationTopic;
         this.otpExpirationMinutes = otpExpirationMinutes;
         this.resetTokenExpirationMinutes = resetTokenExpirationMinutes;
         this.exposeDevOtp = exposeDevOtp;
@@ -54,9 +57,9 @@ public class PasswordResetServiceImpl implements PasswordResetService {
         User user = userRepository.findByUserDetailsEmail(normalizedEmail);
         if (user == null) {
             return new PasswordResetSendOtpResult(
-                    "Neu email ton tai trong he thong, ma OTP da duoc gui.",
+                    "Neu email ton tai trong he thong, ma xac thuc se duoc gui den email do.",
                     null,
-                    emailService.isConfigured()
+                    true
             );
         }
 
@@ -71,16 +74,26 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         passwordResetOtpRepository.save(resetOtp);
 
-        boolean deliveredByEmail = false;
-        String message = "Neu email ton tai trong he thong, ma OTP da duoc gui.";
+        boolean deliveredByEmail = true;
+        String message = "Neu email ton tai trong he thong, ma xac thuc se duoc gui den email do.";
         try {
-            emailService.sendPasswordResetOtp(normalizedEmail, resetOtp.getOtpCode(), otpExpirationMinutes);
-            deliveredByEmail = emailService.isConfigured();
-        } catch (IllegalStateException ex) {
+            java.util.Map<String, Object> event = new java.util.HashMap<>();
+            event.put("eventId", "USER_FORGOT_PASSWORD_OTP:" + UUID.randomUUID().toString());
+            event.put("eventType", "USER_FORGOT_PASSWORD_OTP");
+            event.put("recipientEmail", normalizedEmail);
+            String fullName = user.getUserDetails() != null ? user.getUserDetails().getFirstName() + (user.getUserDetails().getLastName() != null ? " " + user.getUserDetails().getLastName() : "") : null;
+            event.put("recipientName", fullName != null && !fullName.isBlank() ? fullName : "Customer");
+            event.put("otpCode", resetOtp.getOtpCode());
+            event.put("expirationMinutes", otpExpirationMinutes);
+            event.put("occurredAt", java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))));
+            
+            kafkaTemplate.send(notificationTopic, event);
+        } catch (Exception ex) {
             if (!exposeDevOtp) {
-                throw ex;
+                throw new IllegalStateException("Loi khi tao yeu cau gui email.", ex);
             }
-            message = "Khong gui duoc email OTP. He thong da chuyen sang ma OTP test local.";
+            message = "Khong the gui notification event. He thong da chuyen sang ma OTP test local.";
+            deliveredByEmail = false;
         }
 
         String devOtp = (!deliveredByEmail && exposeDevOtp) ? resetOtp.getOtpCode() : null;
@@ -148,6 +161,20 @@ public class PasswordResetServiceImpl implements PasswordResetService {
 
         resetOtp.setUsed(true);
         passwordResetOtpRepository.save(resetOtp);
+        
+        try {
+            java.util.Map<String, Object> event = new java.util.HashMap<>();
+            event.put("eventId", "USER_PASSWORD_RESET_SUCCESS:" + UUID.randomUUID().toString());
+            event.put("eventType", "USER_PASSWORD_RESET_SUCCESS");
+            event.put("recipientEmail", normalizedEmail);
+            String fullName = user.getUserDetails() != null ? user.getUserDetails().getFirstName() + (user.getUserDetails().getLastName() != null ? " " + user.getUserDetails().getLastName() : "") : null;
+            event.put("recipientName", fullName != null && !fullName.isBlank() ? fullName : "Customer");
+            event.put("occurredAt", java.time.format.DateTimeFormatter.ISO_OFFSET_DATE_TIME.format(java.time.ZonedDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"))));
+            
+            kafkaTemplate.send(notificationTopic, event);
+        } catch (Exception ignored) {
+            // Do not fail the transaction if notification fails
+        }
     }
 
     private void invalidatePendingOtps(String email) {

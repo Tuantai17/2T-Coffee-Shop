@@ -3,7 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import UserLayout from '../../layouts/UserLayout';
 import { getPublicPosts, getFeaturedPosts } from '../../services/newsPublicService';
 import { getAdminPostCategories } from '../../services/newsAdminService'; // Can reuse for public since it doesn't strictly require admin, or use public category endpoint if created
-import { applyImageFallback, DEFAULT_IMAGE_FALLBACK } from '../../utils/imageFallback';
+import { applyImageFallback, DEFAULT_IMAGE_FALLBACK, resolveImageUrl } from '../../utils/imageFallback';
 
 // Reusing axiosClient directly for public categories to avoid auth headers issue if admin service is protected
 import axiosClient from '../../api/axiosClient';
@@ -51,11 +51,17 @@ export default function NewsPage() {
     const loadData = async () => {
         setLoading(true);
         try {
-            // Fetch categories (publicly accessible via catalog service usually, or we just call the standard one)
-            const catRes = await axiosClient.get("/api/catalog/products/categories"); // Fallback if no post categories public api. Wait, we should use the post categories.
-            const pCatRes = await axiosClient.get("/api/admin/post-categories?size=100"); // Using the same endpoint, assuming it works or we need to add a public one. For simplicity, we call this.
-            
-            setCategories(pCatRes.data.content || []);
+            // Fetch categories
+            let fetchedCats = [];
+            try {
+                const pCatRes = await axiosClient.get("/api/admin/post-categories?size=100");
+                if (pCatRes && pCatRes.data && pCatRes.data.content) {
+                    fetchedCats = pCatRes.data.content;
+                }
+            } catch (err) {
+                console.warn("Could not fetch post categories (might need admin rights):", err);
+            }
+            setCategories(fetchedCats);
 
             const featuredRes = await getFeaturedPosts();
             setFeaturedPosts(featuredRes.data || []);
@@ -143,7 +149,7 @@ export default function NewsPage() {
                         {!keyword && !categoryId && page === 0 && topFeatured && (
                             <div className="card border-0 shadow-sm mb-5 rounded-4 overflow-hidden cursor-pointer" onClick={() => navigate(`/news/${topFeatured.slug}`)}>
                                 <img 
-                                    src={topFeatured.thumbnailUrl} 
+                                    src={resolveImageUrl(topFeatured.thumbnailUrl)} 
                                     className="card-img-top" 
                                     alt={topFeatured.title} 
                                     style={{ height: '400px', objectFit: 'cover' }}
@@ -173,7 +179,7 @@ export default function NewsPage() {
                                     <div className="col-md-6" key={post.id}>
                                         <div className="card h-100 border-0 shadow-sm rounded-4 overflow-hidden cursor-pointer" onClick={() => navigate(`/news/${post.slug}`)}>
                                             <img 
-                                                src={post.thumbnailUrl} 
+                                                src={resolveImageUrl(post.thumbnailUrl)} 
                                                 className="card-img-top" 
                                                 alt={post.title} 
                                                 style={{ height: '200px', objectFit: 'cover' }}
@@ -252,7 +258,7 @@ export default function NewsPage() {
                                     {sidebarPosts.map(post => (
                                         <div key={post.id} className="d-flex gap-3 align-items-center cursor-pointer" onClick={() => navigate(`/news/${post.slug}`)}>
                                             <img 
-                                                src={post.thumbnailUrl} 
+                                                src={resolveImageUrl(post.thumbnailUrl)} 
                                                 alt={post.title}
                                                 className="rounded-3"
                                                 style={{ width: '90px', height: '70px', objectFit: 'cover' }}

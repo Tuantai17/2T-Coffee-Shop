@@ -36,4 +36,69 @@ public class ProcessedEvent {
     protected void onCreate() {
         processedAt = LocalDateTime.now();
     }
+
+    public void setEventId(String eventId) { this.eventId = eventId; }
+    public void setEventType(String eventType) { this.eventType = eventType; }
+    public void setReferenceId(String referenceId) { this.referenceId = referenceId; }
+    public void setStatus(String status) { this.status = status; }
+    public void setProcessedAt(LocalDateTime processedAt) { this.processedAt = processedAt; }
+    public LocalDateTime getProcessedAt() { return processedAt; }
+    public String getStatus() { return status; }
+    public String getReferenceId() { return referenceId; }
+    public String getEventType() { return eventType; }
+    public String getEventId() { return eventId; }
+    public void setId(Long id) { this.id = id; }
+    public Long getId() { return id; }
+
+    public static class ProcessedEventBuilder {
+        private Long id;
+        private String eventId;
+        private String eventType;
+        private String referenceId;
+        private String status;
+        private LocalDateTime processedAt;
+
+        public ProcessedEventBuilder id(Long id) {
+            this.id = id;
+            return this;
+        }
+
+        public ProcessedEventBuilder eventId(String eventId) {
+            this.eventId = eventId;
+            return this;
+        }
+
+        public ProcessedEventBuilder eventType(String eventType) {
+            this.eventType = eventType;
+            return this;
+        }
+
+        public ProcessedEventBuilder referenceId(String referenceId) {
+            this.referenceId = referenceId;
+            return this;
+        }
+
+        public ProcessedEventBuilder status(String status) {
+            this.status = status;
+            return this;
+        }
+
+        public ProcessedEventBuilder processedAt(LocalDateTime processedAt) {
+            this.processedAt = processedAt;
+            return this;
+        }
+
+        public ProcessedEvent build() {
+            ProcessedEvent obj = new ProcessedEvent();
+            obj.setId(this.id);
+            obj.setEventId(this.eventId);
+            obj.setEventType(this.eventType);
+            obj.setReferenceId(this.referenceId);
+            obj.setStatus(this.status);
+            obj.setProcessedAt(this.processedAt);
+            return obj;
+        }
+    }
+    
+    public static ProcessedEventBuilder builder() { return new ProcessedEventBuilder(); }
 }

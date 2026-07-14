@@ -1,12 +1,12 @@
 import React from "react";
 
 function AddressCard({ address, onEdit, onDelete, onSetDefault, isSettingDefault }) {
-  const isDefault = address.default || address.isDefault;
-  const fullAddr = [address.addressLine, address.ward, address.district, address.province].filter(Boolean).join(", ");
+  const isDefault = address.isDefault || address.default;
+  const fullAddr = address.fullAddress || [address.detailAddress || address.addressLine, address.wardName || address.ward, address.districtName || address.district, address.provinceName || address.province].filter(Boolean).join(", ");
   
   let iconClass = "fa-house";
-  if (address.label === "Công ty") iconClass = "fa-briefcase";
-  else if (address.label === "Nhà người thân") iconClass = "fa-users";
+  if (address.addressType === "OFFICE" || address.label === "Công ty") iconClass = "fa-briefcase";
+  else if (address.addressType === "OTHER" || address.label === "Nhà người thân") iconClass = "fa-users";
 
   return (
     <div className={`card border-0 shadow-sm rounded-4 mb-3 ${isDefault ? "border-danger" : ""}`} style={{ border: isDefault ? "1px solid #ce1f28 !important" : "" }}>
@@ -25,18 +25,20 @@ function AddressCard({ address, onEdit, onDelete, onSetDefault, isSettingDefault
           <div className="flex-grow-1">
             <div className="d-flex align-items-center gap-2 mb-2">
               {isDefault && <span className="badge bg-danger rounded-1">Mặc định</span>}
-              <h6 className="mb-0 fw-bold">{address.label || "Nhà riêng"}</h6>
+              <h6 className="mb-0 fw-bold">
+                {address.addressType === "HOME" ? "Nhà riêng" : address.addressType === "OFFICE" ? "Công ty" : address.addressType === "OTHER" ? "Khác" : (address.label || "Nhà riêng")}
+              </h6>
             </div>
             
             <div className="row g-2 mb-2 small text-dark">
               <div className="col-auto d-flex align-items-center gap-2">
                 <i className="fa-regular fa-user text-muted"></i>
-                <span className="fw-medium">{address.receiverName}</span>
+                <span className="fw-medium">{address.recipientName || address.receiverName}</span>
               </div>
               <div className="col-auto text-muted">|</div>
               <div className="col-auto d-flex align-items-center gap-2">
                 <i className="fa-solid fa-phone text-muted"></i>
-                <span className="fw-medium">{address.phoneNumber}</span>
+                <span className="fw-medium">{address.phone || address.phoneNumber}</span>
               </div>
             </div>
             

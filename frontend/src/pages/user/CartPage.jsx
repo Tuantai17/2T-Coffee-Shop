@@ -8,7 +8,6 @@ import CartSummary from "./components/cart/CartSummary";
 import CartSkeleton from "./components/cart/CartSkeleton";
 import EmptyCart from "./components/cart/EmptyCart";
 import RemoveConfirmModal from "./components/cart/RemoveConfirmModal";
-import VoucherModal from "./components/cart/VoucherModal";
 import RecommendedProducts from "./components/cart/RecommendedProducts";
 import EditCartItemModal from "./components/cart/EditCartItemModal";
 
@@ -24,13 +23,6 @@ function CartPage() {
 
   // Edit item
   const [editingItem, setEditingItem] = useState(null);
-
-  // Voucher
-  const [appliedVoucher, setAppliedVoucher] = useState(null);
-  const [showVoucherModal, setShowVoucherModal] = useState(false);
-
-  // Loyalty Points
-  const [appliedPoints, setAppliedPoints] = useState(0);
 
   // Checkout
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -117,21 +109,7 @@ function CartPage() {
     }
   };
 
-  const handleApplyVoucherCode = (code) => {
-    // Mock validation
-    const valid = ['FREESHIP', 'WELCOME15', 'SALE20', 'BREW30K'].includes(code);
-    if (valid) {
-      const mockVouchers = {
-        FREESHIP: { code: 'FREESHIP', description: 'Miễn phí vận chuyển', discount: 0, type: 'freeship' },
-        WELCOME15: { code: 'WELCOME15', description: 'Giảm 15.000đ', discount: 15000, type: 'fixed' },
-        SALE20: { code: 'SALE20', description: 'Giảm 20% tối đa 30K', discount: 20, type: 'percent' },
-        BREW30K: { code: 'BREW30K', description: 'Giảm 30.000đ', discount: 30000, type: 'fixed' },
-      };
-      setAppliedVoucher(mockVouchers[code]);
-    } else {
-      alert("Mã voucher không hợp lệ!");
-    }
-  };
+
 
   const handleCheckout = () => {
     setIsCheckingOut(true);
@@ -239,12 +217,6 @@ function CartPage() {
               <div className="col-lg-4">
                 <CartSummary
                   items={items}
-                  appliedVoucher={appliedVoucher}
-                  onApplyVoucherCode={handleApplyVoucherCode}
-                  onOpenVoucherModal={() => setShowVoucherModal(true)}
-                  onRemoveVoucher={() => setAppliedVoucher(null)}
-                  appliedPoints={appliedPoints}
-                  onApplyPoints={setAppliedPoints}
                   isCheckingOut={isCheckingOut}
                   onCheckout={handleCheckout}
                 />
@@ -292,11 +264,6 @@ function CartPage() {
         item={removeItem}
         onConfirm={handleRemoveConfirm}
         onCancel={() => setRemoveItem(null)}
-      />
-      <VoucherModal
-        show={showVoucherModal}
-        onClose={() => setShowVoucherModal(false)}
-        onSelect={(v) => setAppliedVoucher(v)}
       />
       <EditCartItemModal
         show={!!editingItem}

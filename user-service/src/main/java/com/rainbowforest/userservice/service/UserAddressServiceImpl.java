@@ -52,8 +52,10 @@ public class UserAddressServiceImpl implements UserAddressService {
         address.setPhoneNumber(addressDetails.getPhoneNumber());
         address.setAddressLine(addressDetails.getAddressLine());
         address.setWard(addressDetails.getWard());
+        address.setWardCode(addressDetails.getWardCode());
         address.setDistrict(addressDetails.getDistrict());
         address.setProvince(addressDetails.getProvince());
+        address.setProvinceCode(addressDetails.getProvinceCode());
         address.setDefault(addressDetails.isDefault());
         return userAddressRepository.save(address);
     }

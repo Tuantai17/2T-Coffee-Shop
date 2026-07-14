@@ -38,13 +38,16 @@ public class JwtTokenProvider {
     }
 
     public String getUsernameFromJWT(String token) {
-        Claims claims = Jwts.parserBuilder()
+        Claims claims = getClaimsFromJWT(token);
+        return claims.getSubject();
+    }
+
+    public Claims getClaimsFromJWT(String token) {
+        return Jwts.parserBuilder()
                 .setSigningKey(getSigningKey())
                 .build()
                 .parseClaimsJws(token)
                 .getBody();
-
-        return claims.getSubject();
     }
 
     public boolean validateToken(String authToken) {

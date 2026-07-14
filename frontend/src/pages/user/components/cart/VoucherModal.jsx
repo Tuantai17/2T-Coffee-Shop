@@ -1,25 +1,9 @@
 import "../../../../styles/voucher-loyalty.css";
 
-const fallbackVouchers = [
-  {
-    id: 1,
-    code: "FREESHIP",
-    name: "Mien phi giao hang",
-    description: "Mien phi giao hang don tu 50K",
-    discountLabel: "Freeship",
-    discount: 0,
-    type: "freeship",
-    minOrderValue: 50000,
-    canApply: true,
-    status: "AVAILABLE",
-    expiringSoon: false,
-  },
-];
-
 function VoucherModal({ show, onClose, onSelect, vouchers = [] }) {
   if (!show) return null;
 
-  const items = vouchers.length > 0 ? vouchers : fallbackVouchers;
+  const items = vouchers || [];
 
   return (
     <div className="modal show d-block vl-bottom-sheet-mobile" style={{ backgroundColor: "rgba(0,0,0,0.45)", zIndex: 9999 }} onClick={onClose}>
@@ -34,7 +18,12 @@ function VoucherModal({ show, onClose, onSelect, vouchers = [] }) {
           </div>
 
           <div className="modal-body" style={{ padding: "16px 24px 24px" }}>
-            {items.map((voucher) => (
+            {items.length === 0 ? (
+              <div className="text-center text-muted py-4">
+                <p className="mb-0">Bạn chưa có voucher nào.</p>
+              </div>
+            ) : (
+              items.map((voucher) => (
               <div key={voucher.id} className="vl-sheet-row mb-3">
                 <div className="vl-sheet-amount">{voucher.discountLabel || voucher.description}</div>
                 <div className="vl-sheet-content">
@@ -54,7 +43,7 @@ function VoucherModal({ show, onClose, onSelect, vouchers = [] }) {
                   </div>
                 </div>
               </div>
-            ))}
+            )))}
           </div>
         </div>
       </div>

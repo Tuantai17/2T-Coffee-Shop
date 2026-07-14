@@ -5,6 +5,7 @@ public class InventoryAdjustmentRequest {
     private Long orderId;
     private Long orderItemId;
     private Long productId;
+    private Long variantId;
     private Integer quantity;
     private String reason;
     private String idempotencyKey;
@@ -30,11 +31,20 @@ public class InventoryAdjustmentRequest {
         this.idempotencyKey = idempotencyKey;
     }
 
-    
     public InventoryAdjustmentRequest(Long orderId, Long orderItemId, Long productId, Integer quantity, String reason, String idempotencyKey) {
         this.orderId = orderId;
         this.orderItemId = orderItemId;
         this.productId = productId;
+        this.quantity = quantity;
+        this.reason = reason;
+        this.idempotencyKey = idempotencyKey;
+    }
+
+    public InventoryAdjustmentRequest(Long orderId, Long orderItemId, Long productId, Long variantId, Integer quantity, String reason, String idempotencyKey) {
+        this.orderId = orderId;
+        this.orderItemId = orderItemId;
+        this.productId = productId;
+        this.variantId = variantId;
         this.quantity = quantity;
         this.reason = reason;
         this.idempotencyKey = idempotencyKey;
@@ -48,6 +58,8 @@ public class InventoryAdjustmentRequest {
     public void setOrderItemId(Long orderItemId) { this.orderItemId = orderItemId; }
     public Long getProductId() { return productId; }
     public void setProductId(Long productId) { this.productId = productId; }
+    public Long getVariantId() { return variantId; }
+    public void setVariantId(Long variantId) { this.variantId = variantId; }
     public Integer getQuantity() { return quantity; }
     public void setQuantity(Integer quantity) { this.quantity = quantity; }
     public String getReason() { return reason; }

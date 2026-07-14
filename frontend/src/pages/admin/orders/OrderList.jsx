@@ -33,6 +33,10 @@ const getPaymentBadge = (status) => {
       return <span className="text-warning fw-bold" style={{ fontSize: "11px" }}>Chưa thanh toán</span>;
     case "FAILED":
       return <span className="text-danger fw-bold" style={{ fontSize: "11px" }}>Thất bại</span>;
+    case "CANCELLED":
+      return <span className="text-secondary fw-bold" style={{ fontSize: "11px" }}>Đã hủy</span>;
+    case "REFUNDED":
+      return <span className="text-info fw-bold" style={{ fontSize: "11px" }}>Đã hoàn tiền</span>;
     default:
       return <span className="text-muted fw-bold" style={{ fontSize: "11px" }}>{status}</span>;
   }

@@ -1,7 +1,44 @@
-import { motion } from "framer-motion";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import miniGameApi from "../../../../api/miniGameApi";
+import { getAuthSession, AUTH_SCOPES } from "../../../../utils/authStorage";
 
-function MiniGameBanner({ gamesData }) {
+function MiniGameBanner() {
+  const [gamesData, setGamesData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let ignore = false;
+    const { token } = getAuthSession(AUTH_SCOPES.USER);
+
+    const loadGames = async () => {
+      if (!token) {
+        if (!ignore) setLoading(false);
+        return;
+      }
+      try {
+        const response = await miniGameApi.getGames();
+        if (!ignore) {
+          setGamesData(Array.isArray(response?.data) ? response.data.slice(0, 2) : []);
+        }
+      } catch (error) {
+        if (!ignore) {
+          setGamesData([]);
+        }
+      } finally {
+        if (!ignore) setLoading(false);
+      }
+    };
+
+    loadGames();
+
+    return () => {
+      ignore = true;
+    };
+  }, []);
+
+  const hasGames = gamesData.length > 0;
+
   return (
     <div className="container mt-5 pt-3">
       <div 
@@ -15,15 +52,15 @@ function MiniGameBanner({ gamesData }) {
         }}></div>
         <div className="position-absolute top-0 end-0 w-50 h-100 d-none d-md-block" style={{ background: "linear-gradient(90deg, #2E1810 0%, rgba(46,24,16,0) 100%)" }}></div>
 
-        <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0 placeholder-glow" style={{ maxWidth: "400px", width: "100%" }}>
+        <div className="position-relative z-1 text-center text-md-start mb-4 mb-md-0" style={{ maxWidth: "400px", width: "100%" }}>
           <span className="badge bg-warning text-dark mb-3 px-3 py-2 fs-6 rounded-pill">MINI GAME</span>
           
-          {!gamesData ? (
-             <>
+          {loading ? (
+             <div className="placeholder-glow">
                <div className="placeholder col-10 bg-secondary rounded mb-2" style={{ height: "32px" }}></div>
                <div className="placeholder col-8 bg-secondary rounded mb-4" style={{ height: "32px" }}></div>
                <div className="placeholder col-5 bg-secondary rounded-pill py-3"></div>
-             </>
+             </div>
           ) : (
             <>
               <h2 className="fw-bold text-white mb-3">Chơi game nhận điểm & voucher hấp dẫn</h2>
@@ -34,23 +71,56 @@ function MiniGameBanner({ gamesData }) {
           )}
         </div>
 
-        <div className="position-relative z-1 ms-md-auto d-flex gap-3 justify-content-center placeholder-glow">
-          {!gamesData ? (
-             <>
+        <div className="position-relative z-1 ms-md-auto d-flex gap-3 justify-content-center">
+          {loading ? (
+             <div className="placeholder-glow d-flex gap-3 align-items-center">
                <div className="bg-white p-2 rounded-4 shadow d-flex flex-column align-items-center" style={{ width: "120px" }}>
                  <div className="placeholder bg-secondary w-100 rounded-3 mb-2" style={{ aspectRatio: "1/1" }}></div>
                  <div className="placeholder col-8 bg-secondary rounded"></div>
                </div>
-               <div className="d-flex align-items-center text-white opacity-50">
+               <div className="text-white opacity-50">
                  <i className="fa-solid fa-plus fs-5"></i>
                </div>
                <div className="bg-white p-2 rounded-4 shadow d-flex flex-column align-items-center" style={{ width: "120px" }}>
                  <div className="placeholder bg-secondary w-100 rounded-3 mb-2" style={{ aspectRatio: "1/1" }}></div>
                  <div className="placeholder col-8 bg-secondary rounded"></div>
                </div>
-             </>
+             </div>
+          ) : !hasGames ? (
+             <div className="d-flex gap-3 align-items-center opacity-75">
+               <div className="bg-white p-2 rounded-4 shadow d-flex flex-column align-items-center" style={{ width: "120px" }}>
+                 <div className="bg-light w-100 rounded-3 mb-2 d-flex align-items-center justify-content-center" style={{ aspectRatio: "1/1" }}>
+                   <i className="fa-solid fa-gamepad text-secondary fs-3"></i>
+                 </div>
+                 <div className="fw-bold text-dark small text-center">Game Vui</div>
+               </div>
+               <div className="text-white opacity-50">
+                 <i className="fa-solid fa-plus fs-5"></i>
+               </div>
+               <div className="bg-white p-2 rounded-4 shadow d-flex flex-column align-items-center" style={{ width: "120px" }}>
+                 <div className="bg-light w-100 rounded-3 mb-2 d-flex align-items-center justify-content-center" style={{ aspectRatio: "1/1" }}>
+                   <i className="fa-solid fa-gift text-secondary fs-3"></i>
+                 </div>
+                 <div className="fw-bold text-dark small text-center">Nhận Quà</div>
+               </div>
+             </div>
           ) : (
-             null
+            gamesData.map((game) => (
+              <Link
+                key={game.id}
+                to={`/game/${game.slug}`}
+                className="bg-white p-2 rounded-4 shadow d-flex flex-column align-items-center text-decoration-none"
+                style={{ width: "120px" }}
+              >
+                <img
+                  src={game.thumbnailUrl || game.bannerUrl || "/mykingdom_banner.png"}
+                  alt={game.name}
+                  className="w-100 rounded-3 mb-2"
+                  style={{ aspectRatio: "1 / 1", objectFit: "cover" }}
+                />
+                <div className="fw-bold text-dark small text-center">{game.name}</div>
+              </Link>
+            ))
           )}
         </div>
       </div>

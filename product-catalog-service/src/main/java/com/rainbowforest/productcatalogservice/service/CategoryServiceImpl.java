@@ -68,14 +68,33 @@ public class CategoryServiceImpl implements CategoryService {
             return;
         }
 
+        String baseSlug;
         if (category.getSlug() == null || category.getSlug().isBlank()) {
-            category.setSlug(slugify(category.getName()));
+            baseSlug = slugify(category.getName());
         } else {
-            category.setSlug(slugify(category.getSlug()));
+            baseSlug = slugify(category.getSlug());
         }
+        
+        category.setSlug(generateUniqueSlug(baseSlug, category.getId()));
 
         if (category.getSortOrder() == null) {
             category.setSortOrder(0);
+        }
+    }
+
+    private String generateUniqueSlug(String baseSlug, Long id) {
+        String slug = baseSlug;
+        int count = 1;
+        while (true) {
+            boolean exists = (id == null) 
+                    ? categoryRepository.existsBySlug(slug)
+                    : categoryRepository.existsBySlugAndIdNot(slug, id);
+            
+            if (!exists) {
+                return slug;
+            }
+            slug = baseSlug + "-" + count;
+            count++;
         }
     }
 

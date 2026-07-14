@@ -44,3 +44,20 @@ export const deleteReadNotifications = async () => {
   // return axiosClient.delete("/api/notifications/admin/read");
   return { data: true };
 };
+
+// --- USER NOTIFICATIONS ---
+export const getMyNotifications = async () => {
+  return axiosClient.get("/api/notifications/me");
+};
+
+export const getMyUnreadCount = async () => {
+  return axiosClient.get("/api/notifications/unread-count");
+};
+
+export const markMyNotificationAsRead = async (id) => {
+  return axiosClient.patch(`/api/notifications/${id}/read`);
+};
+
+export const markAllMyNotificationsAsRead = async () => {
+  return axiosClient.patch("/api/notifications/read-all");
+};

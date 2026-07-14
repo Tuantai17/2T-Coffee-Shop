@@ -11,17 +11,21 @@ function statusBadgeClass(status) {
   switch (status) {
     case "COMPLETED":
       return { bg: "bg-success-subtle", text: "text-success", icon: "fa-circle-check" };
+    case "DELIVERING":
     case "SHIPPING":
       return { bg: "bg-primary-subtle", text: "text-primary", icon: "fa-truck-fast" };
+    case "READY_FOR_DELIVERY":
+      return { bg: "bg-warning-subtle", text: "text-warning", icon: "fa-truck-ramp-box" };
     case "CANCELLED":
       return { bg: "bg-secondary", text: "text-dark", icon: "fa-circle-xmark" };
+    case "PREPARING":
     case "PACKING":
       return { bg: "bg-info-subtle", text: "text-info", icon: "fa-box-open" };
+    case "CONFIRMED":
+      return { bg: "bg-success-subtle", text: "text-success", icon: "fa-check" };
     case "PENDING_CONFIRMATION":
     case "PENDING":
       return { bg: "bg-primary-subtle", text: "text-primary", icon: "fa-hourglass-half" };
-    case "APPROVED":
-      return { bg: "bg-success-subtle", text: "text-success", icon: "fa-check" };
     default:
       return { bg: "bg-warning-subtle", text: "text-warning", icon: "fa-clock" };
   }
@@ -30,12 +34,15 @@ function statusBadgeClass(status) {
 function statusText(status) {
   switch (status) {
     case "COMPLETED": return "Hoàn thành";
+    case "DELIVERING":
     case "SHIPPING": return "Đang giao hàng";
+    case "READY_FOR_DELIVERY": return "Chờ giao hàng";
     case "CANCELLED": return "Đã hủy";
+    case "PREPARING":
     case "PACKING": return "Đang chuẩn bị";
+    case "CONFIRMED": return "Đã xác nhận";
     case "PENDING_CONFIRMATION":
     case "PENDING": return "Chờ duyệt";
-    case "APPROVED": return "Đã duyệt";
     default: return status;
   }
 }
@@ -43,9 +50,10 @@ function statusText(status) {
 const TABS = [
   { id: "ALL", label: "Tất cả", icon: "fa-border-all" },
   { id: "PENDING_CONFIRMATION", label: "Chờ duyệt", icon: "fa-hourglass-half" },
-  { id: "APPROVED", label: "Đã duyệt", icon: "fa-check" },
-  { id: "PACKING", label: "Đang chuẩn bị", icon: "fa-box-open" },
-  { id: "SHIPPING", label: "Đang giao hàng", icon: "fa-truck-fast" },
+  { id: "CONFIRMED", label: "Đã xác nhận", icon: "fa-check" },
+  { id: "PREPARING", label: "Đang chuẩn bị", icon: "fa-box-open" },
+  { id: "READY_FOR_DELIVERY", label: "Chờ giao hàng", icon: "fa-truck-ramp-box" },
+  { id: "DELIVERING", label: "Đang giao hàng", icon: "fa-truck-fast" },
   { id: "COMPLETED", label: "Hoàn thành", icon: "fa-circle-check" },
   { id: "CANCELLED", label: "Đã hủy", icon: "fa-circle-xmark" },
 ];

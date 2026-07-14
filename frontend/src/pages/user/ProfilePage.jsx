@@ -9,8 +9,11 @@ import ProfileDashboard from "./components/profile/ProfileDashboard";
 import ProfileLoyalty from "./components/profile/ProfileLoyalty";
 import ProfileCheckin from "./components/profile/ProfileCheckin";
 import ProfileVoucher from "./components/profile/ProfileVoucher";
+import ProfileMiniGame from "./components/profile/ProfileMiniGame";
 
 import { getOrdersByUser } from "../../services/orderService";
+import loyaltyApi from "../../api/loyaltyApi";
+import miniGameApi from "../../api/miniGameApi";
 
 function ProfilePage() {
   const [profile, setProfile] = useState(null);
@@ -22,22 +25,35 @@ function ProfilePage() {
 
   const { userId } = getAuthSession(AUTH_SCOPES.USER);
 
-  const loadProfileData = useCallback(async () => {
+  const loadProfileData = useCallback(async (showLoading = true) => {
     if (!userId) {
-      setLoading(false);
+      if (showLoading) setLoading(false);
       return;
     }
 
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setError("");
 
     try {
-      const [profileRes, addressRes, orderRes] = await Promise.all([
+      const [profileRes, addressRes, orderRes, loyaltyRes, miniGameRes] = await Promise.all([
         getUserProfile(userId),
         getUserAddresses(userId),
-        getOrdersByUser(userId)
+        getOrdersByUser(userId),
+        loyaltyApi.getMyLoyaltyAccount().catch(() => ({ data: { availablePoints: 0 } })),
+        miniGameApi.getMyGameSummary()
+          .then((response) => ({ data: response?.data || null, unavailable: false }))
+          .catch((miniGameError) => ({
+            data: null,
+            unavailable: [404, 502, 503, 504].includes(miniGameError?.response?.status),
+          })),
       ]);
-      setProfile(profileRes.data);
+      const profileData = profileRes.data;
+      if (loyaltyRes?.data) {
+        profileData.loyaltyPoints = loyaltyRes.data.availablePoints || 0;
+      }
+      profileData.miniGameSummary = miniGameRes?.data || null;
+      profileData.miniGameUnavailable = Boolean(miniGameRes?.unavailable);
+      setProfile(profileData);
       setAddresses(addressRes.data);
       const sortedOrders = Array.isArray(orderRes.data) 
         ? orderRes.data.sort((a, b) => b.id - a.id)
@@ -47,7 +63,7 @@ function ProfilePage() {
       console.error("Lỗi lấy dữ liệu hồ sơ:", err);
       setError("Không thể tải thông tin tài khoản.");
     } finally {
-      setLoading(false);
+      if (showLoading) setLoading(false);
     }
   }, [userId]);
 
@@ -60,6 +76,7 @@ function ProfilePage() {
   const isLoyaltyPage = location.pathname.includes("/profile/loyalty");
   const isCheckinPage = location.pathname.includes("/profile/checkin");
   const isVoucherPage = location.pathname.includes("/profile/vouchers");
+  const isMiniGamePage = location.pathname.includes("/profile/minigame");
 
   return (
     <UserLayout>
@@ -91,11 +108,16 @@ function ProfilePage() {
                 {isInfoPage ? (
                   <ProfileInformationForm profile={profile} addresses={addresses} onUpdateSuccess={loadProfileData} />
                 ) : isLoyaltyPage ? (
-                  <ProfileLoyalty profile={profile} />
+                  <ProfileLoyalty />
                 ) : isCheckinPage ? (
-                  <ProfileCheckin profile={profile} />
+                  <ProfileCheckin profile={profile} onUpdateSuccess={loadProfileData} />
                 ) : isVoucherPage ? (
                   <ProfileVoucher profile={profile} />
+                ) : isMiniGamePage ? (
+                  <ProfileMiniGame
+                    summary={profile?.miniGameSummary}
+                    unavailable={profile?.miniGameUnavailable}
+                  />
                 ) : (
                   <ProfileDashboard profile={profile} orders={orders} />
                 )}

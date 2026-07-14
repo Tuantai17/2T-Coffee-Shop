@@ -9,6 +9,8 @@ function AdminSidebar() {
   const [isGamificationOpen, setIsGamificationOpen] = useState(
     location.pathname.includes("/admin/check-in") || location.pathname.includes("/admin/mini-games")
   );
+  const isContactRoute = location.pathname.startsWith("/admin/contacts") || location.pathname.startsWith("/admin/store-contact");
+  const [isContactOpen, setIsContactOpen] = useState(isContactRoute);
 
   const menuItems = [
     { path: "/admin", label: "Dashboard", icon: "fa-chart-pie" },
@@ -23,6 +25,7 @@ function AdminSidebar() {
     { path: "/admin/menus", label: "Quản lý menu", icon: "fa-sitemap" },
     { path: "/admin/orders", label: "Quản lý đơn hàng", icon: "fa-receipt" },
     { path: "/admin/users", label: "Quản lý người dùng", icon: "fa-users" },
+    { path: "/admin/support", label: "Hỗ trợ khách hàng", icon: "fa-headset" },
   ];
 
   const loyaltyItems = [
@@ -35,11 +38,13 @@ function AdminSidebar() {
   ];
 
   const gamificationItems = [
-    { path: "/admin/check-in/dashboard", label: "Điểm danh hằng ngày", icon: "fa-calendar-check" },
-    { path: "/admin/check-in/missions", label: "Nhiệm vụ", icon: "fa-bullseye" },
-    { path: "/admin/check-in/reward-cycles", label: "Chu kỳ Phần thưởng", icon: "fa-gift" },
+    { path: "/admin/check-in", label: "Điểm danh hằng ngày", icon: "fa-calendar-check" },
     { path: "/admin/mini-games", label: "Mini Game", icon: "fa-gamepad" },
-    { path: "/admin/check-in/achievements", label: "Thành tích", icon: "fa-medal" },
+  ];
+
+  const contactItems = [
+    { path: "/admin/contacts", label: "Danh sách liên hệ", icon: "fa-envelope-open-text" },
+    { path: "/admin/store-contact", label: "Thông tin cửa hàng", icon: "fa-store" },
   ];
 
   const renderMenuItem = (item, isSubItem = false) => {
@@ -174,6 +179,40 @@ function AdminSidebar() {
           {isGamificationOpen && (
             <ul className="nav flex-column mt-1 gap-1">
               {gamificationItems.map(item => renderMenuItem(item, true))}
+            </ul>
+          )}
+        </li>
+
+        {/* CONTACT Submenu */}
+        <li className="nav-item mt-2">
+          <div
+            className="nav-link d-flex align-items-center justify-content-between gap-3"
+            style={{
+              cursor: "pointer",
+              borderRadius: "12px",
+              padding: "12px 18px",
+              color: isContactOpen ? "#ffffff" : "var(--admin-sidebar-muted)",
+              fontWeight: isContactOpen ? "600" : "400",
+              transition: "all 0.2s ease"
+            }}
+            onClick={() => setIsContactOpen(!isContactOpen)}
+            onMouseEnter={(e) => {
+              if (!isContactOpen) e.currentTarget.style.backgroundColor = "rgba(255,255,255,0.05)";
+            }}
+            onMouseLeave={(e) => {
+              if (!isContactOpen) e.currentTarget.style.backgroundColor = "transparent";
+            }}
+          >
+            <div className="d-flex align-items-center gap-3">
+              <i className="fa-solid fa-address-book text-info" style={{ width: "20px", textAlign: "center" }}></i>
+              LIÊN HỆ
+            </div>
+            <i className={`fa-solid fa-chevron-${isContactOpen ? 'down' : 'right'} small`}></i>
+          </div>
+          
+          {isContactOpen && (
+            <ul className="nav flex-column mt-1 gap-1">
+              {contactItems.map(item => renderMenuItem(item, true))}
             </ul>
           )}
         </li>

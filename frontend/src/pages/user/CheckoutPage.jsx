@@ -7,6 +7,7 @@ import { getDefaultAddress, addUserAddress } from "../../services/addressService
 import { getUserProfile } from "../../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
 import loyaltyApi from "../../api/loyaltyApi";
+import { createPayment } from "../../services/paymentService";
 
 import CheckoutStepper from "./components/checkout/CheckoutStepper";
 import AddressSelectorModal from "./components/checkout/AddressSelectorModal";
@@ -15,7 +16,6 @@ import VoucherModal from "./components/cart/VoucherModal";
 import DeliveryMethodCard from "./components/checkout/DeliveryMethodCard";
 import ScheduleCard from "./components/checkout/ScheduleCard";
 import CustomerInfoCard from "./components/checkout/CustomerInfoCard";
-import DiscountCard from "./components/checkout/DiscountCard";
 import PaymentMethodCard from "./components/checkout/PaymentMethodCard";
 import OrderSummaryCard from "./components/checkout/OrderSummaryCard";
 import SecurityCard from "./components/checkout/SecurityCard";
@@ -167,7 +167,7 @@ function CheckoutPage() {
   const handleApplyVoucher = async (manualCode) => {
     const codeToUse = (manualCode || voucherCode || "").trim();
     if (!codeToUse) {
-      setVoucherError("Vui long nhap ma voucher");
+      setSubmitError("Vui long nhap ma voucher");
       return;
     }
     try {
@@ -177,10 +177,10 @@ function CheckoutPage() {
       });
       setAppliedVoucher(response?.data || null);
       setVoucherCode(codeToUse);
-      setVoucherError("");
+      setSubmitError("");
     } catch (error) {
       setAppliedVoucher(null);
-      setVoucherError(error?.response?.data?.message || "Voucher khong hop le hoac khong ap dung duoc");
+      setSubmitError(error?.response?.data?.message || "Voucher khong hop le hoac khong ap dung duoc");
     }
   };
 
@@ -235,8 +235,34 @@ function CheckoutPage() {
       };
 
       const res = await createOrder(Number(userId), payload);
+      const orderId = res.data?.id || res.data?.orderId || res.data?.orderCode;
+
+      if (paymentMethod === "VNPAY") {
+        try {
+          const paymentRes = await createPayment({
+            orderId,
+            paymentMethod,
+            ipAddress: "127.0.0.1"
+          });
+          if (paymentRes.data?.paymentUrl) {
+            sessionStorage.setItem("pendingPaymentOrderId", String(orderId));
+            window.location.href = paymentRes.data.paymentUrl;
+            return;
+          }
+          throw new Error("Khong nhan duoc lien ket thanh toan VNPay.");
+        } catch (paymentErr) {
+          setSubmitError(paymentErr?.response?.data?.message || "Loi khoi tao cong thanh toan. Don hang da duoc luu, vui long vao lich su don hang de thanh toan lai.");
+          navigate(`/order-success/${orderId}`, {
+            state: {
+              paymentNotice: "Don hang da duoc tao, nhung chua khoi tao duoc lien ket VNPay. Vui long vao lich su don hang de thanh toan lai.",
+            },
+          });
+          return;
+        }
+      }
+
       await clearCart();
-      navigate(`/order-success/${res.data?.id || res.data?.orderId || res.data?.orderCode}`);
+      navigate(`/order-success/${orderId}`);
     } catch (error) {
       setSubmitError(error?.response?.data?.message || "Dat hang that bai. Vui long thu lai.");
       window.scrollTo({ top: 0, behavior: "smooth" });
@@ -280,18 +306,6 @@ function CheckoutPage() {
 
               <CustomerInfoCard form={form} onChangeForm={handleChangeForm} />
 
-              <DiscountCard
-                voucherCode={voucherCode}
-                onChangeVoucher={handleChangeVoucher}
-                onApplyVoucher={() => handleApplyVoucher()}
-                appliedVoucher={appliedVoucher}
-                voucherError={voucherError}
-                onOpenVoucherWallet={() => setShowVoucherModal(true)}
-                pointsAvailable={pointsAvailable}
-                pointsUsed={pointsUsed}
-                onChangePoints={setPointsUsed}
-              />
-
               <PaymentMethodCard paymentMethod={paymentMethod} onChangePayment={setPaymentMethod} />
             </div>
 
@@ -306,6 +320,15 @@ function CheckoutPage() {
                 loadingSubmit={loadingSubmit}
                 onSubmit={handleCheckout}
                 loyaltyPointsEarned={loyaltyPointsEarned}
+                appliedVoucher={appliedVoucher}
+                onApplyVoucherCode={(code) => handleApplyVoucher(code)}
+                onOpenVoucherModal={() => setShowVoucherModal(true)}
+                onRemoveVoucher={() => {
+                  setAppliedVoucher(null);
+                  setVoucherCode("");
+                }}
+                totalPoints={pointsAvailable}
+                onApplyPoints={setPointsUsed}
               />
               <SecurityCard />
             </div>

@@ -342,7 +342,7 @@ function AdminProductPage() {
     originalPrice: form.originalPrice ? Number(form.originalPrice) : null,
     quantity: Number(form.quantity),
     imageUrl: form.imageUrl || null,
-    imageUrls: form.imageUrls ? form.imageUrls.split(",").map(s => s.trim()).filter(Boolean) : [],
+    imageUrls: Array.isArray(form.imageUrls) ? form.imageUrls : (form.imageUrls ? form.imageUrls.split(",").map(s => s.trim()).filter(Boolean) : []),
     categoryId: String(form.categoryId),
     status: form.status || "ACTIVE",
     featured: Boolean(form.featured),

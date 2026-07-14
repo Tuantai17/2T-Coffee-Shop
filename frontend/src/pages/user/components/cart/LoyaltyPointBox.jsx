@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatPrice } from '../../../../utils/formatPrice';
 
-function LoyaltyPointBox({ totalPoints = 1250, maxUsable = 500, pointValue = 10, onApplyPoints }) {
+function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 10, onApplyPoints }) {
   const [inputPoints, setInputPoints] = useState(0);
   const [applied, setApplied] = useState(false);
 

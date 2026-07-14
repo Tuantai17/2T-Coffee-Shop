@@ -170,8 +170,16 @@ public class OrderController {
         	    order = this.createOrder(orderItems, user, checkoutRequest, discountAmount);
                 order = orderService.saveOrder(order);
                 Long reservedOrderId = order.getId();
-                List<com.rainbowforest.orderservice.dto.InventoryAdjustmentRequest> requests = orderItems.stream()
-                        .map(item -> new com.rainbowforest.orderservice.dto.InventoryAdjustmentRequest(reservedOrderId, null, item.getProduct().getId(), item.getQuantity(), "Order checkout", null))
+                List<com.rainbowforest.orderservice.dto.InventoryAdjustmentRequest> requests = cart.stream()
+                        .map(item -> new com.rainbowforest.orderservice.dto.InventoryAdjustmentRequest(
+                                reservedOrderId,
+                                null,
+                                item.getProductId(),
+                                item.getVariantId(),
+                                item.getQuantity(),
+                                "Order checkout",
+                                null
+                        ))
                         .collect(java.util.stream.Collectors.toList());
                 inventoryClient.reserveInventory(requests);
 
@@ -189,6 +197,9 @@ public class OrderController {
                     orderEvent.put("total", order.getTotal());
                     orderEvent.put("status", order.getStatus());
                     orderEvent.put("paymentStatus", order.getPaymentStatus());
+                    orderEvent.put("email", order.getEmail());
+                    orderEvent.put("recipientName", order.getReceiverName() != null ? order.getReceiverName() : "Customer");
+                    orderEvent.put("orderCode", "MKD" + String.format("%08d", order.getId()));
                     
                     com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(
                         java.util.UUID.randomUUID().toString(), "ORDER_CREATED", 1, java.util.UUID.randomUUID().toString(), "order-service", orderEvent
@@ -227,7 +238,13 @@ public class OrderController {
                 if (idempotencyKey != null) markLogStatus(idempotencyKey, "FAILED", null);
                 ex.printStackTrace();
                 java.util.Map<String, String> errorMap = new java.util.HashMap<>();
-                errorMap.put("message", "Lỗi từ hệ thống kho: " + ex.getMessage());
+                String errorMsg = extractFeignMessage(ex, null);
+                if (errorMsg == null || errorMsg.isBlank()) {
+                    errorMsg = ex.getMessage() != null && ex.getMessage().contains("Read timed out")
+                            ? "He thong kho phan hoi qua cham. Vui long thu lai."
+                            : "Loi tu he thong kho: " + ex.getMessage();
+                }
+                errorMap.put("message", errorMsg);
                 return new ResponseEntity<>(errorMap, HttpStatus.BAD_REQUEST);
             }catch (Exception ex){
                 rollbackOrderIfCreated(order);

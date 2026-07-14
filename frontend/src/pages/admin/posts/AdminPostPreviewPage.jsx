@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import AdminLayout from '../../../layouts/AdminLayout';
 import { getAdminPostById } from '../../../services/newsAdminService';
+import { applyImageFallback, resolveImageUrl } from '../../../utils/imageFallback';
 
 export default function AdminPostPreviewPage() {
     const { id } = useParams();
@@ -68,7 +69,12 @@ export default function AdminPostPreviewPage() {
                             )}
 
                             {post.thumbnailUrl && (
-                                <img src={post.thumbnailUrl} alt={post.title} className="img-fluid rounded mb-5 w-100" />
+                                <img
+                                    src={resolveImageUrl(post.thumbnailUrl)}
+                                    alt={post.title}
+                                    className="img-fluid rounded mb-5 w-100"
+                                    onError={(e) => applyImageFallback(e)}
+                                />
                             )}
                         </div>
 

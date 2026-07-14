@@ -2,24 +2,46 @@ import React from 'react';
 
 const ORDER_STEPS = [
   { status: 'PENDING_CONFIRMATION', label: 'Chờ duyệt', icon: 'fa-hourglass-half' },
-  { status: 'APPROVED', label: 'Đã duyệt', icon: 'fa-check' },
-  { status: 'PACKING', label: 'Đang chuẩn bị', icon: 'fa-box-open' },
-  { status: 'SHIPPING', label: 'Đang giao hàng', icon: 'fa-truck-fast' },
+  { status: 'CONFIRMED', label: 'Đã xác nhận', icon: 'fa-check' },
+  { status: 'PREPARING', label: 'Đang chuẩn bị', icon: 'fa-box-open' },
+  { status: 'READY_FOR_DELIVERY', label: 'Chờ giao hàng', icon: 'fa-truck-ramp-box' },
+  { status: 'DELIVERING', label: 'Đang giao hàng', icon: 'fa-truck-fast' },
   { status: 'COMPLETED', label: 'Hoàn thành', icon: 'fa-check-double' }
 ];
 
 function statusText(status) {
   switch (status) {
     case "COMPLETED": return "Hoàn thành";
+    case "DELIVERING":
     case "SHIPPING": return "Đang giao hàng";
+    case "READY_FOR_DELIVERY": return "Chờ giao hàng";
     case "CANCELLED": return "Đã hủy";
+    case "PREPARING":
     case "PACKING": return "Đang chuẩn bị";
+    case "CONFIRMED": return "Đã xác nhận";
     case "PENDING_CONFIRMATION":
     case "PENDING": return "Chờ duyệt";
-    case "APPROVED": return "Đã duyệt";
     case "WAITING_FOR_RESTOCK": return "Chờ nhập hàng";
     case "AWAITING_CUSTOMER_DECISION": return "Chờ khách phản hồi";
     default: return status;
+  }
+}
+
+function getPaymentStatusLabel(status) {
+  switch (String(status || "").toUpperCase()) {
+    case "PAID":
+      return "Đã thanh toán";
+    case "PAYMENT_ON_DELIVERY":
+    case "PENDING":
+      return "Chưa thanh toán";
+    case "FAILED":
+      return "Thất bại";
+    case "CANCELLED":
+      return "Đã hủy";
+    case "REFUNDED":
+      return "Đã hoàn tiền";
+    default:
+      return status || "Chưa thanh toán";
   }
 }
 
@@ -222,7 +244,7 @@ const OrderDetailModal = ({ order, profile, onClose }) => {
                   </div>
                   <div className="d-flex justify-content-between mb-2">
                     <span className="text-muted small">Trạng thái:</span>
-                    <span className="badge bg-light border text-dark">{order.paymentStatus || "Chưa thanh toán"}</span>
+                    <span className="badge bg-light border text-dark">{getPaymentStatusLabel(order.paymentStatus)}</span>
                   </div>
                 </div>
               </div>

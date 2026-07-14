@@ -83,14 +83,4 @@ public class GameController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-
-    @Autowired
-    private com.rainbowforest.minigameservice.repository.GameSessionRepository sessionRepository;
-
-    @GetMapping("/me/history")
-    public ResponseEntity<?> getHistory(@RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
-        if (userIdHeader == null) return ResponseEntity.status(401).build();
-        Long userId = Long.parseLong(userIdHeader);
-        return ResponseEntity.ok(sessionRepository.findByUserIdOrderByStartedAtDesc(userId));
-    }
 }

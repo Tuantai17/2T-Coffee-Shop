@@ -6,13 +6,11 @@ import com.rainbowforest.loyaltyservice.domain.MembershipTier;
 import com.rainbowforest.loyaltyservice.domain.PointTransaction;
 import com.rainbowforest.loyaltyservice.domain.UserVoucher;
 import com.rainbowforest.loyaltyservice.domain.VoucherDefinition;
-import com.rainbowforest.loyaltyservice.repository.DailyCheckinRepository;
 import com.rainbowforest.loyaltyservice.repository.LoyaltyAccountRepository;
 import com.rainbowforest.loyaltyservice.repository.MembershipTierRepository;
 import com.rainbowforest.loyaltyservice.repository.PointTransactionRepository;
 import com.rainbowforest.loyaltyservice.repository.UserVoucherRepository;
 import com.rainbowforest.loyaltyservice.repository.VoucherDefinitionRepository;
-import com.rainbowforest.loyaltyservice.service.CheckinService;
 import com.rainbowforest.loyaltyservice.service.LoyaltyEngineService;
 import com.rainbowforest.loyaltyservice.service.VoucherService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,11 +52,42 @@ public class LoyaltyUserController {
     @Autowired
     private VoucherService voucherService;
 
-    @Autowired
-    private CheckinService checkinService;
-
-    @Autowired
-    private DailyCheckinRepository dailyCheckinRepository;
+    @GetMapping("/tiers")
+    public ResponseEntity<?> getPublicTiers() {
+        List<Map<String, Object>> tiers = tierRepository.findAll().stream()
+                .filter(tier -> Boolean.TRUE.equals(tier.getActive()))
+                .sorted(Comparator.comparingInt(tier -> tier.getDisplayOrder() != null ? tier.getDisplayOrder() : Integer.MAX_VALUE))
+                .map(tier -> {
+                    Map<String, Object> map = new LinkedHashMap<>();
+                    map.put("code", tier.getCode());
+                    map.put("name", tier.getName());
+                    map.put("color", tier.getColor() != null && !tier.getColor().isBlank() ? tier.getColor() : "#cccccc");
+                    map.put("icon", tier.getIcon() != null && !tier.getIcon().isBlank() ? tier.getIcon() : "fa-star");
+                    map.put("displayOrder", tier.getDisplayOrder());
+                    map.put("minimumEligibleSpending", tier.getMinimumEligibleSpending());
+                    map.put("minimumCompletedOrders", tier.getMinimumCompletedOrders());
+                    // Benefits
+                    List<String> benefits = new java.util.ArrayList<>();
+                    benefits.add("Điểm danh hàng ngày: " + safeLong(tier.getDailyCheckinPoints()) + " điểm");
+                    benefits.add("Quay thưởng/ngày: " + (tier.getDailySpinCount() != null ? tier.getDailySpinCount() : 0) + " lượt");
+                    if (safeLong(tier.getUpgradeVoucherValue()) > 0) {
+                        benefits.add("Voucher lên hạng: " + String.format("%,dđ", safeLong(tier.getUpgradeVoucherValue())));
+                    }
+                    if (safeLong(tier.getBirthdayVoucherValue()) > 0) {
+                        benefits.add("Voucher sinh nhật: " + String.format("%,dđ", safeLong(tier.getBirthdayVoucherValue())));
+                    }
+                    if (tier.getMonthlyFreeshipCount() != null && tier.getMonthlyFreeshipCount() > 0) {
+                        benefits.add("Freeship/tháng: " + tier.getMonthlyFreeshipCount() + " lần");
+                    }
+                    if (Boolean.TRUE.equals(tier.getPrioritySupport())) {
+                        benefits.add("Hỗ trợ ưu tiên");
+                    }
+                    map.put("benefits", benefits);
+                    return map;
+                })
+                .toList();
+        return ResponseEntity.ok(tiers);
+    }
 
     @GetMapping("/me")
     public ResponseEntity<?> getMyLoyaltyAccount(@RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
@@ -70,9 +99,57 @@ public class LoyaltyUserController {
                 .orElse(LoyaltyAccount.builder()
                         .userId(userId)
                         .availablePoints(0L)
-                        .currentTierCode("MEMBER")
+                        .pendingPoints(0L)
+                        .reservedPoints(0L)
+                        .lifetimeEarnedPoints(0L)
+                        .lifetimeUsedPoints(0L)
+                        .currentTierCode("SILVER")
                         .build());
-        return ResponseEntity.ok(account);
+
+        // Build enriched response with tier info
+        List<MembershipTier> allTiers = tierRepository.findAll().stream()
+                .filter(t -> Boolean.TRUE.equals(t.getActive()))
+                .sorted(Comparator.comparingInt(t -> t.getDisplayOrder() != null ? t.getDisplayOrder() : Integer.MAX_VALUE))
+                .toList();
+
+        MembershipTier currentTier = allTiers.stream()
+                .filter(t -> t.getCode().equalsIgnoreCase(account.getCurrentTierCode()))
+                .findFirst().orElse(null);
+
+        MembershipTier nextTier = allTiers.stream()
+                .filter(t -> currentTier != null && t.getDisplayOrder() > currentTier.getDisplayOrder())
+                .min(Comparator.comparingInt(t -> t.getDisplayOrder() != null ? t.getDisplayOrder() : Integer.MAX_VALUE))
+                .orElse(null);
+
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("id", account.getId());
+        response.put("userId", account.getUserId());
+        response.put("availablePoints", safeLong(account.getAvailablePoints()));
+        response.put("pendingPoints", safeLong(account.getPendingPoints()));
+        response.put("reservedPoints", safeLong(account.getReservedPoints()));
+        response.put("lifetimeEarnedPoints", safeLong(account.getLifetimeEarnedPoints()));
+        response.put("lifetimeUsedPoints", safeLong(account.getLifetimeUsedPoints()));
+        response.put("currentTierCode", account.getCurrentTierCode());
+
+        if (currentTier != null) {
+            response.put("currentTierName", currentTier.getName());
+            response.put("currentTierColor", currentTier.getColor());
+            response.put("currentTierIcon", currentTier.getIcon());
+            response.put("currentTierDisplayOrder", currentTier.getDisplayOrder());
+        }
+
+        if (nextTier != null) {
+            response.put("nextTierCode", nextTier.getCode());
+            response.put("nextTierName", nextTier.getName());
+            response.put("nextTierColor", nextTier.getColor());
+            response.put("nextTierMinSpending", nextTier.getMinimumEligibleSpending());
+            response.put("nextTierMinOrders", nextTier.getMinimumCompletedOrders());
+        }
+
+        response.put("createdAt", account.getCreatedAt());
+        response.put("updatedAt", account.getUpdatedAt());
+
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/me/transactions")
@@ -301,49 +378,7 @@ public class LoyaltyUserController {
         }
     }
 
-    @PostMapping("/checkin")
-    public ResponseEntity<?> performCheckin(@RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
-        Long userId = extractUserId(userIdHeader);
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
-        try {
-            return ResponseEntity.ok(checkinService.processCheckin(userId));
-        } catch (Exception exception) {
-            return ResponseEntity.badRequest().body(Map.of("error", exception.getMessage()));
-        }
-    }
-
-    @GetMapping("/me/checkin-status")
-    public ResponseEntity<?> getCheckinStatus(@RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
-        Long userId = extractUserId(userIdHeader);
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
-
-        LocalDate today = LocalDate.now();
-        boolean checkedInToday = dailyCheckinRepository.findByUserIdAndCheckinDate(userId, today).isPresent();
-        DailyCheckin lastCheckin = dailyCheckinRepository.findFirstByUserIdOrderByCheckinDateDesc(userId).orElse(null);
-
-        int currentStreak = 0;
-        if (lastCheckin != null) {
-            if (lastCheckin.getCheckinDate().equals(today) || lastCheckin.getCheckinDate().equals(today.minusDays(1))) {
-                currentStreak = lastCheckin.getStreakCount();
-            }
-        }
-
-        int nextStreak = currentStreak == 7 ? 1 : currentStreak + 1;
-        String nextRewardType = nextStreak == 7 ? "VOUCHER" : "POINTS";
-        String nextRewardValue = nextStreak == 7 ? "FREE_TOPPING_7DAYS" : String.valueOf(nextStreak * 5);
-
-        return ResponseEntity.ok(Map.of(
-                "checkedInToday", checkedInToday,
-                "currentStreak", currentStreak,
-                "nextRewardType", nextRewardType,
-                "nextRewardValue", nextRewardValue
-        ));
-    }
 
     private Map<String, Object> toRewardSummary(VoucherDefinition voucher, LoyaltyAccount account, List<MembershipTier> allTiers) {
         long requiredPoints = safeLong(voucher.getPointsRequired());

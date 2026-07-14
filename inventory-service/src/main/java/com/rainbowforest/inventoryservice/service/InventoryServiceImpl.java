@@ -1,5 +1,7 @@
 package com.rainbowforest.inventoryservice.service;
 
+import com.rainbowforest.inventoryservice.common.exception.BusinessException;
+import com.rainbowforest.inventoryservice.common.exception.ResourceNotFoundException;
 import com.rainbowforest.inventoryservice.domain.Inventory;
 import com.rainbowforest.inventoryservice.domain.InventoryReservation;
 import com.rainbowforest.inventoryservice.domain.InventoryTransaction;
@@ -30,7 +32,7 @@ public class InventoryServiceImpl implements InventoryService {
 
     @Override
     public InventoryResponse getProductInventory(Long productId, Long variantId) {
-        Inventory inv = inventoryRepository.findByProductIdAndVariantId(productId, variantId).orElse(null);
+        Inventory inv = findInventoryOrFallback(productId, variantId).orElse(null);
         if (inv == null) return new InventoryResponse(productId, variantId, 0, 0);
         return new InventoryResponse(productId, variantId, inv.getAvailableQuantity(), inv.getReservedQuantity());
     }
@@ -39,29 +41,33 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public void reserveInventory(List<InventoryAdjustmentRequest> requests) {
         if (requests == null || requests.isEmpty()) return;
-        
-        Long orderId = requests.get(0).getOrderId();
-        
+
         for (InventoryAdjustmentRequest req : requests) {
             // Idempotency check for reservation per order, product, and variant
             if (reservationRepository.findByOrderIdAndProductIdAndVariantId(req.getOrderId(), req.getProductId(), req.getVariantId()).isPresent()) {
-                continue; 
+                continue;
             }
-            
-            Inventory inv = inventoryRepository.findByProductIdAndVariantId(req.getProductId(), req.getVariantId())
-                .orElseThrow(() -> new RuntimeException("Product not found in inventory: " + req.getProductId()));
-            
+
+            Inventory inv = findInventoryOrFallback(req.getProductId(), req.getVariantId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "INVENTORY_NOT_FOUND",
+                        buildMissingInventoryMessage(req.getProductId(), req.getVariantId())
+                ));
+
             if (inv.getAvailableQuantity() < req.getQuantity()) {
-                throw new RuntimeException("Not enough inventory for product: " + req.getProductId());
+                throw new BusinessException(
+                        "INSUFFICIENT_INVENTORY",
+                        buildInsufficientInventoryMessage(req.getProductId(), req.getVariantId(), inv.getAvailableQuantity(), req.getQuantity())
+                );
             }
-            
+
             int beforeOn = inv.getOnHandQuantity();
             int beforeRes = inv.getReservedQuantity();
-            
+
             inv.setReservedQuantity(inv.getReservedQuantity() + req.getQuantity());
             inv.setUpdatedAt(LocalDateTime.now());
             inventoryRepository.save(inv);
-            
+
             InventoryReservation res = new InventoryReservation();
             res.setReservationCode(UUID.randomUUID().toString());
             res.setOrderId(req.getOrderId());
@@ -88,6 +94,39 @@ public class InventoryServiceImpl implements InventoryService {
         }
     }
 
+    private String buildMissingInventoryMessage(Long productId, Long variantId) {
+        if (variantId != null) {
+            return "Khong tim thay ton kho cho san pham " + productId + " voi bien the " + variantId;
+        }
+        return "Khong tim thay ton kho cho san pham " + productId;
+    }
+
+    private java.util.Optional<Inventory> findInventoryOrFallback(Long productId, Long variantId) {
+        java.util.Optional<Inventory> exactInventory =
+                inventoryRepository.findByProductIdAndVariantId(productId, variantId);
+
+        if (exactInventory.isPresent() || variantId == null) {
+            return exactInventory;
+        }
+
+        // Current admin product flow manages one shared stock value per product.
+        // If a variant does not have its own inventory row yet, use the product-level stock.
+        return inventoryRepository.findByProductIdAndVariantId(productId, null);
+    }
+
+    private String buildInsufficientInventoryMessage(Long productId, Long variantId, int availableQuantity, int requestedQuantity) {
+        StringBuilder message = new StringBuilder("San pham ");
+        message.append(productId);
+        if (variantId != null) {
+            message.append(" (bien the ").append(variantId).append(")");
+        }
+        message.append(" khong du ton kho. Con lai ")
+                .append(availableQuantity)
+                .append(", yeu cau ")
+                .append(requestedQuantity);
+        return message.toString();
+    }
+
     @Override
     @Transactional
     public void commitReservation(Long orderId) {
@@ -96,7 +135,7 @@ public class InventoryServiceImpl implements InventoryService {
             if ("COMMITTED".equals(res.getStatus())) continue;
             
             if ("RESERVED".equals(res.getStatus())) {
-                Inventory inv = inventoryRepository.findByProductIdAndVariantId(res.getProductId(), res.getVariantId()).orElseThrow();
+                Inventory inv = findInventoryOrFallback(res.getProductId(), res.getVariantId()).orElseThrow();
                 int beforeOn = inv.getOnHandQuantity();
                 int beforeRes = inv.getReservedQuantity();
                 
@@ -132,7 +171,7 @@ public class InventoryServiceImpl implements InventoryService {
             if ("RELEASED".equals(res.getStatus()) || "COMMITTED".equals(res.getStatus())) continue;
             
             if ("RESERVED".equals(res.getStatus())) {
-                Inventory inv = inventoryRepository.findByProductIdAndVariantId(res.getProductId(), res.getVariantId()).orElseThrow();
+                Inventory inv = findInventoryOrFallback(res.getProductId(), res.getVariantId()).orElseThrow();
                 int beforeOn = inv.getOnHandQuantity();
                 int beforeRes = inv.getReservedQuantity();
                 
@@ -166,7 +205,7 @@ public class InventoryServiceImpl implements InventoryService {
         List<InventoryReservation> reservations = reservationRepository.findByOrderId(orderId);
         for (InventoryReservation res : reservations) {
             if ("COMMITTED".equals(res.getStatus())) {
-                Inventory inv = inventoryRepository.findByProductIdAndVariantId(res.getProductId(), res.getVariantId()).orElseThrow();
+                Inventory inv = findInventoryOrFallback(res.getProductId(), res.getVariantId()).orElseThrow();
                 int beforeOn = inv.getOnHandQuantity();
                 
                 inv.setOnHandQuantity(inv.getOnHandQuantity() + res.getQuantity());
@@ -226,7 +265,7 @@ public class InventoryServiceImpl implements InventoryService {
     @Transactional
     public void adjustInventory(InventoryAdjustmentRequest req) {
         // Admin direct adjustment
-        Inventory inv = inventoryRepository.findByProductIdAndVariantId(req.getProductId(), req.getVariantId()).orElseThrow();
+        Inventory inv = findInventoryOrFallback(req.getProductId(), req.getVariantId()).orElseThrow();
         int beforeOn = inv.getOnHandQuantity();
         inv.setOnHandQuantity(inv.getOnHandQuantity() + req.getQuantity());
         if (inv.getAvailableQuantity() < 0) {
