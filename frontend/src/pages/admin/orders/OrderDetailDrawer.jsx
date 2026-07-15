@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 
 const getStatusBadge = (status) => {
   switch (status) {
@@ -125,7 +126,13 @@ function OrderDetailDrawer({ show, order, loading, error, onRetry, onClose, onUp
                 </div>
                 <div className="d-flex">
                   <span className="text-muted w-25">User ID:</span>
-                  <span>{order.user?.id || "-"}</span>
+                  <span>
+                    {order.user?.id ? (
+                      <Link to={`/admin/users?search=${order.user.id}`} className="text-primary text-decoration-none fw-semibold">
+                        {order.user.id} <i className="fa-solid fa-arrow-up-right-from-square small ms-1"></i>
+                      </Link>
+                    ) : "-"}
+                  </span>
                 </div>
               </div>
             </div>

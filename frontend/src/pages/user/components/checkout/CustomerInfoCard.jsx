@@ -7,6 +7,33 @@ function CustomerInfoCard({ form, onChangeForm }) {
         3. THÔNG TIN BỔ SUNG
       </h6>
       
+      <div className="row g-3 mb-3">
+        <div className="col-6">
+          <label className="form-label small fw-semibold text-muted mb-1">Họ và tên</label>
+          <input 
+            type="text" 
+            name="receiverName"
+            value={form.receiverName}
+            onChange={onChangeForm}
+            className="form-control rounded-3" 
+            placeholder="Nguyễn Văn A" 
+            style={{ height: "48px" }}
+          />
+        </div>
+        <div className="col-6">
+          <label className="form-label small fw-semibold text-muted mb-1">Số điện thoại</label>
+          <input 
+            type="tel" 
+            name="phone"
+            value={form.phone}
+            onChange={onChangeForm}
+            className="form-control rounded-3" 
+            placeholder="0901 234 567" 
+            style={{ height: "48px" }}
+          />
+        </div>
+      </div>
+
       <div className="mb-3">
         <label className="form-label small fw-semibold text-muted mb-1">Email</label>
         <input 
@@ -16,6 +43,19 @@ function CustomerInfoCard({ form, onChangeForm }) {
           onChange={onChangeForm}
           className="form-control rounded-3" 
           placeholder="minhanh@gmail.com" 
+          style={{ height: "48px" }}
+        />
+      </div>
+
+      <div className="mb-3">
+        <label className="form-label small fw-semibold text-muted mb-1">Ghi chú giao hàng</label>
+        <input 
+          type="text" 
+          name="note"
+          value={form.note}
+          onChange={onChangeForm}
+          className="form-control rounded-3 border-0 bg-light" 
+          placeholder="Giao giờ hành chính, gọi trước khi giao. Cảm ơn!"
           style={{ height: "48px" }}
         />
       </div>

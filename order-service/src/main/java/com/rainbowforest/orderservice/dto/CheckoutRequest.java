@@ -13,6 +13,15 @@ public class CheckoutRequest {
     private String voucherCode;
     private String email;
     private String fulfillmentType = "DELIVERY"; // DELIVERY or PICKUP
+    private Long pointsUsed;
+
+    public Long getPointsUsed() {
+        return pointsUsed;
+    }
+
+    public void setPointsUsed(Long pointsUsed) {
+        this.pointsUsed = pointsUsed;
+    }
 
     public String getFulfillmentType() {
         return fulfillmentType;

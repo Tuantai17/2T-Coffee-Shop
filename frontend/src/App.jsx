@@ -87,6 +87,7 @@ function App() {
         <Route path="/collections/:slug" element={<CollectionDetailPage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/voucher" element={<LoyaltyRewardsPage />} />
         <Route path="/loyalty/rewards" element={<ProtectedRoute><LoyaltyRewardsPage /></ProtectedRoute>} />
         <Route path="/loyalty/rewards/success" element={<ProtectedRoute><LoyaltyRewardSuccessPage /></ProtectedRoute>} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />

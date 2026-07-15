@@ -7,10 +7,10 @@
   --hero-aspect-ratio: 1.7778;
   position: relative;
   width: 100%;
-  max-width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  border-radius: 0 0 16px 16px;
   aspect-ratio: var(--hero-aspect-ratio);
-  min-height: clamp(240px, 34vw, 420px);
-  max-height: min(78vh, 860px);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -82,21 +82,14 @@
   filter: none !important;
   opacity: 1 !important;
   transform: none !important;
-  scale: none;
-  zoom: normal;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
   -webkit-user-drag: none;
   user-select: none;
   pointer-events: none;
-  backface-visibility: hidden;
 }
 
 /* Loading skeleton — cùng hệ chiều cao với banner thật */
 .hero-slider--loading {
   aspect-ratio: var(--hero-aspect-ratio);
-  min-height: clamp(240px, 34vw, 420px);
-  max-height: min(78vh, 860px);
   background: linear-gradient(90deg, #efe8e0 25%, #f7f3ef 50%, #efe8e0 75%);
   background-size: 200% 100%;
   animation: hero-slider-shimmer 1.2s ease-in-out infinite;
@@ -201,11 +194,6 @@
 
 /* Mobile: banner thấp hơn */
 @media (max-width: 767.98px) {
-  .hero-slider,
-  .hero-slider--loading {
-    min-height: clamp(180px, 52vw, 280px);
-    max-height: min(46vh, 300px);
-  }
 
   .hero-slider__nav {
     width: 30px;
@@ -239,11 +227,6 @@
 
 /* Tablet */
 @media (min-width: 768px) and (max-width: 1199px) {
-  .hero-slider,
-  .hero-slider--loading {
-    min-height: clamp(320px, 42vw, 520px);
-    max-height: min(62vh, 560px);
-  }
 
   .hero-slider__nav {
     width: 38px;
@@ -266,11 +249,6 @@
 
 /* Desktop lớn */
 @media (min-width: 1200px) {
-  .hero-slider,
-  .hero-slider--loading {
-    min-height: clamp(420px, 48vw, 720px);
-    max-height: min(78vh, 820px);
-  }
 
   .hero-slider__nav {
     width: 40px;
@@ -303,13 +281,6 @@
 }
 
 /* Laptop 1366: gọn trong first screen */
-@media (min-width: 1200px) and (max-height: 800px) {
-  .hero-slider,
-  .hero-slider--loading {
-    min-height: clamp(360px, 50vw, 620px);
-    max-height: min(70vh, 660px);
-  }
-}
 
 .hero-slider,
 .hero-slider * {

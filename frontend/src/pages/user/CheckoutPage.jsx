@@ -8,6 +8,7 @@ import { getUserProfile } from "../../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
 import loyaltyApi from "../../api/loyaltyApi";
 import { createPayment } from "../../services/paymentService";
+import { getStoreContactInfo } from "../../services/contactPublicService";
 
 import CheckoutStepper from "./components/checkout/CheckoutStepper";
 import AddressSelectorModal from "./components/checkout/AddressSelectorModal";
@@ -39,6 +40,8 @@ function CheckoutPage() {
     phone: "",
     email: "",
     note: "",
+    deliveryDate: "",
+    deliveryTime: "",
   });
 
   const [deliveryMethod, setDeliveryMethod] = useState("DELIVERY");
@@ -48,12 +51,13 @@ function CheckoutPage() {
   const [appliedVoucher, setAppliedVoucher] = useState(null);
   const [pointsAvailable, setPointsAvailable] = useState(0);
   const [pointsUsed, setPointsUsed] = useState(0);
+  const [storeInfo, setStoreInfo] = useState(null);
 
   const subTotal = cart.reduce(
     (total, item) => total + (item.subTotal || ((item.product ? item.product.price : 0) * item.quantity)),
     0
   );
-  const pointDiscount = pointsUsed * 10;
+  const pointDiscount = pointsUsed * 1;
   const shippingFee = deliveryMethod === "PICKUP" ? 0 : (subTotal >= 500000 ? 0 : (cart.length > 0 ? 20000 : 0));
   const discount = appliedVoucher ? Number(appliedVoucher.discountAmount || 0) : 0;
   const grandTotal = Math.max(0, subTotal - discount - pointDiscount + shippingFee);
@@ -87,10 +91,11 @@ function CheckoutPage() {
       setForm((prev) => ({ ...prev, email: email || "" }));
 
       try {
-        const [profileRes, loyaltyRes, voucherRes] = await Promise.all([
+        const [profileRes, loyaltyRes, voucherRes, storeRes] = await Promise.all([
           getUserProfile(userId),
           loyaltyApi.getMyLoyaltyAccount(),
           loyaltyApi.getMyVouchers(),
+          getStoreContactInfo().catch(() => null),
         ]);
         const profileEmail = profileRes?.data?.userDetails?.email || profileRes?.data?.email || profileRes?.data?.userName;
         if (profileEmail) {
@@ -98,6 +103,9 @@ function CheckoutPage() {
         }
         setPointsAvailable(Number(loyaltyRes?.data?.availablePoints || 0));
         setAvailableVouchers((Array.isArray(voucherRes?.data) ? voucherRes.data : []).filter((voucher) => voucher.canApply));
+        if (storeRes?.data) {
+          setStoreInfo(storeRes.data);
+        }
       } catch (error) {
         // noop
       }
@@ -114,6 +122,12 @@ function CheckoutPage() {
       handleApplyVoucher(location.state.voucherCode);
     }
   }, [subTotal]);
+
+  useEffect(() => {
+    if (deliveryMethod === "PICKUP" && scheduleType === "NOW") {
+      setScheduleType("LATER");
+    }
+  }, [deliveryMethod, scheduleType]);
 
   const loadDefaultAddress = async (userId) => {
     try {
@@ -210,28 +224,34 @@ function CheckoutPage() {
         window.scrollTo({ top: 0, behavior: "smooth" });
         return;
       }
-      if (!form.receiverName.trim() || !form.phone.trim()) {
-        setSubmitError("Vui long dien day du ten nguoi nhan va so dien thoai.");
-        window.scrollTo({ top: 0, behavior: "smooth" });
-        return;
-      }
+    }
+
+    if (!form.receiverName.trim() || !form.phone.trim()) {
+      setSubmitError("Vui long dien day du ten nguoi nhan va so dien thoai.");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
 
     setSubmitError("");
     setLoadingSubmit(true);
     try {
+      const finalNote = scheduleType === "LATER" && form.deliveryDate && form.deliveryTime
+        ? `[Giao lúc: ${form.deliveryTime} ngày ${form.deliveryDate}] ${form.note}`.trim()
+        : form.note;
+
       const payload = {
-        receiverName: deliveryMethod === "PICKUP" ? (form.receiverName || "Khach hang") : form.receiverName,
-        phone: deliveryMethod === "PICKUP" ? (form.phone || "0000") : form.phone,
-        address: deliveryMethod === "PICKUP" ? "Brew Moments Flagship, Q1, HCM" : selectedAddress.addressLine,
+        receiverName: form.receiverName,
+        phone: form.phone,
+        address: deliveryMethod === "PICKUP" ? (storeInfo?.address || "2T Coffee Shop, HCM") : selectedAddress.addressLine,
         province: deliveryMethod === "PICKUP" ? "HCM" : selectedAddress.province,
-        district: deliveryMethod === "PICKUP" ? "Q1" : selectedAddress.district,
-        ward: deliveryMethod === "PICKUP" ? "Phuong Da Kao" : selectedAddress.ward,
+        district: deliveryMethod === "PICKUP" ? "Pickup" : selectedAddress.district,
+        ward: deliveryMethod === "PICKUP" ? "Pickup" : selectedAddress.ward,
         paymentMethod,
-        note: form.note,
+        note: finalNote,
         voucherCode: appliedVoucher ? appliedVoucher.voucherCode : "",
         email: form.email,
         fulfillmentType: deliveryMethod,
+        pointsUsed: pointsUsed > 0 ? pointsUsed : null,
       };
 
       const res = await createOrder(Number(userId), payload);
@@ -300,9 +320,16 @@ function CheckoutPage() {
                 form={form}
                 onChangeForm={handleChangeForm}
                 getFullAddressString={getFullAddressString}
+                storeInfo={storeInfo}
               />
 
-              <ScheduleCard scheduleType={scheduleType} onChangeType={setScheduleType} />
+              <ScheduleCard 
+                scheduleType={scheduleType} 
+                onChangeType={setScheduleType} 
+                form={form} 
+                onChangeForm={handleChangeForm} 
+                deliveryMethod={deliveryMethod}
+              />
 
               <CustomerInfoCard form={form} onChangeForm={handleChangeForm} />
 
@@ -328,7 +355,9 @@ function CheckoutPage() {
                   setVoucherCode("");
                 }}
                 totalPoints={pointsAvailable}
+                maxUsable={Math.max(0, subTotal - discount)}
                 onApplyPoints={setPointsUsed}
+                deliveryMethod={deliveryMethod}
               />
               <SecurityCard />
             </div>

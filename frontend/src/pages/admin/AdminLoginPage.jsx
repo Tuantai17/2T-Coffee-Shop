@@ -47,12 +47,12 @@ function AdminLoginPage() {
         email: username || form.username,
       });
 
-      alert("Dang nhap admin thanh cong!");
+      alert("Đăng nhập admin thành công!");
       navigate("/admin");
     } catch (err) {
       console.error(err);
       clearAuthSession(AUTH_SCOPES.ADMIN);
-      setError("Dang nhap admin that bai. Vui long kiem tra lai tai khoan va mat khau!");
+      setError("Đăng nhập admin thất bại. Vui lòng kiểm tra lại tài khoản và mật khẩu!");
     } finally {
       setLoading(false);
     }
@@ -76,7 +76,7 @@ function AdminLoginPage() {
 
         <form onSubmit={handleLogin}>
           <div className="mb-3">
-            <label className="form-label fw-semibold">Ten dang nhap hoac Email</label>
+            <label className="form-label fw-semibold">Tên đăng nhập hoặc Email</label>
             <input
               name="username"
               type="text"
@@ -102,7 +102,7 @@ function AdminLoginPage() {
           </div>
 
           <button type="submit" className="btn btn-danger w-100 rounded-4 py-3 fw-bold" disabled={loading}>
-            {loading ? "Dang xac thuc..." : "Dang nhap admin"}
+            {loading ? "Đang xác thực..." : "Đăng nhập admin"}
           </button>
         </form>
 

@@ -79,10 +79,6 @@ function MiniCart({ cart, loadCart, closeCart }) {
           </div>
         )}
 
-        {/* Freeship Banner */}
-        <div className="d-flex align-items-center justify-content-center py-2 mb-3 rounded" style={{ backgroundColor: "#e8fdf5", color: "#00b27b", fontWeight: "600", fontSize: "14px" }}>
-          🎉 Bạn đã được FREESHIP
-        </div>
 
         {/* Item List */}
         {items.length === 0 ? (

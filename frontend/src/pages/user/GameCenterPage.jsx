@@ -69,7 +69,7 @@ export default function GameCenterPage() {
               </span>
               <h1>Chơi game - Nhận quà cực đã</h1>
               <p className="mb-4">
-                Khám phá bộ sưu tập Mini game độc quyền của Brew Moments. Tích điểm Loyalty, nhận hàng ngàn Voucher giảm giá mỗi ngày!
+                Khám phá bộ sưu tập Mini game độc quyền của 2T Coffee Shop. Tích điểm Loyalty, nhận hàng ngàn Voucher giảm giá mỗi ngày!
               </p>
               <div className="d-flex gap-3 mt-2">
                 <button type="button" className="btn-mg-outline text-white border-white" onClick={() => setShowHistory(true)}>

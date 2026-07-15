@@ -84,6 +84,7 @@ public class ProductController {
             @RequestParam(value = "maxPrice", required = false) BigDecimal maxPrice,
             @RequestParam(value = "badge", required = false) String badge,
             @RequestParam(value = "status", required = false) String status,
+            @RequestParam(value = "topping", required = false) Long toppingId,
             @RequestParam(value = "sort", required = false) String sort,
             @RequestParam(value = "page", defaultValue = "0") int page,
             @RequestParam(value = "size", defaultValue = "12") int size
@@ -105,6 +106,7 @@ public class ProductController {
                 null,
                 null,
                 null,
+                toppingId,
                 badge,
                 status,
                 sort,

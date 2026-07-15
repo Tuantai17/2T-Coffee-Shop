@@ -14,6 +14,8 @@ const loyaltyApi = {
   getCheckinStatus: () => axiosClient.get("/api/loyalty/me/checkin-status"),
   claimBenefits: () => axiosClient.post("/api/loyalty/me/claim-benefits"),
   getClaimStatus: () => axiosClient.get("/api/loyalty/me/claim-status"),
+  claimOrderPoints: (orderId, orderTotal) => axiosClient.post(`/api/loyalty/orders/${orderId}/claim-points`, { orderTotal }),
+  getClaimedOrders: () => axiosClient.get("/api/loyalty/orders/claimed"),
 };
 
 export default loyaltyApi;

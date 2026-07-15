@@ -38,6 +38,7 @@ public interface ProductService {
             Boolean featured,
             Boolean onSale,
             Boolean newArrival,
+            Long toppingId,
             String badge,
             String status,
             String sort,

@@ -3,6 +3,7 @@ import AdminLayout from "../../layouts/AdminLayout";
 import { getUsers, updateUser } from "../../services/authService";
 import { exportUsersToExcel } from "../../services/userExportService";
 import { getAuthSession, AUTH_SCOPES } from "../../utils/authStorage";
+import { useSearchParams } from "react-router-dom";
 
 import UserSummaryCards from "./users/UserSummaryCards";
 import UserFilterBar from "./users/UserFilterBar";
@@ -11,6 +12,7 @@ import UserPagination from "./users/UserPagination";
 import UserDetailDrawer from "./users/UserDetailDrawer";
 
 function AdminUserPage() {
+  const [searchParams] = useSearchParams();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
@@ -18,7 +20,7 @@ function AdminUserPage() {
 
   // Filter & Sort
   const [filters, setFilters] = useState({
-    search: "",
+    search: searchParams.get("search") || "",
     role: "",
     status: "",
     sort: "newest"

@@ -12,7 +12,7 @@ function AppDownload() {
       >
         <div className="row align-items-center">
           <div className="col-md-6 p-4 p-md-5">
-            <h2 className="fw-bold mb-3" style={{ color: "var(--primary-color)", fontSize: "2.5rem" }}>Trải nghiệm <br/> Brew Moments App</h2>
+            <h2 className="fw-bold mb-3" style={{ color: "var(--primary-color)", fontSize: "2.5rem" }}>Trải nghiệm <br/> 2T Coffee Shop App</h2>
             <p className="text-muted mb-4 fs-5" style={{ maxWidth: "400px" }}>
               Đặt hàng nhanh chóng, tích điểm dễ dàng và nhận vô vàn ưu đãi độc quyền chỉ có trên ứng dụng.
             </p>

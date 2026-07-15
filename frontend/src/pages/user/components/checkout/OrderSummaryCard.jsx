@@ -20,7 +20,9 @@ function OrderSummaryCard({
   onOpenVoucherModal,
   onRemoveVoucher,
   totalPoints = 0,
-  onApplyPoints
+  maxUsable,
+  onApplyPoints,
+  deliveryMethod
 }) {
   return (
     <div className="card shadow-sm border-0 rounded-4 p-0 bg-white sticky-top mb-4" style={{ top: "80px", zIndex: 1, boxShadow: "0 4px 20px rgba(0,0,0,0.05)" }}>
@@ -103,18 +105,20 @@ function OrderSummaryCard({
         />
 
         {/* Loyalty Points */}
-        <LoyaltyPointBox totalPoints={totalPoints} onApplyPoints={onApplyPoints} />
+        <LoyaltyPointBox totalPoints={totalPoints} maxUsable={maxUsable} onApplyPoints={onApplyPoints} />
 
         <hr style={{ borderColor: "#f0ebe5" }} />
 
-        <div className="d-flex justify-content-between mb-3 small pb-3 border-bottom">
-          <span className="text-muted flex-grow-1">Phí giao hàng</span>
-          {shippingFee > 0 ? (
-            <span className="fw-medium text-dark">{formatPrice(shippingFee)}</span>
-          ) : (
-            <span className="fw-bold text-success bg-success-subtle px-2 py-1 rounded-pill" style={{ fontSize: "10px" }}>Miễn phí</span>
-          )}
-        </div>
+        {deliveryMethod === 'DELIVERY' && (
+          <div className="d-flex justify-content-between mb-3 small pb-3 border-bottom">
+            <span className="text-muted flex-grow-1">Phí giao hàng</span>
+            {shippingFee > 0 ? (
+              <span className="fw-medium text-dark">{formatPrice(shippingFee)}</span>
+            ) : (
+              <span className="fw-bold text-success bg-success-subtle px-2 py-1 rounded-pill" style={{ fontSize: "10px" }}>Miễn phí</span>
+            )}
+          </div>
+        )}
         
         <div className="d-flex justify-content-between align-items-end mb-4">
           <div className="d-flex flex-column">

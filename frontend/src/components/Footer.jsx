@@ -7,11 +7,9 @@ function Footer() {
         <div className="row g-4 mb-5">
           <div className="col-12 col-md-4 pe-md-5">
             <Link className="navbar-brand text-decoration-none d-flex align-items-center gap-2 mb-4" to="/">
-              <div className="bg-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: "45px", height: "45px", color: "var(--primary-color)" }}>
-                <i className="fa-solid fa-mug-hot fs-4"></i>
-              </div>
+              <img src="/logo_2Tcoffee_shop.png" alt="2T Coffee Shop" style={{ height: "70px", objectFit: "contain" }} className="bg-white p-1 rounded shadow-sm" />
               <span className="fw-bold fs-3 text-white" style={{ letterSpacing: "-0.5px" }}>
-                Brew <span style={{ color: "var(--secondary-color)" }}>Moments</span>
+                2T Coffee <span style={{ color: "var(--secondary-color)" }}>Shop</span>
               </span>
             </Link>
             <p className="text-white-50 mb-4" style={{ fontSize: "0.95rem", lineHeight: "1.6" }}>
@@ -47,7 +45,7 @@ function Footer() {
 
           <div className="col-12 col-md-4">
             <h6 className="fw-bold mb-4 text-uppercase text-white" style={{ letterSpacing: "1px" }}>Đăng ký nhận tin</h6>
-            <p className="text-white-50 mb-3" style={{ fontSize: "0.95rem" }}>Nhận ưu đãi và tin tức mới nhất từ Brew Moments.</p>
+            <p className="text-white-50 mb-3" style={{ fontSize: "0.95rem" }}>Nhận ưu đãi và tin tức mới nhất từ 2T Coffee Shop.</p>
             <div className="position-relative mb-4">
               <input type="email" className="form-control rounded-pill bg-white bg-opacity-10 border-0 text-white ps-4 py-3 pe-5" placeholder="Nhập email của bạn..." style={{ backdropFilter: "blur(4px)" }} />
               <button className="btn position-absolute top-50 end-0 translate-middle-y text-white h-100 px-4 rounded-pill hover-opacity">
@@ -67,7 +65,7 @@ function Footer() {
         <hr className="border-secondary mb-4 opacity-25" />
 
         <div className="d-flex flex-column flex-md-row justify-content-between align-items-center gap-3">
-          <small className="text-white-50">&copy; {new Date().getFullYear()} Brew Moments. Tất cả quyền được bảo lưu.</small>
+          <small className="text-white-50">&copy; {new Date().getFullYear()} 2T Coffee Shop. Tất cả quyền được bảo lưu.</small>
           <div className="d-flex gap-3 align-items-center">
             <span className="text-white-50 small">Thanh toán an toàn:</span>
             <div className="d-flex gap-2">

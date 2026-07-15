@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { formatPrice } from '../../../../utils/formatPrice';
 
-function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 10, onApplyPoints }) {
-  const [inputPoints, setInputPoints] = useState(0);
+function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 1, onApplyPoints }) {
+  const [inputPoints, setInputPoints] = useState("");
   const [applied, setApplied] = useState(false);
 
   const actualMax = Math.min(maxUsable, totalPoints);
-  const discountAmount = inputPoints * pointValue;
+  const currentVal = inputPoints === "" ? 0 : parseInt(inputPoints, 10);
+  const discountAmount = currentVal * pointValue;
 
   const handleSliderChange = (e) => {
     const val = parseInt(e.target.value);
@@ -15,7 +16,13 @@ function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 10, on
   };
 
   const handleInputChange = (e) => {
-    let val = parseInt(e.target.value) || 0;
+    const rawVal = e.target.value;
+    if (rawVal === "") {
+        setInputPoints("");
+        setApplied(false);
+        return;
+    }
+    let val = parseInt(rawVal) || 0;
     if (val > actualMax) val = actualMax;
     if (val < 0) val = 0;
     setInputPoints(val);
@@ -24,11 +31,11 @@ function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 10, on
 
   const handleApply = () => {
     setApplied(true);
-    if (onApplyPoints) onApplyPoints(inputPoints);
+    if (onApplyPoints) onApplyPoints(currentVal);
   };
 
   const handleRemove = () => {
-    setInputPoints(0);
+    setInputPoints("");
     setApplied(false);
     if (onApplyPoints) onApplyPoints(0);
   };
@@ -81,8 +88,8 @@ function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 10, on
             className="form-range mb-2"
             min={0}
             max={actualMax}
-            step={10}
-            value={inputPoints}
+            step={1}
+            value={currentVal}
             onChange={handleSliderChange}
             style={{ accentColor: "#c67c4e" }}
           />
@@ -91,7 +98,7 @@ function LoyaltyPointBox({ totalPoints = 0, maxUsable = 500, pointValue = 10, on
             <span className="text-muted" style={{ fontSize: "11px" }}>
               Tối đa {actualMax.toLocaleString()} điểm cho đơn này
             </span>
-            {inputPoints > 0 && (
+            {currentVal > 0 && (
               <button
                 className="btn btn-sm rounded-pill fw-bold px-3"
                 style={{ backgroundColor: "var(--primary-color, #c67c4e)", color: "#fff", border: "none", fontSize: "12px" }}

@@ -34,7 +34,7 @@ function SupportMessageList({ messages, currentUserRole }) {
                             color: '#272727'
                         }}
                     >
-                        <p className="mb-0">Xin chào!<br />Cảm ơn bạn đã liên hệ với BrewMoments.<br />Bạn cần hỗ trợ điều gì ạ?</p>
+                        <p className="mb-0">Xin chào!<br />Cảm ơn bạn đã liên hệ với 2T Coffee Shop.<br />Bạn cần hỗ trợ điều gì ạ?</p>
                     </div>
                 </div>
             )}

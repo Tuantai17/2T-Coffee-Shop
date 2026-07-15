@@ -168,7 +168,7 @@ function ProfileLoyalty() {
                 </div>
                 <div className="text-muted small">
                   Cảm ơn bạn đã đồng hành cùng <br/> 
-                  <strong className="text-dark">Brew Moments</strong> <i className="fa-solid fa-heart text-danger"></i>
+                  <strong className="text-dark">2T Coffee Shop</strong> <i className="fa-solid fa-heart text-danger"></i>
                 </div>
               </div>
             </div>

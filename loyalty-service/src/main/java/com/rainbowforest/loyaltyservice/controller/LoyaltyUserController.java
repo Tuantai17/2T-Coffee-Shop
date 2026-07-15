@@ -224,12 +224,14 @@ public class LoyaltyUserController {
             @RequestParam(required = false) String type,
             @RequestParam(required = false) Boolean eligibleOnly) {
         Long userId = extractUserId(userIdHeader);
-        if (userId == null) {
-            return ResponseEntity.status(401).build();
-        }
 
-        LoyaltyAccount account = accountRepository.findByUserId(userId)
-                .orElse(LoyaltyAccount.builder().userId(userId).availablePoints(0L).currentTierCode("MEMBER").build());
+        LoyaltyAccount account;
+        if (userId != null) {
+            account = accountRepository.findByUserId(userId)
+                    .orElse(LoyaltyAccount.builder().userId(userId).availablePoints(0L).currentTierCode("MEMBER").build());
+        } else {
+            account = LoyaltyAccount.builder().availablePoints(0L).currentTierCode("MEMBER").build();
+        }
         String normalizedSearch = search != null ? search.trim().toLowerCase() : "";
         String normalizedType = type != null ? type.trim().toUpperCase() : "";
 
@@ -378,6 +380,118 @@ public class LoyaltyUserController {
         }
     }
 
+    @PostMapping("/points/consume")
+    public ResponseEntity<?> consumePoints(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @RequestBody Map<String, Object> payload) {
+        Long userId = extractUserId(userIdHeader);
+        if (userId == null) {
+            userId = extractBodyLong(payload, "userId");
+        }
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        try {
+            Long pointsToConsume = extractBodyLong(payload, "pointsUsed");
+            if (pointsToConsume == null || pointsToConsume <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("message", "So diem khong hop le"));
+            }
+            Long orderId = extractBodyLong(payload, "orderId");
+            if (orderId == null) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Thieu orderId"));
+            }
+            loyaltyEngineService.consumePointsForOrder(userId, pointsToConsume, orderId);
+            return ResponseEntity.ok(Map.of("message", "Tru diem thanh cong"));
+        } catch (RuntimeException exception) {
+            return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
+        }
+    }
+
+    /**
+     * Claim loyalty points for a completed order.
+     * User clicks a button to claim their reward.
+     */
+    @PostMapping("/orders/{orderId}/claim-points")
+    public ResponseEntity<?> claimOrderPoints(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader,
+            @PathVariable Long orderId,
+            @RequestBody(required = false) Map<String, Object> payload) {
+        Long userId = extractUserId(userIdHeader);
+        if (userId == null && payload != null) {
+            userId = extractBodyLong(payload, "userId");
+        }
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        final Long finalUserId = userId;
+
+        try {
+            // Check if already claimed
+            List<PointTransaction> existing = transactionRepository
+                    .findByReferenceTypeAndReferenceIdOrderByCreatedAtDesc("ORDER", String.valueOf(orderId));
+            boolean alreadyClaimed = existing.stream()
+                    .anyMatch(tx -> "EARN".equals(tx.getType()) && finalUserId.equals(tx.getUserId()));
+            if (alreadyClaimed) {
+                long claimedPoints = existing.stream()
+                        .filter(tx -> "EARN".equals(tx.getType()) && finalUserId.equals(tx.getUserId()))
+                        .mapToLong(tx -> tx.getPoints() != null ? tx.getPoints() : 0L)
+                        .sum();
+                return ResponseEntity.ok(Map.of(
+                        "message", "Điểm thưởng đã được nhận trước đó",
+                        "alreadyClaimed", true,
+                        "pointsClaimed", claimedPoints
+                ));
+            }
+
+            // Get order total from payload
+            long orderTotal = 0;
+            if (payload != null && payload.get("orderTotal") != null) {
+                orderTotal = extractBodyLong(payload, "orderTotal");
+            }
+            if (orderTotal <= 0) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Tổng đơn hàng không hợp lệ"));
+            }
+
+            // Award points: 1 point per 1000 VND
+            loyaltyEngineService.processOrderCompleted(userId, orderId, orderTotal, 0, 0, 0, 0);
+
+            long pointsEarned = orderTotal / 1000;
+            return ResponseEntity.ok(Map.of(
+                    "message", "Nhận điểm thưởng thành công!",
+                    "alreadyClaimed", false,
+                    "pointsClaimed", pointsEarned
+            ));
+        } catch (RuntimeException exception) {
+            return ResponseEntity.badRequest().body(Map.of("message", exception.getMessage()));
+        }
+    }
+
+    /**
+     * Check which orders have already had points claimed by this user.
+     */
+    @GetMapping("/orders/claimed")
+    public ResponseEntity<?> getClaimedOrders(
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader) {
+        Long userId = extractUserId(userIdHeader);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+
+        List<PointTransaction> allEarns = transactionRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        List<Map<String, Object>> claimed = allEarns.stream()
+                .filter(tx -> "EARN".equals(tx.getType()) && "ORDER".equals(tx.getReferenceType()))
+                .map(tx -> {
+                    Map<String, Object> item = new LinkedHashMap<>();
+                    item.put("orderId", tx.getReferenceId());
+                    item.put("points", tx.getPoints());
+                    item.put("claimedAt", tx.getCreatedAt() != null ? tx.getCreatedAt().toString() : null);
+                    return item;
+                })
+                .toList();
+        return ResponseEntity.ok(claimed);
+    }
 
 
     private Map<String, Object> toRewardSummary(VoucherDefinition voucher, LoyaltyAccount account, List<MembershipTier> allTiers) {

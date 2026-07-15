@@ -87,6 +87,10 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         }
         Order savedOrder = orderRepository.save(order);
 
+        if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
+            publishOrderEvent(savedOrder, "ORDER_COMPLETED");
+        }
+
         logActivity(orderId, "STATUS_CHANGE", "Cập nhật trạng thái đơn hàng", oldStatus, newStatus, performedBy);
         
         return savedOrder;
@@ -478,6 +482,7 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             event.put("orderId", order.getId());
             event.put("userId", order.getUser() != null ? order.getUser().getId() : null);
             event.put("total", order.getTotal());
+            event.put("productSubtotal", order.getTotal());
             event.put("status", order.getStatus());
             
             com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(

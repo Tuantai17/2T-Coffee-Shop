@@ -4,7 +4,7 @@ import { logout } from "../../../../services/authService";
 import { AUTH_SCOPES } from "../../../../utils/authStorage";
 import loyaltyApi from "../../../../api/loyaltyApi";
 
-function ProfileSidebar({ profile }) {
+function ProfileSidebar({ profile, refreshKey = 0 }) {
   const navigate = useNavigate();
   const location = useLocation();
   const [loyaltyAccount, setLoyaltyAccount] = useState(null);
@@ -13,7 +13,7 @@ function ProfileSidebar({ profile }) {
     loyaltyApi.getMyLoyaltyAccount()
       .then(res => setLoyaltyAccount(res?.data || null))
       .catch(() => {});
-  }, []);
+  }, [refreshKey]);
 
   const handleLogout = () => {
     logout(AUTH_SCOPES.USER);

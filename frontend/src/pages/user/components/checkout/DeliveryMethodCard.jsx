@@ -8,7 +8,8 @@ function DeliveryMethodCard({
   onOpenAddressForm,
   form,
   onChangeForm,
-  getFullAddressString
+  getFullAddressString,
+  storeInfo
 }) {
   return (
     <div className="card border-0 rounded-4 p-4 bg-white mb-4 shadow-sm" style={{ boxShadow: "0 4px 20px rgba(0,0,0,0.03)" }}>
@@ -67,7 +68,7 @@ function DeliveryMethodCard({
                 </div>
                 <div>
                   <div className="fw-bold text-dark" style={{ fontSize: "15px" }}>Nhận tại cửa hàng</div>
-                  <div className="text-muted" style={{ fontSize: "12px" }}>Nhận tại cửa hàng Brew Moments</div>
+                  <div className="text-muted" style={{ fontSize: "12px" }}>Nhận tại cửa hàng 2T Coffee Shop</div>
                 </div>
               </div>
             </div>
@@ -92,57 +93,32 @@ function DeliveryMethodCard({
                   <i className="fa-solid fa-chevron-down text-muted"></i>
                 </div>
               </div>
-
-              <div className="row g-3 mb-3">
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-muted mb-1">Họ và tên</label>
-                  <input 
-                    type="text" 
-                    name="receiverName"
-                    value={form.receiverName}
-                    onChange={onChangeForm}
-                    className="form-control rounded-3" 
-                    placeholder="Nguyễn Văn A" 
-                    style={{ height: "48px" }}
-                  />
-                </div>
-                <div className="col-6">
-                  <label className="form-label small fw-semibold text-muted mb-1">Số điện thoại</label>
-                  <input 
-                    type="tel" 
-                    name="phone"
-                    value={form.phone}
-                    onChange={onChangeForm}
-                    className="form-control rounded-3" 
-                    placeholder="0901 234 567" 
-                    style={{ height: "48px" }}
-                  />
-                </div>
-              </div>
-
-              <div className="mt-auto">
-                <label className="form-label small fw-semibold text-muted mb-1">Ghi chú giao hàng</label>
-                <input 
-                  type="text" 
-                  name="note"
-                  value={form.note}
-                  onChange={onChangeForm}
-                  className="form-control rounded-3 border-0 bg-light" 
-                  placeholder="Giao giờ hành chính, gọi trước khi giao. Cảm ơn!"
-                  style={{ height: "48px" }}
-                />
-              </div>
             </div>
           ) : (
             <div className="h-100 d-flex flex-column justify-content-center border rounded-4 p-4 bg-light text-center position-relative overflow-hidden">
               <i className="fa-solid fa-store text-muted opacity-25 position-absolute" style={{ fontSize: "100px", right: "-10px", bottom: "-10px" }}></i>
-              <h5 className="fw-bold mb-2">Brew Moments Flagship</h5>
-              <p className="text-muted small mb-3">123 Đường Điện Biên Phủ, Phường Đa Kao, Quận 1, TP.HCM</p>
-              <div className="d-flex justify-content-center gap-3 mb-3">
-                <span className="badge bg-white text-dark border px-3 py-2 rounded-pill"><i className="fa-solid fa-location-dot text-danger me-1"></i> 1.2 km</span>
-                <span className="badge bg-white text-dark border px-3 py-2 rounded-pill"><i className="fa-regular fa-clock text-primary me-1"></i> 15 phút</span>
-              </div>
-              <button className="btn btn-outline-dark rounded-pill fw-medium btn-sm mx-auto" style={{ width: "fit-content" }}>
+              <h5 className="fw-bold mb-2">2T Coffee Shop Flagship</h5>
+              <p className="text-muted small mb-3">
+                {storeInfo?.address || "123 Đường Điện Biên Phủ, Phường Đa Kao, Quận 1, TP.HCM"}
+              </p>
+              {storeInfo?.phone && (
+                <p className="text-muted small fw-bold mb-3">SĐT: {storeInfo.phone}</p>
+              )}
+              <button 
+                className="btn btn-outline-dark rounded-pill fw-medium btn-sm mx-auto" 
+                style={{ width: "fit-content" }}
+                onClick={() => {
+                  if (storeInfo?.googleMapsUrl) {
+                    const tempElement = document.createElement('div');
+                    tempElement.innerHTML = storeInfo.googleMapsUrl;
+                    const iframe = tempElement.querySelector('iframe');
+                    const src = iframe ? iframe.src : storeInfo.googleMapsUrl;
+                    window.open(src, '_blank');
+                  } else {
+                    window.open("https://maps.google.com/?q=" + encodeURIComponent(storeInfo?.address || "2T Coffee Shop"), "_blank");
+                  }
+                }}
+              >
                 <i className="fa-solid fa-map-location-dot me-1"></i> Xem bản đồ
               </button>
             </div>

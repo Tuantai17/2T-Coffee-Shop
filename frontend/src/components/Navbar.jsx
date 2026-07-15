@@ -7,6 +7,8 @@ import { getCart } from "../services/cartService";
 import { motion, AnimatePresence } from "framer-motion";
 import loyaltyApi from "../api/loyaltyApi";
 import UserNotificationDropdown from "./UserNotificationDropdown";
+import { getPublicMenus } from "../services/menuService";
+import { getCategories } from "../services/productService";
 
 function Navbar() {
   const navigate = useNavigate();
@@ -22,6 +24,10 @@ function Navbar() {
   const [userAvatar, setUserAvatar] = useState("");
   const [scrolled, setScrolled] = useState(false);
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
+  const [navLinks, setNavLinks] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [productHovered, setProductHovered] = useState(false);
+  const productHoverTimeout = useRef(null);
 
   const loadUserProfileData = useCallback(async () => {
     if (userId) {
@@ -60,7 +66,36 @@ function Navbar() {
     }
   }, [token]);
 
+  const loadMenus = useCallback(async () => {
+    try {
+      const res = await getPublicMenus();
+      if (res.data) {
+        const activeMenus = res.data
+          .filter(m => m.isActive)
+          .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
+        setNavLinks(activeMenus);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy danh sách menu public:", error);
+    }
+  }, []);
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const res = await getCategories();
+      // Filter out root categories (parentId = null or missing parentId)
+      // Or just take all categories. Let's take all and display them.
+      if (res.data) {
+        setCategories(res.data);
+      }
+    } catch (error) {
+      console.error("Lỗi lấy danh sách danh mục:", error);
+    }
+  }, []);
+
   useEffect(() => {
+    loadMenus();
+    loadCategories();
     if (token) {
       loadCart();
       loadUserProfileData();
@@ -126,15 +161,30 @@ function Navbar() {
 
   const totalQuantity = cart.reduce((total, item) => total + (item.quantity || 0), 0);
 
-  const navLinks = [
-    { name: "Trang chủ", path: "/", icon: "fa-solid fa-house" },
-    { name: "Sản phẩm", path: "/products", icon: "fa-solid fa-mug-hot" },
-    { name: "Khuyến mãi", path: "/promotions", icon: "fa-solid fa-tags" },
-    { name: "Voucher", path: "/loyalty/rewards", icon: "fa-solid fa-ticket" },
-    { name: "Tin tức", path: "/news", icon: "fa-regular fa-newspaper" },
-    { name: "Mini Game", path: "/game", icon: "fa-solid fa-gamepad" },
-    { name: "Liên hệ", path: "/contact", icon: "fa-solid fa-envelope" },
-  ];
+  const getIconForPath = (path) => {
+    switch (path) {
+      case "/": return "fa-solid fa-house";
+      case "/products": return "fa-solid fa-mug-hot";
+      case "/promotions": return "fa-solid fa-tags";
+      case "/voucher": 
+      case "/loyalty/rewards": return "fa-solid fa-ticket";
+      case "/news": return "fa-regular fa-newspaper";
+      case "/game": return "fa-solid fa-gamepad";
+      case "/contact": return "fa-solid fa-envelope";
+      default: return "fa-solid fa-link";
+    }
+  };
+
+  const handleProductMouseEnter = () => {
+    if (productHoverTimeout.current) clearTimeout(productHoverTimeout.current);
+    setProductHovered(true);
+  };
+
+  const handleProductMouseLeave = () => {
+    productHoverTimeout.current = setTimeout(() => {
+      setProductHovered(false);
+    }, 200);
+  };
 
   return (
     <header 
@@ -147,26 +197,72 @@ function Navbar() {
           {/* Left: Logo & Menu */}
           <div className="d-flex align-items-center gap-4">
             <Link className="navbar-brand text-decoration-none d-flex align-items-center gap-2" to="/">
-              <div className="text-white rounded-circle d-flex align-items-center justify-content-center shadow-sm" style={{ width: "40px", height: "40px", backgroundColor: "var(--primary-color)" }}>
-                <i className="fa-solid fa-mug-hot fs-5"></i>
-              </div>
+              <img src="/logo_2Tcoffee_shop.png" alt="2T Coffee Shop" style={{ height: "60px", objectFit: "contain" }} />
               <span className="fw-bold fs-4" style={{ color: "var(--primary-color)", letterSpacing: "-0.5px" }}>
-                Brew <span style={{ color: "var(--secondary-color)" }}>Moments</span>
+                2T Coffee <span style={{ color: "var(--secondary-color)" }}>Shop</span>
               </span>
             </Link>
 
             <nav className="d-none d-xl-flex gap-4 mb-0 list-unstyled align-items-center">
-              {navLinks.map((link, idx) => (
-                <Link 
-                  key={idx} 
-                  to={link.path} 
-                  className={`text-decoration-none fw-semibold d-flex align-items-center gap-2 transition-all ${location.pathname === link.path ? 'text-secondary-brew' : 'text-dark hover-text-primary'}`}
-                  style={{ fontSize: "0.95rem", color: location.pathname === link.path ? "var(--secondary-color)" : "var(--dark-text)" }}
-                >
-                  <i className={`${link.icon} fs-6`}></i>
-                  {link.name}
-                </Link>
-              ))}
+              {navLinks.map((link, idx) => {
+                const isProductLink = link.path === "/products";
+                
+                return (
+                  <div 
+                    key={idx} 
+                    className="position-relative h-100 d-flex align-items-center"
+                    onMouseEnter={isProductLink ? handleProductMouseEnter : undefined}
+                    onMouseLeave={isProductLink ? handleProductMouseLeave : undefined}
+                    style={{ padding: "10px 0" }}
+                  >
+                    <Link 
+                      to={link.path} 
+                      className={`text-decoration-none fw-semibold d-flex align-items-center gap-2 transition-all ${location.pathname === link.path ? 'text-secondary-brew' : 'text-dark hover-text-primary'}`}
+                      style={{ fontSize: "0.95rem", color: location.pathname === link.path ? "var(--secondary-color)" : "var(--dark-text)" }}
+                    >
+                      <i className={`${link.icon || getIconForPath(link.path)} fs-6`}></i>
+                      {link.name}
+                      {isProductLink && <i className="fa-solid fa-chevron-down ms-1" style={{ fontSize: "0.7rem" }}></i>}
+                    </Link>
+
+                    {/* Product Categories Dropdown */}
+                    {isProductLink && (
+                      <AnimatePresence>
+                        {productHovered && categories.length > 0 && (
+                          <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            className="position-absolute bg-white rounded shadow-sm border"
+                            style={{ top: "100%", left: "0", minWidth: "220px", zIndex: 1060, paddingTop: "8px", paddingBottom: "8px" }}
+                          >
+                            <div className="d-flex flex-column">
+                              {categories.slice(0, 8).map(category => (
+                                <Link 
+                                  key={category.id} 
+                                  to={`/products?category=${category.id}`}
+                                  className="text-decoration-none text-dark px-4 py-2 hover-bg-light transition-all d-flex align-items-center gap-3"
+                                >
+                                  {category.imageUrl && (
+                                    <img src={category.imageUrl} alt={category.name} style={{ width: "24px", height: "24px", objectFit: "cover", borderRadius: "4px" }} />
+                                  )}
+                                  <span style={{ fontSize: "0.9rem", fontWeight: "500" }}>{category.name}</span>
+                                </Link>
+                              ))}
+                              {categories.length > 8 && (
+                                <Link to="/products" className="text-decoration-none px-4 py-2 text-primary fw-semibold text-center mt-2 border-top" style={{ fontSize: "0.85rem" }}>
+                                  Xem tất cả danh mục
+                                </Link>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    )}
+                  </div>
+                );
+              })}
             </nav>
           </div>
 
@@ -190,18 +286,11 @@ function Navbar() {
             {/* Mobile utilities */}
             <div className="d-flex d-md-none align-items-center gap-3 ms-auto me-3">
               <UserNotificationDropdown />
-              <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
-                <i className="fa-solid fa-ticket fs-5 text-warning"></i>
-              </div>
             </div>
 
             {/* Utility Icons (Notification, etc.) */}
             <div className="d-none d-md-flex align-items-center gap-3 me-2">
               <UserNotificationDropdown />
-              <div className="position-relative text-dark" style={{ cursor: "pointer" }}>
-                <i className="fa-solid fa-ticket fs-5 text-warning"></i>
-                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>2</span>
-              </div>
             </div>
 
             {/* Loyalty Point */}

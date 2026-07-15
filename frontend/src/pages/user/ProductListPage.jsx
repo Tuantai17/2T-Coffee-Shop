@@ -107,7 +107,7 @@ function ProductListPage() {
           <div className="row mb-2">
             <div className="col-lg-6">
               <h2 className="fw-bold mb-2 text-uppercase" style={{ color: "var(--primary-color)", fontSize: "2rem" }}>TẤT CẢ ĐỒ UỐNG</h2>
-              <p className="text-muted mb-4">Khám phá những thức uống được yêu thích nhất tại Brew Moments.</p>
+              <p className="text-muted mb-4">Khám phá những thức uống được yêu thích nhất tại 2T Coffee Shop.</p>
             </div>
             <div className="col-lg-6">
               <SearchBar onSearch={handleSearch} />

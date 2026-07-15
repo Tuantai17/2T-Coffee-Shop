@@ -14,3 +14,7 @@ export const previewCheckoutVoucher = async (voucherCode, orderTotal) => {
     orderTotal,
   });
 };
+
+export const getPublicRewards = async () => {
+  return axiosClient.get("/api/loyalty/rewards");
+};

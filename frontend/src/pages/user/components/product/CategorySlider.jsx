@@ -62,10 +62,13 @@ function CategorySlider({ categories = [], activeCategory, onCategoryChange }) {
                 }}
                 onClick={() => onCategoryChange(cat.id.toString())}
               >
-                {/* Generic placeholder icon for DB categories */}
-                <div className="rounded-circle overflow-hidden bg-light d-flex align-items-center justify-content-center" style={{ width: "24px", height: "24px", color: "var(--primary-color)" }}>
-                  <i className="fa-solid fa-coffee small"></i>
-                </div>
+                {cat.imageUrl ? (
+                  <img src={cat.imageUrl} alt={cat.name} style={{ width: "24px", height: "24px", objectFit: "cover", borderRadius: "4px" }} />
+                ) : (
+                  <div className="rounded-circle overflow-hidden bg-light d-flex align-items-center justify-content-center" style={{ width: "24px", height: "24px", color: "var(--primary-color)" }}>
+                    <i className="fa-solid fa-coffee small"></i>
+                  </div>
+                )}
                 {cat.name}
               </button>
             </motion.div>

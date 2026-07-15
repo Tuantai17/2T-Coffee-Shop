@@ -6,6 +6,7 @@ import { getUserProfile } from "../../services/authService";
 import { AUTH_SCOPES, getAuthSession } from "../../utils/authStorage";
 import ProfileSidebar from "./components/profile/ProfileSidebar";
 import OrderDetailModal from "./components/OrderDetailModal";
+import loyaltyApi from "../../api/loyaltyApi";
 
 function statusBadgeClass(status) {
   switch (status) {
@@ -65,6 +66,11 @@ function OrderHistoryPage() {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const location = useLocation();
 
+  // Claimed orders tracking
+  const [claimedOrders, setClaimedOrders] = useState({}); // { orderId: points }
+  const [claimingOrderId, setClaimingOrderId] = useState(null);
+  const [loyaltyRefreshKey, setLoyaltyRefreshKey] = useState(0);
+
   // Filters
   const [activeTab, setActiveTab] = useState("ALL");
   const [searchCode, setSearchCode] = useState("");
@@ -97,9 +103,41 @@ function OrderHistoryPage() {
     }
   }, [userId]);
 
+  // Load claimed orders
+  const loadClaimedOrders = useCallback(async () => {
+    try {
+      const res = await loyaltyApi.getClaimedOrders();
+      const map = {};
+      (res.data || []).forEach(item => {
+        map[String(item.orderId)] = item.points;
+      });
+      setClaimedOrders(map);
+    } catch (e) {
+      console.error("Failed to load claimed orders", e);
+    }
+  }, []);
+
   useEffect(() => {
     loadData();
-  }, [loadData]);
+    loadClaimedOrders();
+  }, [loadData, loadClaimedOrders]);
+
+  const handleClaimPoints = async (order) => {
+    if (claimingOrderId) return;
+    setClaimingOrderId(order.id);
+    try {
+      const res = await loyaltyApi.claimOrderPoints(order.id, order.total || 0);
+      const data = res.data;
+      setClaimedOrders(prev => ({ ...prev, [String(order.id)]: data.pointsClaimed }));
+      setLoyaltyRefreshKey(prev => prev + 1);
+      // Show a brief success toast-style animation (optional UX)
+    } catch (e) {
+      console.error("Claim failed", e);
+      alert(e.response?.data?.message || "Nhận điểm thất bại");
+    } finally {
+      setClaimingOrderId(null);
+    }
+  };
 
   useEffect(() => {
     if (location.state?.openOrder && orders.length > 0) {
@@ -155,9 +193,9 @@ function OrderHistoryPage() {
         ) : (
           <div className="row g-4">
             {/* Sidebar */}
-            <div className="col-lg-3">
-              <ProfileSidebar profile={profile} />
-            </div>
+        <div className="col-lg-3 d-none d-lg-block">
+          <ProfileSidebar profile={profile} refreshKey={loyaltyRefreshKey} />
+        </div>
 
             {/* Main Content */}
             <div className="col-lg-9">
@@ -305,6 +343,27 @@ function OrderHistoryPage() {
                                   <i className={`fa-solid ${st.icon} small`}></i>
                                   {statusText(order.status)}
                                 </div>
+                                {order.status === 'COMPLETED' && (
+                                  claimedOrders[String(order.id)] ? (
+                                    <div className="mt-2 small text-success fw-medium" title="Đã nhận điểm thưởng">
+                                      <i className="fa-solid fa-circle-check me-1"></i>
+                                      +{claimedOrders[String(order.id)]} điểm
+                                    </div>
+                                  ) : (
+                                    <button
+                                      className="btn btn-sm btn-warning rounded-pill mt-2 px-3 fw-medium d-inline-flex align-items-center gap-1 shadow-sm"
+                                      style={{ fontSize: '0.78rem' }}
+                                      disabled={claimingOrderId === order.id}
+                                      onClick={(e) => { e.stopPropagation(); handleClaimPoints(order); }}
+                                    >
+                                      {claimingOrderId === order.id ? (
+                                        <><span className="spinner-border spinner-border-sm me-1"></span>Đang nhận...</>
+                                      ) : (
+                                        <><i className="fa-solid fa-gift"></i> Nhận +{Math.floor((order.total || 0) / 1000)} điểm</>
+                                      )}
+                                    </button>
+                                  )
+                                )}
                               </td>
                               <td className="py-3 text-center">
                                 <button 
@@ -330,7 +389,14 @@ function OrderHistoryPage() {
 
       {/* Modal chi tiết đơn hàng */}
       {selectedOrder && (
-        <OrderDetailModal order={selectedOrder} profile={profile} onClose={() => setSelectedOrder(null)} />
+        <OrderDetailModal
+          order={selectedOrder}
+          profile={profile}
+          onClose={() => setSelectedOrder(null)}
+          claimedOrders={claimedOrders}
+          onClaimPoints={handleClaimPoints}
+          claimingOrderId={claimingOrderId}
+        />
       )}
     </UserLayout>
   );

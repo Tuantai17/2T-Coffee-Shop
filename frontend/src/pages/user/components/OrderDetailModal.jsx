@@ -45,7 +45,7 @@ function getPaymentStatusLabel(status) {
   }
 }
 
-const OrderDetailModal = ({ order, profile, onClose }) => {
+const OrderDetailModal = ({ order, profile, onClose, claimedOrders = {}, onClaimPoints, claimingOrderId }) => {
   if (!order) return null;
 
   const formattedCode = `MKD${String(order.id).padStart(8, "0")}`;
@@ -86,7 +86,7 @@ const OrderDetailModal = ({ order, profile, onClose }) => {
       <div
         className="bg-white rounded-4 shadow-lg position-relative d-flex flex-column"
         style={{ 
-          width: "100%", maxWidth: "1000px", maxHeight: "95vh", 
+          width: "100%", maxWidth: "1200px", maxHeight: "95vh", 
           overflow: "hidden", fontFamily: "Inter, sans-serif" 
         }}
         onClick={(event) => event.stopPropagation()}
@@ -175,6 +175,43 @@ const OrderDetailModal = ({ order, profile, onClose }) => {
               )}
             </div>
           </div>
+
+          {/* Loyalty Points Reward */}
+          {order.status === "COMPLETED" && (
+            claimedOrders[String(order.id)] ? (
+              <div className="alert alert-success d-flex align-items-center mb-4 rounded-4 shadow-sm border-success-subtle py-3" role="alert">
+                <i className="fa-solid fa-circle-check fs-3 me-3 text-success"></i>
+                <div>
+                  <h6 className="alert-heading fw-bold mb-1">Đã nhận điểm thưởng!</h6>
+                  <p className="mb-0">Bạn đã nhận được <strong className="text-success">+{claimedOrders[String(order.id)]} điểm thưởng</strong> Loyalty từ đơn hàng này.</p>
+                </div>
+              </div>
+            ) : (
+              <div className="d-flex align-items-center justify-content-between mb-4 rounded-4 shadow-sm py-3 px-4" style={{ background: 'linear-gradient(135deg, #fff7e6 0%, #ffe8cc 100%)', border: '1.5px solid #ffc107' }}>
+                <div className="d-flex align-items-center gap-3">
+                  <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: '50px', height: '50px', background: 'linear-gradient(135deg, #ff9800 0%, #ff5722 100%)', color: 'white' }}>
+                    <i className="fa-solid fa-gift fs-4"></i>
+                  </div>
+                  <div>
+                    <h6 className="fw-bold mb-0 text-dark">Phần thưởng đơn hàng</h6>
+                    <p className="mb-0 small text-muted">Bạn có <strong className="text-warning">+{Math.floor((order.total || 0) / 1000)} điểm thưởng</strong> chờ nhận từ đơn hàng này!</p>
+                  </div>
+                </div>
+                <button
+                  className="btn btn-warning btn-sm rounded-pill px-4 py-2 fw-bold shadow d-flex align-items-center gap-2"
+                  style={{ fontSize: '0.9rem', minWidth: '150px', justifyContent: 'center' }}
+                  disabled={claimingOrderId === order.id}
+                  onClick={() => onClaimPoints && onClaimPoints(order)}
+                >
+                  {claimingOrderId === order.id ? (
+                    <><span className="spinner-border spinner-border-sm"></span> Đang nhận...</>
+                  ) : (
+                    <><i className="fa-solid fa-hand-holding-heart"></i> Nhận điểm thưởng</>
+                  )}
+                </button>
+              </div>
+            )
+          )}
 
           {/* 3 Columns Grid */}
           <div className="row g-4 mb-4">
@@ -271,44 +308,74 @@ const OrderDetailModal = ({ order, profile, onClose }) => {
                     </tr>
                   </thead>
                   <tbody className="border-top-0">
-                    {order.items?.map((item) => {
-                      const finalQty = item.finalQuantity !== null && item.finalQuantity !== undefined ? item.finalQuantity : item.quantity;
-                      const isRemoved = item.itemStatus === 'REMOVED' || item.itemStatus === 'CANCELLED';
-                      const productPrice = item.unitPrice || item.product?.price || 0;
-                      
-                      return (
-                        <tr key={item.id || item.product?.id} className={isRemoved ? "opacity-50" : ""}>
-                          <td className="px-4 py-3">
-                            <div className="d-flex align-items-center gap-3">
-                              {item.product?.imageUrl ? (
-                                <img 
-                                  src={item.product.imageUrl} 
-                                  alt="Product" 
-                                  className="rounded-3 border" 
-                                  style={{ width: "60px", height: "60px", objectFit: "cover" }} 
-                                />
-                              ) : (
-                                <div className="bg-light rounded-3 border d-flex align-items-center justify-content-center" style={{ width: "60px", height: "60px" }}>
-                                  <i className="fa-solid fa-image text-muted"></i>
-                                </div>
-                              )}
-                              <div>
-                                <div className="fw-semibold text-dark text-wrap" style={{ maxWidth: "350px", fontSize: "0.95rem" }}>
-                                  {item.productName || item.product?.productName || "Sản phẩm đồ chơi"}
-                                </div>
-                                <div className="small text-muted mt-1">
-                                  SKU: {item.productId || item.product?.id || "N/A"}
-                                  {isRemoved && <span className="badge bg-danger ms-2">Đã hủy/Loại bỏ</span>}
+                      {order.items?.map((item) => {
+                        const finalQty = item.finalQuantity !== null && item.finalQuantity !== undefined ? item.finalQuantity : item.quantity;
+                        const isRemoved = item.itemStatus === 'REMOVED' || item.itemStatus === 'CANCELLED';
+                        const productPrice = item.unitPrice || item.product?.price || 0;
+                        const productCost = productPrice * finalQty;
+                        const itemSubTotal = item.subTotal || productCost;
+                        const toppingCost = Math.max(0, itemSubTotal - productCost);
+                        
+                        return (
+                          <tr key={item.id || item.product?.id} className={isRemoved ? "opacity-50" : ""}>
+                            <td className="px-4 py-3">
+                              <div className="d-flex align-items-center gap-3">
+                                {item.product?.imageUrl ? (
+                                  <img 
+                                    src={item.product.imageUrl} 
+                                    alt="Product" 
+                                    className="rounded-3 border" 
+                                    style={{ width: "60px", height: "60px", objectFit: "cover" }} 
+                                  />
+                                ) : (
+                                  <div className="bg-light rounded-3 border d-flex align-items-center justify-content-center" style={{ width: "60px", height: "60px" }}>
+                                    <i className="fa-solid fa-image text-muted"></i>
+                                  </div>
+                                )}
+                                <div>
+                                  <div className="fw-semibold text-dark text-wrap" style={{ maxWidth: "350px", fontSize: "0.95rem" }}>
+                                    {item.productName || item.product?.productName || "Sản phẩm đồ chơi"}
+                                  </div>
+                                  <div className="small text-muted mt-1">
+                                    SKU: {item.productId || item.product?.id || "N/A"}
+                                    {isRemoved && <span className="badge bg-danger ms-2">Đã hủy/Loại bỏ</span>}
+                                  </div>
+                                  {(item.variantName || item.optionsSnapshot || item.toppingsSnapshot || item.note) && (
+                                    <div className="mt-2" style={{ fontSize: "0.85rem", color: "#666" }}>
+                                      {item.variantName && <div className="mb-1"><i className="fa-solid fa-ruler me-1" style={{ fontSize: "9px" }}></i>Size {item.variantName}</div>}
+                                      {item.optionsSnapshot && <div className="mb-1"><i className="fa-solid fa-sliders me-1" style={{ fontSize: "9px" }}></i>Tuỳ chọn: {item.optionsSnapshot}</div>}
+                                      {item.toppingsSnapshot && <div className="mb-1"><i className="fa-solid fa-ice-cream me-1" style={{ fontSize: "9px" }}></i>Topping: {Object.entries(item.toppingsSnapshot.split(', ').reduce((acc, curr) => { acc[curr] = (acc[curr] || 0) + 1; return acc; }, {})).map(([name, count]) => count > 1 ? `${name} (x${count})` : name).join(', ')}</div>}
+                                      {item.note && <div className="mb-1 fst-italic"><i className="fa-regular fa-comment-dots me-1" style={{ fontSize: "9px" }}></i>Ghi chú: {item.note}</div>}
+                                    </div>
+                                  )}
                                 </div>
                               </div>
-                            </div>
-                          </td>
-                          <td className="text-end py-3 fw-medium text-dark">{productPrice.toLocaleString("vi-VN")} đ</td>
-                          <td className="text-center py-3 fw-medium">x{finalQty}</td>
-                          <td className="text-end px-4 py-3 fw-bold text-dark">{(productPrice * finalQty).toLocaleString("vi-VN")} đ</td>
-                        </tr>
-                      );
-                    })}
+                            </td>
+                            <td className="text-end py-3 fw-medium text-dark">{productPrice.toLocaleString("vi-VN")} đ</td>
+                            <td className="text-center py-3 fw-medium">x{finalQty}</td>
+                            <td className="text-end px-4 py-3 text-dark">
+                              {toppingCost > 0 ? (
+                                <div className="d-flex flex-column align-items-end" style={{ fontSize: "0.85rem" }}>
+                                  <div className="d-flex justify-content-between mb-1 text-muted" style={{ width: "130px" }}>
+                                    <span>Sản phẩm:</span>
+                                    <span>{productCost.toLocaleString("vi-VN")} đ</span>
+                                  </div>
+                                  <div className="d-flex justify-content-between mb-1 text-muted" style={{ width: "130px" }}>
+                                    <span>Topping:</span>
+                                    <span>{toppingCost.toLocaleString("vi-VN")} đ</span>
+                                  </div>
+                                  <div className="d-flex justify-content-between pt-1 mt-1 border-top" style={{ width: "130px" }}>
+                                    <span className="fw-semibold">Tổng:</span>
+                                    <span className="fw-bold text-dark">{itemSubTotal.toLocaleString("vi-VN")} đ</span>
+                                  </div>
+                                </div>
+                              ) : (
+                                <span className="fw-bold">{itemSubTotal.toLocaleString("vi-VN")} đ</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
                   </tbody>
                 </table>
               </div>

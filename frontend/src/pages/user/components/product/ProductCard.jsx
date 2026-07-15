@@ -16,7 +16,7 @@ function ProductCard({ product, onAddToCart, onQuickView, viewMode }) {
 
   // Only use real data from product (do not use Math.random)
   const rating = product.rating || null;
-  const sold = product.sold || 0;
+  const sold = product.soldCount || 0;
   const calories = product.calories || null;
 
   const getBadgeColor = (type) => {

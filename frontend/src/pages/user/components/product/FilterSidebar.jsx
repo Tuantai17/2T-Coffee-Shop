@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function FilterSidebar({ onFilterChange, filters }) {
@@ -9,6 +9,7 @@ function FilterSidebar({ onFilterChange, filters }) {
     temperature: true
   });
 
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
@@ -17,7 +18,7 @@ function FilterSidebar({ onFilterChange, filters }) {
     onFilterChange('priceRange', priceRange);
   };
 
-  const SectionHeader = ({ title, section }) => (
+  const renderSectionHeader = (title, section) => (
     <div 
       className="d-flex justify-content-between align-items-center mb-3 cursor-pointer"
       onClick={() => toggleSection(section)}
@@ -38,7 +39,7 @@ function FilterSidebar({ onFilterChange, filters }) {
 
       {/* Khoảng Giá */}
       <div className="mb-4 pb-3 border-bottom">
-        <SectionHeader title="KHOẢNG GIÁ" section="price" />
+        {renderSectionHeader("KHOẢNG GIÁ", "price")}
         <AnimatePresence>
           {expandedSections.price && (
             <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
@@ -70,70 +71,13 @@ function FilterSidebar({ onFilterChange, filters }) {
         </AnimatePresence>
       </div>
 
-      {/* Size */}
-      <div className="mb-4 pb-3 border-bottom">
-        <SectionHeader title="SIZE" section="size" />
-        <AnimatePresence>
-          {expandedSections.size && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <div className="d-flex flex-column gap-2 mt-2">
-                {['S', 'M', 'L'].map(size => (
-                  <div className="form-check custom-checkbox" key={size}>
-                    <input className="form-check-input" type="checkbox" id={`size-${size}`} />
-                    <label className="form-check-label text-muted ms-2" htmlFor={`size-${size}`}>Size {size}</label>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
 
-      {/* Topping */}
-      <div className="mb-4 pb-3 border-bottom">
-        <SectionHeader title="TOPPING" section="topping" />
-        <AnimatePresence>
-          {expandedSections.topping && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <div className="d-flex flex-column gap-2 mt-2">
-                <div className="form-check custom-checkbox">
-                  <input className="form-check-input" type="checkbox" id="topping-yes" />
-                  <label className="form-check-label text-muted ms-2" htmlFor="topping-yes">Có Topping</label>
-                </div>
-                <div className="form-check custom-checkbox">
-                  <input className="form-check-input" type="checkbox" id="topping-no" />
-                  <label className="form-check-label text-muted ms-2" htmlFor="topping-no">Không Topping</label>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
 
-      {/* Temperature */}
-      <div className="mb-4">
-        <SectionHeader title="NHIỆT ĐỘ" section="temperature" />
-        <AnimatePresence>
-          {expandedSections.temperature && (
-            <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-              <div className="d-flex flex-column gap-2 mt-2">
-                <div className="form-check custom-checkbox">
-                  <input className="form-check-input" type="checkbox" id="temp-hot" />
-                  <label className="form-check-label text-muted ms-2" htmlFor="temp-hot">Nóng (Hot)</label>
-                </div>
-                <div className="form-check custom-checkbox">
-                  <input className="form-check-input" type="checkbox" id="temp-cold" />
-                  <label className="form-check-label text-muted ms-2" htmlFor="temp-cold">Lạnh (Ice)</label>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+
+
+
       
-      <button className="btn btn-brew-primary w-100 rounded-pill py-2 fw-bold mt-2 shadow-sm">
-        ÁP DỤNG LỌC
-      </button>
+
 
       <style>{`
         .custom-radio .form-check-input:checked {

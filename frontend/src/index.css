@@ -1,5 +1,5 @@
 :root {
-  /* Brew Moments Brand Colors */
+  /* 2T Coffee Shop Brand Colors */
   --primary-color: #5A3825; /* Coffee Brown */
   --primary-hover: #4A2E1E;
   --secondary-color: #D48C5B; /* Warm Orange */
@@ -105,7 +105,7 @@ body {
   box-shadow: 0 4px 10px rgba(230, 57, 70, 0.3);
 }
 
-/* Các nút bấm phong cách Brew Moments */
+/* Các nút bấm phong cách 2T Coffee Shop */
 .btn-brew-primary {
   background-color: var(--secondary-color) !important;
   color: var(--light-text) !important;

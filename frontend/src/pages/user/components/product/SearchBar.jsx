@@ -1,18 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function SearchBar({ onSearch }) {
   const [query, setQuery] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [history, setHistory] = useState([]);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem('searchHistory');
+    if (saved) {
+      try {
+        setHistory(JSON.parse(saved));
+      } catch(e) {}
+    }
+  }, []);
+
+  const saveHistory = (term) => {
+    if (!term || !term.trim()) return;
+    const newHistory = [term, ...history.filter(h => h !== term)].slice(0, 5);
+    setHistory(newHistory);
+    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+  };
+
+  const removeHistoryItem = (term, e) => {
+    e.stopPropagation();
+    const newHistory = history.filter(h => h !== term);
+    setHistory(newHistory);
+    localStorage.setItem('searchHistory', JSON.stringify(newHistory));
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    localStorage.removeItem('searchHistory');
+  };
+
+  const handleHistoryClick = (term) => {
+    setQuery(term);
+    if (onSearch) onSearch(term);
+    setIsFocused(false);
+    saveHistory(term);
+  };
+
+  // Cleanup debounce on unmount
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
+
+  const handleChange = (e) => {
+    const val = e.target.value;
+    setQuery(val);
+    
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    
+    debounceRef.current = setTimeout(() => {
+      if (onSearch) onSearch(val);
+    }, 300);
+  };
 
   const handleClear = () => {
     setQuery('');
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (onSearch) onSearch('');
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (debounceRef.current) clearTimeout(debounceRef.current);
     if (onSearch) onSearch(query);
+    saveHistory(query);
+    setIsFocused(false);
+    document.activeElement.blur(); // Remove focus so the dropdown closes
   };
 
   return (
@@ -32,7 +92,7 @@ function SearchBar({ onSearch }) {
             className="form-control border-0 shadow-none bg-transparent flex-grow-1 fs-6"
             placeholder="Tìm tên đồ uống..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={handleChange}
             onFocus={() => setIsFocused(true)}
             onBlur={() => setTimeout(() => setIsFocused(false), 200)}
           />
@@ -55,7 +115,7 @@ function SearchBar({ onSearch }) {
 
       {/* Auto Suggest Mock Popover */}
       <AnimatePresence>
-        {isFocused && (
+        {isFocused && !query && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -63,30 +123,44 @@ function SearchBar({ onSearch }) {
             className="position-absolute w-100 bg-white rounded-4 shadow-lg mt-2 overflow-hidden"
             style={{ border: "1px solid #f1f5f9" }}
           >
-            <div className="p-3 border-bottom">
-              <h6 className="fw-bold text-muted small mb-3">TÌM KIẾM GẦN ĐÂY</h6>
-              <div className="d-flex flex-wrap gap-2">
-                <span className="badge bg-light text-dark fw-normal px-3 py-2 rounded-pill hover-scale cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>Trà đào cam sả</span>
-                <span className="badge bg-light text-dark fw-normal px-3 py-2 rounded-pill hover-scale cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>Cà phê đen đá</span>
-                <span className="badge bg-light text-dark fw-normal px-3 py-2 rounded-pill hover-scale cursor-pointer" style={{ border: "1px solid #e2e8f0" }}>Freeze Matcha</span>
-              </div>
-            </div>
             <div className="p-3">
-              <h6 className="fw-bold text-muted small mb-3">TÌM KIẾM PHỔ BIẾN</h6>
-              <div className="d-flex flex-column gap-2">
-                <div className="d-flex align-items-center gap-3 p-2 hover-bg-light rounded cursor-pointer transition-all">
-                  <div className="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "30px", height: "30px", fontSize: "0.8rem" }}>
-                    <i className="fa-solid fa-fire"></i>
-                  </div>
-                  <span className="fw-medium">Cà phê sữa đá</span>
-                </div>
-                <div className="d-flex align-items-center gap-3 p-2 hover-bg-light rounded cursor-pointer transition-all">
-                  <div className="bg-danger text-white rounded-circle d-flex align-items-center justify-content-center" style={{ width: "30px", height: "30px", fontSize: "0.8rem" }}>
-                    <i className="fa-solid fa-fire"></i>
-                  </div>
-                  <span className="fw-medium">Trà sen vàng</span>
-                </div>
+              <div className="d-flex justify-content-between align-items-center mb-3">
+                <h6 className="fw-bold text-muted small mb-0">TÌM KIẾM GẦN ĐÂY</h6>
+                {history.length > 0 && (
+                  <span 
+                    className="small text-danger cursor-pointer hover-text-primary" 
+                    onClick={clearHistory}
+                  >
+                    Xóa tất cả
+                  </span>
+                )}
               </div>
+              
+              {history.length === 0 ? (
+                <div className="text-muted small">Chưa có lịch sử tìm kiếm.</div>
+              ) : (
+                <div className="d-flex flex-wrap gap-2">
+                  {history.map((term, idx) => (
+                    <span 
+                      key={idx} 
+                      className="badge bg-light text-dark fw-normal px-3 py-2 rounded-pill cursor-pointer d-flex align-items-center gap-2" 
+                      style={{ border: "1px solid #e2e8f0" }}
+                      onMouseDown={(e) => {
+                        // Prevent blur event from firing before click
+                        e.preventDefault();
+                      }}
+                      onClick={() => handleHistoryClick(term)}
+                    >
+                      {term}
+                      <i 
+                        className="fa-solid fa-xmark text-muted hover-text-danger" 
+                        onClick={(e) => removeHistoryItem(term, e)}
+                        style={{ fontSize: "0.8rem", padding: "2px" }}
+                      ></i>
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           </motion.div>
         )}

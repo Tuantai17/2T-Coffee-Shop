@@ -83,6 +83,12 @@ public class Order {
     @Column(name = "shipping_fee")
     private BigDecimal shippingFee;
 
+    @Column(name = "points_used")
+    private Long pointsUsed;
+
+    @Column(name = "point_discount_amount")
+    private BigDecimal pointDiscountAmount;
+
     @Column(name = "email")
     private String email;
 
@@ -280,6 +286,22 @@ public class Order {
 
     public void setShippingFee(BigDecimal shippingFee) {
         this.shippingFee = shippingFee;
+    }
+
+    public Long getPointsUsed() {
+        return pointsUsed;
+    }
+
+    public void setPointsUsed(Long pointsUsed) {
+        this.pointsUsed = pointsUsed;
+    }
+
+    public BigDecimal getPointDiscountAmount() {
+        return pointDiscountAmount;
+    }
+
+    public void setPointDiscountAmount(BigDecimal pointDiscountAmount) {
+        this.pointDiscountAmount = pointDiscountAmount;
     }
 
     public String getEmail() {

@@ -30,24 +30,24 @@ const PaymentResultPage = () => {
 
       setOrderId(resolvedOrderId || null);
       setStatus("success");
-      setMessage("Thanh toan thanh cong. Don hang cua ban da duoc ghi nhan.");
+      setMessage("Thanh toán thành công. Đơn hàng của bạn đã được ghi nhận.");
     };
 
     const markFailure = (backendStatus) => {
       if (backendStatus === "CANCELLED") {
         setStatus("failed");
-        setMessage("Giao dich VNPay da bi huy.");
+        setMessage("Giao dịch VNPay đã bị hủy.");
         return;
       }
 
       setStatus("failed");
-      setMessage("Thanh toan that bai hoac chua duoc he thong xac nhan.");
+      setMessage("Thanh toán thất bại hoặc chưa được hệ thống xác nhận.");
     };
 
     const checkPaymentStatus = async (attempt = 1) => {
       if (!txnRef) {
         setStatus("failed");
-        setMessage("Khong tim thay thong tin giao dich VNPay.");
+        setMessage("Không tìm thấy thông tin giao dịch VNPay.");
         return;
       }
 
@@ -75,12 +75,12 @@ const PaymentResultPage = () => {
 
         if (attempt >= MAX_STATUS_CHECK_ATTEMPTS) {
           setStatus("failed");
-          setMessage("He thong chua dong bo duoc trang thai thanh toan. Vui long mo lai chi tiet don hang de kiem tra.");
+          setMessage("Hệ thống chưa đồng bộ được trạng thái thanh toán. Vui lòng mở lại chi tiết đơn hàng để kiểm tra.");
           return;
         }
 
         setStatus("processing");
-        setMessage(`He thong dang dong bo trang thai thanh toan. Dang thu lan ${attempt}/${MAX_STATUS_CHECK_ATTEMPTS}...`);
+        setMessage(`Hệ thống đang đồng bộ trạng thái thanh toán. Đang thử lần ${attempt}/${MAX_STATUS_CHECK_ATTEMPTS}...`);
         retryTimeoutId = window.setTimeout(() => {
           checkPaymentStatus(attempt + 1);
         }, STATUS_CHECK_INTERVAL_MS);
@@ -93,12 +93,12 @@ const PaymentResultPage = () => {
 
         if (attempt >= MAX_STATUS_CHECK_ATTEMPTS) {
           setStatus("failed");
-          setMessage("Da xay ra loi khi kiem tra trang thai thanh toan.");
+          setMessage("Đã xảy ra lỗi khi kiểm tra trạng thái thanh toán.");
           return;
         }
 
         setStatus("processing");
-        setMessage(`Dang thu ket noi lai de dong bo giao dich (${attempt}/${MAX_STATUS_CHECK_ATTEMPTS})...`);
+        setMessage(`Đang thử kết nối lại để đồng bộ giao dịch (${attempt}/${MAX_STATUS_CHECK_ATTEMPTS})...`);
         retryTimeoutId = window.setTimeout(() => {
           checkPaymentStatus(attempt + 1);
         }, STATUS_CHECK_INTERVAL_MS);
@@ -108,7 +108,7 @@ const PaymentResultPage = () => {
     const verifyPaymentResult = async () => {
       if (!txnRef) {
         setStatus("failed");
-        setMessage("Khong tim thay thong tin giao dich VNPay.");
+        setMessage("Không tìm thấy thông tin giao dịch VNPay.");
         return;
       }
 
@@ -135,7 +135,7 @@ const PaymentResultPage = () => {
         }
 
         setStatus("processing");
-        setMessage("Backend dang xac minh va dong bo giao dich VNPay...");
+        setMessage("Hệ thống đang xác minh và đồng bộ giao dịch VNPay...");
         await checkPaymentStatus(1);
       } catch (error) {
         console.error("Error verifying VNPay return:", error);
@@ -145,7 +145,7 @@ const PaymentResultPage = () => {
         }
 
         setStatus("processing");
-        setMessage("Dang thu dong bo giao dich tu backend...");
+        setMessage("Đang thử đồng bộ giao dịch từ hệ thống...");
         await checkPaymentStatus(1);
       }
     };
@@ -169,23 +169,23 @@ const PaymentResultPage = () => {
               {status === "processing" && (
                 <>
                   <div className="spinner-border text-primary mb-3" role="status" style={{ width: "3rem", height: "3rem" }}>
-                    <span className="visually-hidden">Dang xu ly...</span>
+                    <span className="visually-hidden">Đang xử lý...</span>
                   </div>
-                  <h4 className="card-title fw-bold">Dang xu ly ket qua thanh toan</h4>
-                  <p className="card-text text-muted">{message || "Vui long doi trong giay lat..."}</p>
+                  <h4 className="card-title fw-bold">Đang xử lý kết quả thanh toán</h4>
+                  <p className="card-text text-muted">{message || "Vui lòng đợi trong giây lát..."}</p>
                 </>
               )}
 
               {status === "success" && (
                 <>
                   <i className="fa-solid fa-circle-check text-success mb-3" style={{ fontSize: "5rem" }}></i>
-                  <h4 className="card-title text-success fw-bold">Thanh Toan Thanh Cong</h4>
+                  <h4 className="card-title text-success fw-bold">Thanh Toán Thành Công</h4>
                   <div className="alert alert-success mt-3">{message}</div>
                   <button
                     className="btn btn-primary mt-4 w-100 py-2 rounded-pill shadow-sm fw-bold"
                     onClick={() => navigate(orderId ? `/order-success/${orderId}` : "/profile/orders")}
                   >
-                    Xem Don Hang
+                    Xem Đơn Hàng
                   </button>
                 </>
               )}
@@ -193,13 +193,13 @@ const PaymentResultPage = () => {
               {status === "failed" && (
                 <>
                   <i className="fa-solid fa-circle-xmark text-danger mb-3" style={{ fontSize: "5rem" }}></i>
-                  <h4 className="card-title text-danger fw-bold">Thanh Toan That Bai</h4>
+                  <h4 className="card-title text-danger fw-bold">Thanh Toán Thất Bại</h4>
                   <div className="alert alert-danger mt-3">{message}</div>
                   <button
                     className="btn btn-secondary mt-4 w-100 py-2 rounded-pill shadow-sm fw-bold"
                     onClick={() => navigate("/cart")}
                   >
-                    Quay Lai Gio Hang
+                    Quay Lại Giỏ Hàng
                   </button>
                 </>
               )}

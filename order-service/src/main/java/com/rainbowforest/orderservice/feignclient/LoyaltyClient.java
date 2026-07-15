@@ -14,4 +14,7 @@ public interface LoyaltyClient {
 
     @PostMapping("/api/loyalty/vouchers/consume")
     Map<String, Object> consumeVoucher(@RequestBody Map<String, Object> payload);
+
+    @PostMapping("/api/loyalty/points/consume")
+    Map<String, Object> consumePoints(@RequestBody Map<String, Object> payload);
 }

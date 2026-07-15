@@ -76,6 +76,46 @@ public class LoyaltyEngineService {
     }
 
     @Transactional
+    public void consumePointsForOrder(Long userId, long pointsToConsume, Long orderId) {
+        if (pointsToConsume <= 0) return;
+        
+        String lockKey = LOCK_PREFIX + userId;
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "LOCKED", Duration.ofSeconds(10));
+        if (Boolean.FALSE.equals(acquired)) {
+            throw new RuntimeException("Could not acquire lock for user " + userId);
+        }
+
+        try {
+            LoyaltyAccount account = accountRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("Khong tim thay vi diem cua nguoi dung"));
+
+            if (account.getAvailablePoints() < pointsToConsume) {
+                throw new RuntimeException("So diem trong vi khong du");
+            }
+
+            account.setAvailablePoints(account.getAvailablePoints() - pointsToConsume);
+            account.setLifetimeUsedPoints((account.getLifetimeUsedPoints() != null ? account.getLifetimeUsedPoints() : 0) + pointsToConsume);
+            accountRepository.save(account);
+
+            PointTransaction transaction = PointTransaction.builder()
+                    .transactionCode(UUID.randomUUID().toString())
+                    .userId(userId)
+                    .type("SPEND")
+                    .source("ORDER_DISCOUNT")
+                    .points(-pointsToConsume)
+                    .balanceBefore(account.getAvailablePoints() + pointsToConsume)
+                    .balanceAfter(account.getAvailablePoints())
+                    .referenceType("ORDER")
+                    .referenceId(String.valueOf(orderId))
+                    .status("COMPLETED")
+                    .description("Tru diem do ap dung giam gia cho don hang #" + orderId)
+                    .build();
+            transactionRepository.save(transaction);
+        } finally {
+            redisTemplate.delete(lockKey);
+        }
+    }
+
+    @Transactional
     public void addPointsFromCheckin(Long userId, long pointsToEarn, Long programId, String description) {
         if (pointsToEarn <= 0) return;
         

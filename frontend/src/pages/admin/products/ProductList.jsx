@@ -60,7 +60,7 @@ function ProductList({
               <th className="py-3 text-muted small fw-bold text-center">Trạng thái</th>
               <th className="py-3 text-muted small fw-bold text-end">Giá bán</th>
               <th className="py-3 text-muted small fw-bold text-end">Giá gốc</th>
-              <th className="py-3 text-muted small fw-bold text-center">Tồn kho</th>
+              <th className="py-3 text-muted small fw-bold text-center">Tồn / Bán</th>
               <th className="py-3 text-muted small fw-bold text-center">Hiển thị & Thứ tự</th>
               <th className="py-3 text-muted small fw-bold">Cập nhật</th>
               <th className="py-3 text-muted small fw-bold text-center">Thao tác</th>
@@ -124,8 +124,13 @@ function ProductList({
                   <td className="py-3 text-center">{getStatusBadge(product.status, product.quantity || product.availability)}</td>
                   <td className="py-3 text-end fw-bold text-dark">{moneyFormatter.format(product.price || 0)}đ</td>
                   <td className="py-3 text-end small text-muted">{product.originalPrice ? moneyFormatter.format(product.originalPrice) + "đ" : "-"}</td>
-                  <td className="py-3 text-center fw-bold" style={{ color: (product.quantity || product.availability) <= 0 ? "var(--admin-danger)" : "inherit" }}>
-                    {product.quantity || product.availability || 0}
+                  <td className="py-3 text-center fw-bold">
+                    <div style={{ color: (product.quantity || product.availability) <= 0 ? "var(--admin-danger)" : "inherit" }}>
+                      {product.quantity || product.availability || 0}
+                    </div>
+                    <div className="text-success small mt-1" style={{ fontSize: "0.75rem" }}>
+                      Đã bán: {product.soldCount || 0}
+                    </div>
                   </td>
                   <td className="py-3 text-center">
                     <div className="d-flex flex-column align-items-end gap-2 mx-auto" style={{ width: "fit-content" }}>
@@ -160,14 +165,14 @@ function ProductList({
                       </div>
 
                       <div className="d-flex align-items-center gap-2" style={{ fontSize: "0.75rem" }}>
-                        <span className="text-muted" style={{ width: "25px", textAlign: "left" }}>Hot</span>
+                        <span className="text-muted" style={{ width: "25px", textAlign: "left" }}>BC</span>
                         <input 
                           type="number" 
                           className="form-control form-control-sm text-center p-0" 
                           style={{ width: "35px", height: "20px", fontSize: "0.75rem" }}
                           defaultValue={product.featuredOrder || 0}
                           onBlur={(e) => onToggleFeature(product.id, 'featuredOrder', Number(e.target.value))}
-                          title="Thứ tự Hot"
+                          title="Thứ tự Bán chạy"
                         />
                         <div className="form-check form-switch m-0">
                           <input className="form-check-input" type="checkbox" role="switch" style={{ cursor: "pointer", height: "16px", width: "30px" }} checked={Boolean(product.featured)} onChange={(e) => onToggleFeature(product.id, 'featured', e.target.checked)} />

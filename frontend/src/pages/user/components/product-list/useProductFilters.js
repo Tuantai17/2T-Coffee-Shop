@@ -22,6 +22,8 @@ export function useProductFilters(defaultSize = 12) {
       badge: searchParams.get("badge") || "",
       minPrice: searchParams.get("minPrice") || "",
       maxPrice: searchParams.get("maxPrice") || "",
+      priceRange: searchParams.get("priceRange") || "",
+      topping: searchParams.get("topping") || "",
       ageFrom: searchParams.get("ageFrom") || "",
       ageTo: searchParams.get("ageTo") || "",
       sort: searchParams.get("sort") || "newest",
@@ -50,6 +52,21 @@ export function useProductFilters(defaultSize = 12) {
           params[key] = currentFilters[key];
         }
       });
+
+      if (params.priceRange) {
+        if (params.priceRange === 'under-30') {
+          params.maxPrice = 30000;
+        } else if (params.priceRange === '30-50') {
+          params.minPrice = 30000;
+          params.maxPrice = 50000;
+        } else if (params.priceRange === '50-70') {
+          params.minPrice = 50000;
+          params.maxPrice = 70000;
+        } else if (params.priceRange === 'over-70') {
+          params.minPrice = 70000;
+        }
+        delete params.priceRange;
+      }
 
       const res = await getPagedProducts(params);
       

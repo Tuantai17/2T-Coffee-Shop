@@ -18,7 +18,6 @@ import ActionButtons from "./components/product-detail/ActionButtons";
 import ServiceInfo from "./components/product-detail/ServiceInfo";
 import DescriptionTabs from "./components/product-detail/DescriptionTabs";
 import ReviewSection from "./components/product-detail/ReviewSection";
-import ComboSuggestion from "./components/product-detail/ComboSuggestion";
 import VoucherCard from "./components/product-detail/VoucherCard";
 
 function ProductDetailPage() {
@@ -170,6 +169,8 @@ function ProductDetailPage() {
   // Helper to safely sort options
   const sortOptions = (options) => [...options].sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
+  const isDrink = product ? !getCategoryName(product.categoryId).toLowerCase().includes('bánh') : true;
+
   const apiSizes = product.variants ? product.variants.map((v, index) => ({ id: v.id || `var-${index}`, name: v.sizeName, price: v.priceAdjustment })) : [];
 
   const tempGroup = globalOptionGroups.find(g => g.name.toLowerCase().includes('nhiệt'));
@@ -234,19 +235,25 @@ function ProductDetailPage() {
                   {apiSizes.length > 0 && (
                     <SizeSelector sizes={apiSizes} selectedSize={selectedSize} onSizeChange={setSelectedSize} />
                   )}
-                  {apiTemps.length > 0 && (
-                    <TemperatureSelector levels={apiTemps} selectedTemp={selectedTemp} onTempChange={setSelectedTemp} />
-                  )}
                   
-                  {(!apiTemps.length || (apiTemps.length > 0 && apiTemps.find(t => t.id === selectedTemp)?.name?.toLowerCase().includes('lạnh'))) && apiIceLevels.length > 0 && (
-                    <IceSugarSelector type="ice" title={<>3. Độ đá <span className="text-danger">*</span></>} levels={apiIceLevels} selectedLevel={selectedIce} onLevelChange={setSelectedIce} />
-                  )}
-                  {apiSugarLevels.length > 0 && (
-                    <IceSugarSelector type="sugar" title={<>4. Độ ngọt <span className="text-danger">*</span></>} levels={apiSugarLevels} selectedLevel={selectedSugar} onLevelChange={setSelectedSugar} />
-                  )}
-                  
-                  {apiToppings.length > 0 && (
-                    <ToppingSelector toppings={apiToppings} selectedToppings={selectedToppings} onToppingChange={handleToppingChange} />
+                  {isDrink && (
+                    <>
+                      {apiTemps.length > 0 && (
+                        <TemperatureSelector levels={apiTemps} selectedTemp={selectedTemp} onTempChange={setSelectedTemp} />
+                      )}
+                      
+                      {(!apiTemps.length || (apiTemps.length > 0 && apiTemps.find(t => t.id === selectedTemp)?.name?.toLowerCase().includes('lạnh'))) && apiIceLevels.length > 0 && (
+                        <IceSugarSelector type="ice" title={<>3. Độ đá <span className="text-danger">*</span></>} levels={apiIceLevels} selectedLevel={selectedIce} onLevelChange={setSelectedIce} />
+                      )}
+                      
+                      {apiSugarLevels.length > 0 && (
+                        <IceSugarSelector type="sugar" title={<>4. Độ ngọt <span className="text-danger">*</span></>} levels={apiSugarLevels} selectedLevel={selectedSugar} onLevelChange={setSelectedSugar} />
+                      )}
+                      
+                      {apiToppings.length > 0 && (
+                        <ToppingSelector toppings={apiToppings} selectedToppings={selectedToppings} onToppingChange={handleToppingChange} />
+                      )}
+                    </>
                   )}
                   
                   <div className="mt-4 pt-4 border-top">
@@ -297,10 +304,6 @@ function ProductDetailPage() {
             <div className="col-lg-4">
               <div className="position-sticky" style={{ top: "100px" }}>
                 <VoucherCard />
-
-                <div className="mb-4">
-                  <ComboSuggestion />
-                </div>
               </div>
             </div>
           </div>

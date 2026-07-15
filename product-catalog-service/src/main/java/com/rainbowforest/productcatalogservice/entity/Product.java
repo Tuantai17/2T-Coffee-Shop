@@ -128,6 +128,9 @@ public class Product implements Serializable {
     @Column(name = "age_max")
     private Integer ageMax;
 
+    @Column(name = "sold_count", nullable = false, columnDefinition = "integer default 0")
+    private Integer soldCount = 0;
+
 	public Product() {
 
 	}
@@ -383,4 +386,8 @@ public class Product implements Serializable {
 
     public Integer getAgeMax() { return ageMax; }
     public void setAgeMax(Integer ageMax) { this.ageMax = ageMax; }
+
+    @JsonProperty("soldCount")
+    public Integer getSoldCount() { return soldCount; }
+    public void setSoldCount(Integer soldCount) { this.soldCount = soldCount; }
 }

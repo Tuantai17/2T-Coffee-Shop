@@ -62,6 +62,7 @@ function HomeProductSection({ title, type, products, loading, viewAllLink, onAdd
           <div className="text-center py-5 text-muted bg-light rounded-4">Không có sản phẩm nào.</div>
         ) : (
           <motion.div 
+            key={page}
             className="row g-4 flex-nowrap flex-lg-wrap overflow-auto hide-scrollbar pb-3 px-2"
             variants={containerVariants}
             initial="hidden"
@@ -120,7 +121,7 @@ function HomeProductSection({ title, type, products, loading, viewAllLink, onAdd
                         <i className="fa-solid fa-star"></i>
                         <i className="fa-solid fa-star-half-stroke"></i>
                         <span className="text-muted ms-1" style={{ fontSize: "0.75rem" }}>(4.8)</span>
-                        <span className="text-muted ms-auto" style={{ fontSize: "0.7rem" }}>Đã bán 1.2k</span>
+                        <span className="text-muted ms-auto" style={{ fontSize: "0.7rem" }}>Đã bán {p.soldCount > 1000 ? (p.soldCount / 1000).toFixed(1) + 'k' : (p.soldCount || 0)}</span>
                       </div>
                       
                       <Link to={`/products/${p.id}`} className="text-decoration-none">
@@ -169,6 +170,45 @@ function HomeProductSection({ title, type, products, loading, viewAllLink, onAdd
           </button>
         )}
       </div>
+
+      {/* Page indicator */}
+      {totalPages > 1 && (
+        <div className="d-flex justify-content-center align-items-center gap-2 mt-3">
+          <button 
+            className="btn btn-sm border-0 text-muted" 
+            onClick={handlePrevPage} 
+            disabled={page === 0}
+            style={{ opacity: page === 0 ? 0.3 : 1 }}
+          >
+            <i className="fa-solid fa-chevron-left small"></i>
+          </button>
+          {Array.from({ length: totalPages }).map((_, i) => (
+            <button
+              key={i}
+              className="btn btn-sm border-0 rounded-circle p-0"
+              style={{
+                width: page === i ? "24px" : "8px",
+                height: "8px",
+                borderRadius: page === i ? "4px" : "50%",
+                backgroundColor: page === i ? "var(--primary-color)" : "#d1d5db",
+                transition: "all 0.3s ease",
+                cursor: "pointer",
+                minWidth: "8px"
+              }}
+              onClick={() => setPage(i)}
+            />
+          ))}
+          <button 
+            className="btn btn-sm border-0 text-muted" 
+            onClick={handleNextPage} 
+            disabled={page === totalPages - 1}
+            style={{ opacity: page === totalPages - 1 ? 0.3 : 1 }}
+          >
+            <i className="fa-solid fa-chevron-right small"></i>
+          </button>
+          <span className="text-muted small ms-2">{page + 1} / {totalPages}</span>
+        </div>
+      )}
       
       <style>{`
         .hide-scrollbar::-webkit-scrollbar { display: none; }

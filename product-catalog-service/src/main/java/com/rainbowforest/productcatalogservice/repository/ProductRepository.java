@@ -21,6 +21,11 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findAllByIsDeletedFalse();
     List<Product> findAllByIsDeletedTrue();
 
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("UPDATE Product p SET p.soldCount = COALESCE(p.soldCount, 0) + :quantity, p.availability = CASE WHEN COALESCE(p.availability, 0) - :quantity < 0 THEN 0 ELSE COALESCE(p.availability, 0) - :quantity END WHERE p.id = :id")
+    void incrementSoldCount(@Param("id") Long id, @Param("quantity") int quantity);
+
+
     @Query("""
         select p from Product p
         where p.isDeleted = false

@@ -70,7 +70,9 @@ function AddressFormModal({ show, onClose, onSave, address, isSaving }) {
       setLoadingLocations(prev => ({ ...prev, p: true }));
       const res = await fetch("https://provinces.open-api.vn/api/v2/p/");
       const data = await res.json();
-      setProvinces(data);
+      // Filter to only allow Thành phố Hồ Chí Minh (code: 79)
+      const hcmOnly = data.filter(p => p.code === 79 || p.name.includes("Hồ Chí Minh"));
+      setProvinces(hcmOnly);
     } catch (err) {
       console.error("Lỗi tải tỉnh thành:", err);
     } finally {

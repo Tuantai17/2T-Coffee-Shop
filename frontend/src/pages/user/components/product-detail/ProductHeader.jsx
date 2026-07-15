@@ -36,12 +36,12 @@ function ProductHeader({ product, getCategoryName }) {
             <span className="text-muted fw-normal">({product.reviews || 0} đánh giá)</span>
           </div>
         )}
-        {(product.rating && product.sold) && <span className="text-muted">|</span>}
-        {product.sold > 0 && <div className="text-muted">Đã bán {product.sold.toLocaleString()} ly</div>}
       </div>
 
       <div className="d-flex align-items-center mb-4 text-muted small">
-        Tình trạng: <span className="text-dark fw-medium ms-1">{product.quantity > 0 ? 'Còn hàng' : 'Hết hàng'}</span> 
+        Tình trạng: <span className="text-dark fw-medium ms-1">{product.quantity > 0 ? `Còn hàng (${product.quantity})` : 'Hết hàng'}</span> 
+        <span className="mx-2">|</span> 
+        Đã bán: <span className="text-dark fw-medium ms-1">{product.soldCount || 0}</span>
         <span className="mx-2">|</span> 
         Mã SKU: <span className="text-dark fw-medium ms-1">{product.sku || 'N/A'}</span>
       </div>

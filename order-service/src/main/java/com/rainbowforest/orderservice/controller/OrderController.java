@@ -167,7 +167,15 @@ public class OrderController {
         	try{
                 BigDecimal subTotal = OrderUtilities.countTotalPrice(orderItems);
                 BigDecimal discountAmount = resolveVoucherDiscount(String.valueOf(userId), checkoutRequest == null ? null : checkoutRequest.getVoucherCode(), subTotal);
-        	    order = this.createOrder(orderItems, user, checkoutRequest, discountAmount);
+                
+                BigDecimal pointDiscountAmount = BigDecimal.ZERO;
+                Long pointsUsed = 0L;
+                if (checkoutRequest != null && checkoutRequest.getPointsUsed() != null && checkoutRequest.getPointsUsed() > 0) {
+                    pointsUsed = checkoutRequest.getPointsUsed();
+                    pointDiscountAmount = BigDecimal.valueOf(pointsUsed * 1);
+                }
+
+        	    order = this.createOrder(orderItems, user, checkoutRequest, discountAmount, pointDiscountAmount, pointsUsed);
                 order = orderService.saveOrder(order);
                 Long reservedOrderId = order.getId();
                 List<com.rainbowforest.orderservice.dto.InventoryAdjustmentRequest> requests = cart.stream()
@@ -184,6 +192,10 @@ public class OrderController {
                 inventoryClient.reserveInventory(requests);
 
                 consumeVoucherIfPresent(userId, checkoutRequest == null ? null : checkoutRequest.getVoucherCode(), order.getId());
+                if (checkoutRequest != null && checkoutRequest.getPointsUsed() != null && checkoutRequest.getPointsUsed() > 0) {
+                    consumePointsIfPresent(userId, checkoutRequest.getPointsUsed(), order.getId());
+                }
+
                 cartService.deleteCart(cartId);
                 
                 if (idempotencyKey != null) {
@@ -336,7 +348,7 @@ public class OrderController {
         return new ResponseEntity<Order>(headerGenerator.getHeadersForError(), HttpStatus.NOT_FOUND);
     }
 
-    private Order createOrder(List<Item> cart, User user, CheckoutRequest checkoutRequest, BigDecimal discountAmount) {
+    private Order createOrder(List<Item> cart, User user, CheckoutRequest checkoutRequest, BigDecimal discountAmount, BigDecimal pointDiscountAmount, Long pointsUsed) {
         Order order = new Order();
         order.setItems(cart);
         order.setUser(user);
@@ -344,7 +356,14 @@ public class OrderController {
         BigDecimal shippingFee = OrderUtilities.resolveShippingFee(subTotal);
         order.setDiscountAmount(discountAmount);
         order.setShippingFee(shippingFee);
-        order.setTotal(subTotal.subtract(discountAmount).add(shippingFee));
+        order.setPointDiscountAmount(pointDiscountAmount);
+        order.setPointsUsed(pointsUsed);
+        
+        BigDecimal total = subTotal.subtract(discountAmount).subtract(pointDiscountAmount != null ? pointDiscountAmount : BigDecimal.ZERO).add(shippingFee);
+        if (total.compareTo(BigDecimal.ZERO) < 0) {
+            total = BigDecimal.ZERO;
+        }
+        order.setTotal(total);
         order.setOrderedDate(java.time.LocalDateTime.now());
         order.setStatus("PENDING_CONFIRMATION");
         order.setPaymentStatus(resolvePaymentStatus(checkoutRequest == null ? null : checkoutRequest.getPaymentMethod()));
@@ -406,6 +425,21 @@ public class OrderController {
             ));
         } catch (Exception exception) {
             System.err.println("Voucher consume failed for order " + orderId + ": " + exception.getMessage());
+        }
+    }
+
+    private void consumePointsIfPresent(Long userId, Long pointsUsed, Long orderId) {
+        if (pointsUsed == null || pointsUsed <= 0) {
+            return;
+        }
+        try {
+            loyaltyClient.consumePoints(Map.of(
+                    "userId", userId,
+                    "pointsUsed", pointsUsed,
+                    "orderId", orderId
+            ));
+        } catch (Exception exception) {
+            System.err.println("Point consume failed for order " + orderId + ": " + exception.getMessage());
         }
     }
 

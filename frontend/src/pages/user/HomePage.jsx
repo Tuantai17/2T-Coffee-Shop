@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { getProducts, getCategories, getBanners } from "../../services/productService";
+import { getProducts, getCategories, getBanners, getPagedProducts, getToppings } from "../../services/productService";
 import { addToCart } from "../../services/cartService";
 import { getPublicPosts } from "../../services/newsPublicService";
 import { resolveImageUrl } from "../../utils/imageFallback";
@@ -11,6 +11,7 @@ import HeroSlider from "./components/home/HeroSlider";
 import QuickOrder from "./components/home/QuickOrder";
 import HomeCategorySlider from "./components/home/HomeCategorySlider";
 import HomeProductSection from "./components/home/HomeProductSection";
+import HomeToppingSection from "./components/home/HomeToppingSection";
 import LoyaltySummary from "./components/home/LoyaltySummary";
 import DailyCheckInSummary from "./components/home/DailyCheckInSummary";
 import MiniGameBanner from "./components/home/MiniGameBanner";
@@ -21,9 +22,9 @@ import FloatingButtons from "./components/home/FloatingButtons";
 function HomePage() {
   const [categories, setCategories] = useState([]);
   const [banners, setBanners] = useState([]);
-  const [hotProducts, setHotProducts] = useState([]);
+  const [bestSellers, setBestSellers] = useState([]);
   const [newProducts, setNewProducts] = useState([]);
-  const [saleProducts, setSaleProducts] = useState([]);
+  const [toppings, setToppings] = useState([]);
   const [latestNews, setLatestNews] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -48,20 +49,25 @@ function HomePage() {
       const catRes = await getCategories();
       setCategories(Array.isArray(catRes.data) ? catRes.data : []);
 
-      // Fetch Hot Products (featured)
-      const hotRes = await getProducts({ featured: true, sort: "featured_order" });
-      const nextHot = Array.isArray(hotRes.data) ? hotRes.data : [];
-      setHotProducts(nextHot.slice(0, 10));
+      // Fetch Best Sellers (featured=true, sắp xếp theo soldCount giảm dần)
+      const hotRes = await getProducts({ featured: true });
+      const hotProducts = Array.isArray(hotRes.data) ? hotRes.data : [];
+      const sortedBySold = [...hotProducts].sort((a, b) => (b.soldCount || 0) - (a.soldCount || 0));
+      setBestSellers(sortedBySold);
 
-      // Fetch New Products (newArrival)
-      const newRes = await getProducts({ newArrival: true, sort: "new_arrival_order" });
+      // Fetch New Products (newArrival=true, sắp xếp theo ngày mới nhất)
+      const newRes = await getProducts({ newArrival: true, sort: "newest" });
       const nextNew = Array.isArray(newRes.data) ? newRes.data : [];
-      setNewProducts(nextNew.slice(0, 10));
+      setNewProducts(nextNew);
 
-      // Fetch Sale Products (onSale)
-      const saleRes = await getProducts({ onSale: true, sort: "on_sale_order" });
-      const nextSale = Array.isArray(saleRes.data) ? saleRes.data : [];
-      setSaleProducts(nextSale.slice(0, 10));
+      // Fetch Toppings
+      try {
+        const toppingRes = await getToppings();
+        const toppingList = Array.isArray(toppingRes.data) ? toppingRes.data : [];
+        setToppings(toppingList);
+      } catch (err) {
+        console.error("Lỗi lấy topping:", err);
+      }
 
       // Fetch Latest News
       try {
@@ -116,20 +122,11 @@ function HomePage() {
       <HomeCategorySlider categories={categories} />
       
       <HomeProductSection 
-        title="SẢN PHẨM NỔI BẬT" 
+        title="SẢN PHẨM BÁN CHẠY NHẤT" 
         type="hot"
-        products={hotProducts} 
+        products={bestSellers} 
         loading={loading} 
         viewAllLink="/products?type=hot" 
-        onAddToCart={handleAddToCart}
-      />
-      
-      <HomeProductSection 
-        title="SẢN PHẨM BÁN CHẠY" 
-        type="sale"
-        products={saleProducts} 
-        loading={loading} 
-        viewAllLink="/products?type=sale" 
         onAddToCart={handleAddToCart}
       />
       
@@ -140,6 +137,11 @@ function HomePage() {
         loading={loading} 
         viewAllLink="/products?type=new" 
         onAddToCart={handleAddToCart}
+      />
+      
+      <HomeToppingSection 
+        toppings={toppings}
+        loading={loading}
       />
 
       <LoyaltySummary />
@@ -153,3 +155,4 @@ function HomePage() {
 }
 
 export default HomePage;
+

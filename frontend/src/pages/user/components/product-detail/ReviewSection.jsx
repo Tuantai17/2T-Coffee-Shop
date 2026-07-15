@@ -34,7 +34,7 @@ function ReviewSection({ product }) {
       avatar: "https://randomuser.me/api/portraits/men/32.jpg",
       rating: 4,
       date: "1 tuần trước",
-      content: "Món tủ của mình mỗi khi đến Brew Moments. Tuy nhiên hôm nay hơi ngọt xíu.",
+      content: "Món tủ của mình mỗi khi đến 2T Coffee Shop. Tuy nhiên hôm nay hơi ngọt xíu.",
       images: [],
       likes: 5
     }

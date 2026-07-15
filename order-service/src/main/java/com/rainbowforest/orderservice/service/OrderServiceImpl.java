@@ -268,10 +268,22 @@ public class OrderServiceImpl implements OrderService {
             event.put("orderCode", "MKD" + String.format("%08d", order.getId()));
             event.put("userId", order.getUser() != null ? order.getUser().getId() : null);
             event.put("total", order.getTotal());
+            event.put("productSubtotal", order.getTotal());
             event.put("status", order.getStatus());
             event.put("email", order.getEmail());
             event.put("recipientEmail", order.getEmail());
             event.put("recipientName", order.getReceiverName() != null ? order.getReceiverName() : "Customer");
+            
+            java.util.List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
+            if (order.getItems() != null) {
+                for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
+                    Map<String, Object> itemData = new HashMap<>();
+                    itemData.put("productId", item.getProduct() != null ? item.getProduct().getId() : null);
+                    itemData.put("quantity", item.getQuantity());
+                    itemsList.add(itemData);
+                }
+            }
+            event.put("items", itemsList);
             
             com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(
                 java.util.UUID.randomUUID().toString(), eventType, 1, java.util.UUID.randomUUID().toString(), "order-service", event

@@ -180,6 +180,7 @@ public class ProductServiceImpl implements ProductService {
             Boolean featured,
             Boolean onSale,
             Boolean newArrival,
+            Long toppingId,
             String badge,
             String status,
             String sort,
@@ -205,6 +206,7 @@ public class ProductServiceImpl implements ProductService {
                 .filter(product -> newArrival == null || product.isNewArrival() == newArrival)
                 .filter(product -> matchesExactIgnoreCase(product.getBadge(), normalizedBadge))
                 .filter(product -> matchesExactIgnoreCase(product.getStatus(), normalizedStatus))
+                .filter(product -> matchesTopping(product, toppingId))
                 .collect(Collectors.toList());
 
         if ("discount_desc".equalsIgnoreCase(sort)) {
@@ -492,6 +494,16 @@ public class ProductServiceImpl implements ProductService {
         int maxP = pMax != null ? pMax : 999;
 
         return Math.max(minF, minP) <= Math.min(maxF, maxP);
+    }
+
+    private boolean matchesTopping(Product product, Long toppingId) {
+        if (toppingId == null) {
+            return true;
+        }
+        if (product.getToppings() == null || product.getToppings().isEmpty()) {
+            return false;
+        }
+        return product.getToppings().stream().anyMatch(t -> t.getId().equals(toppingId));
     }
 
     private String slugify(String value) {
