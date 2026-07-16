@@ -84,7 +84,8 @@ function OrderList({
         time: "00:00" // Not available in LocalDate
       };
     }
-    const date = new Date(dateArr);
+    const normalizedDateStr = typeof dateArr === 'string' && !dateArr.endsWith('Z') ? `${dateArr}Z` : dateArr;
+    const date = new Date(normalizedDateStr);
     return {
       date: date.toLocaleDateString("vi-VN"),
       time: date.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' })

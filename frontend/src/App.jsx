@@ -199,18 +199,26 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route
-          path="/profile/password"
+        <Route 
+          path="/profile/password" 
           element={
             <ProtectedRoute>
               <ProfilePage />
             </ProtectedRoute>
-          }
+          } 
+        />
+        <Route 
+          path="/profile/notifications" 
+          element={
+            <ProtectedRoute>
+              <ProfilePage />
+            </ProtectedRoute>
+          } 
         />
 
         {/* Mini-Game User Routes */}
         <Route
-          path="/games"
+          path="/game"
           element={
             <ProtectedRoute>
               <GameCenterPage />
@@ -218,7 +226,7 @@ function App() {
           }
         />
         <Route
-          path="/games/:slug"
+          path="/game/:slug"
           element={
             <ProtectedRoute>
               <MiniGamePlayPage />

@@ -88,7 +88,64 @@ public class OrderServiceImpl implements OrderService {
             com.rainbowforest.orderservice.domain.User mergedUser = entityManager.merge(order.getUser());
             order.setUser(mergedUser);
         }
-        return orderRepository.save(order);
+        boolean isNew = (order.getId() == null);
+        Order savedOrder = orderRepository.save(order);
+        if (isNew) {
+            publishOrderCreatedEvent(savedOrder);
+        }
+        return savedOrder;
+    }
+
+    private void publishOrderCreatedEvent(Order order) {
+        try {
+            Map<String, Object> event = new HashMap<>();
+            event.put("orderId", order.getId());
+            event.put("orderCode", "MKD" + String.format("%08d", order.getId()));
+            event.put("userId", order.getUser() != null ? order.getUser().getId() : null);
+            event.put("email", order.getEmail());
+            event.put("customerEmail", order.getEmail());
+            event.put("recipientName", order.getReceiverName() != null ? order.getReceiverName() : "Customer");
+            
+            java.math.BigDecimal subtotal = java.math.BigDecimal.ZERO;
+            if (order.getItems() != null) {
+                for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
+                    if (item.getSubTotal() != null) {
+                        subtotal = subtotal.add(item.getSubTotal());
+                    }
+                }
+            }
+            event.put("subtotal", subtotal);
+            event.put("shippingFee", order.getShippingFee() != null ? order.getShippingFee() : java.math.BigDecimal.ZERO);
+            event.put("discountAmount", order.getDiscountAmount() != null ? order.getDiscountAmount() : java.math.BigDecimal.ZERO);
+            event.put("total", order.getTotal());
+            
+            java.util.List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
+            if (order.getItems() != null) {
+                for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
+                    Map<String, Object> itemData = new HashMap<>();
+                    itemData.put("name", item.getProduct() != null ? item.getProduct().getProductName() : "Sản phẩm");
+                    itemData.put("quantity", item.getQuantity());
+                    itemData.put("price", item.getUnitPrice() != null ? item.getUnitPrice() : item.getSubTotal());
+                    itemData.put("subTotal", item.getSubTotal());
+                    itemData.put("sku", item.getSkuSnapshot());
+                    itemData.put("variantName", item.getVariantName());
+                    itemData.put("options", item.getOptionsSnapshot());
+                    itemData.put("toppings", item.getToppingsSnapshot());
+                    itemData.put("note", item.getNote());
+                    itemsList.add(itemData);
+                }
+            }
+            event.put("items", itemsList);
+            
+            com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(
+                UUID.randomUUID().toString(), "ORDER_CREATED", 1, UUID.randomUUID().toString(), "order-service", event
+            );
+            String payloadJson = objectMapper.writeValueAsString(envelope);
+            OutboxEvent outbox = new OutboxEvent(order.getId().toString(), "ORDER_CREATED", payloadJson);
+            outboxEventRepository.save(outbox);
+        } catch (Exception ex) {
+            System.err.println("Failed to save outbox event for ORDER_CREATED: " + ex.getMessage());
+        }
     }
 
     @Override
@@ -110,13 +167,18 @@ public class OrderServiceImpl implements OrderService {
     public Order updateOrderStatus(Long orderId, String status, String paymentStatus) {
         Order order = orderRepository.findById(orderId).orElse(null);
         if (order != null) {
+            String oldStatus = order.getStatus();
             if (status != null && !status.isBlank()) {
                 order.setStatus(status);
             }
             if (paymentStatus != null && !paymentStatus.isBlank()) {
                 order.setPaymentStatus(paymentStatus);
             }
-            return orderRepository.save(order);
+            Order savedOrder = orderRepository.save(order);
+            if (status != null && !status.isBlank() && !status.equals(oldStatus)) {
+                triggerSideEffects(savedOrder, oldStatus, status);
+            }
+            return savedOrder;
         }
         return null;
     }
@@ -213,6 +275,9 @@ public class OrderServiceImpl implements OrderService {
 
     private void triggerSideEffects(Order order, String from, String to) {
         try {
+            if (!from.equals(to)) {
+                publishOrderStatusChangedEvent(order, from, to);
+            }
             if ("CONFIRMED".equals(to)) {
                 inventoryClient.commitReservation(order.getId());
             } else if ("CANCELLED".equals(to) || "DELIVERY_FAILED".equals(to)) {
@@ -236,6 +301,52 @@ public class OrderServiceImpl implements OrderService {
             }
         } catch (Exception e) {
             System.err.println("Failed side effect: " + e.getMessage());
+        }
+    }
+
+    private void publishOrderStatusChangedEvent(Order order, String previousStatus, String newStatus) {
+        try {
+            Map<String, Object> event = new HashMap<>();
+            event.put("orderId", order.getId());
+            event.put("orderCode", "MKD" + String.format("%08d", order.getId()));
+            event.put("userId", order.getUser() != null ? order.getUser().getId() : null);
+            event.put("status", newStatus);
+            event.put("previousStatus", previousStatus);
+            event.put("email", order.getEmail());
+            event.put("customerEmail", order.getEmail());
+            event.put("recipientName", order.getReceiverName() != null ? order.getReceiverName() : "Customer");
+            
+            event.put("subtotal", order.getTotal().subtract(order.getShippingFee() != null ? order.getShippingFee() : java.math.BigDecimal.ZERO).add(order.getDiscountAmount() != null ? order.getDiscountAmount() : java.math.BigDecimal.ZERO));
+            event.put("discountAmount", order.getDiscountAmount());
+            event.put("shippingFee", order.getShippingFee());
+            event.put("total", order.getTotal());
+            
+            java.util.List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
+            if (order.getItems() != null) {
+                for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
+                    Map<String, Object> itemData = new HashMap<>();
+                    itemData.put("name", item.getProductNameSnapshot());
+                    itemData.put("sku", item.getProduct() != null ? item.getProduct().getId() : "");
+                    itemData.put("price", item.getUnitPrice());
+                    itemData.put("quantity", item.getFinalQuantity() != null ? item.getFinalQuantity() : item.getQuantity());
+                    itemData.put("subTotal", item.getSubTotal());
+                    itemData.put("variantName", item.getVariantName());
+                    itemData.put("options", item.getOptionsSnapshot());
+                    itemData.put("toppings", item.getToppingsSnapshot());
+                    itemData.put("note", item.getNote());
+                    itemsList.add(itemData);
+                }
+            }
+            event.put("items", itemsList);
+            
+            com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(
+                java.util.UUID.randomUUID().toString(), "ORDER_STATUS_CHANGED", 1, java.util.UUID.randomUUID().toString(), "order-service", event
+            );
+            String payloadJson = objectMapper.writeValueAsString(envelope);
+            OutboxEvent outbox = new OutboxEvent(order.getId().toString(), "ORDER_STATUS_CHANGED", payloadJson);
+            outboxEventRepository.save(outbox);
+        } catch (Exception ex) {
+            System.err.println("Failed to save outbox event: " + ex.getMessage());
         }
     }
 

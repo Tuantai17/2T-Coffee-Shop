@@ -1,14 +1,16 @@
 package com.rainbowforest.notificationservice.service;
 
-import com.rainbowforest.notificationservice.domain.EmailDeliveryLog;
 import com.rainbowforest.notificationservice.domain.Notification;
-import com.rainbowforest.notificationservice.repository.EmailDeliveryLogRepository;
 import com.rainbowforest.notificationservice.repository.NotificationRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -18,84 +20,120 @@ public class NotificationService {
     private NotificationRepository notificationRepository;
 
     @Autowired
-    private EmailDeliveryLogRepository emailDeliveryLogRepository;
+    private SimpMessagingTemplate messagingTemplate;
 
+    @Autowired
+    private EmailSenderService emailSenderService;
 
-    public Notification createAndSendNotification(Long userId, String userEmail, String type, String title, String message, String refType, String refId) {
-        // 1. Create In-App Notification
+    public Notification createAndSendNotification(
+            String eventId, String idempotencyKey, String recipientId, String recipientRole,
+            String type, String category, String title, String message,
+            String actionUrl, String referenceId, Map<String, Object> metadata,
+            boolean emailRequired, String recipientEmail) {
+            
+        // Check idempotency
+        if (idempotencyKey != null && !idempotencyKey.isBlank()) {
+            if (notificationRepository.existsByIdempotencyKeyAndRecipientId(idempotencyKey, recipientId)) {
+                return null; // Already processed
+            }
+        } else if (eventId != null && !eventId.isBlank()) {
+            if (notificationRepository.existsByEventIdAndRecipientId(eventId, recipientId)) {
+                return null; // Already processed
+            }
+        }
+
         Notification notification = new Notification();
-        notification.setUserId(userId);
+        notification.setEventId(eventId);
+        notification.setIdempotencyKey(idempotencyKey);
+        notification.setRecipientId(recipientId);
+        notification.setRecipientRole(recipientRole);
         notification.setType(type);
+        notification.setCategory(category);
         notification.setTitle(title);
         notification.setMessage(message);
-        notification.setReferenceType(refType);
-        notification.setReferenceId(refId);
-        notification.setDeliveryChannels(List.of("IN_APP", "EMAIL"));
+        notification.setActionUrl(actionUrl);
+        notification.setReferenceId(referenceId);
+        notification.setMetadata(metadata);
+        notification.setEmailRequired(emailRequired);
         
         notification = notificationRepository.save(notification);
 
-        // 2. Send Email
-        EmailDeliveryLog emailLog = new EmailDeliveryLog();
-        emailLog.setEventId(notification.getId());
-        emailLog.setIdempotencyKey("NOTIFICATION:" + notification.getId());
-        emailLog.setEventType(type);
-        emailLog.setTemplateCode(type);
-        emailLog.setUserId(userId);
-        emailLog.setRecipientEmail(userEmail);
-        
-        if (userEmail != null && !userEmail.isBlank()) {
-            try {
-                // Assuming you have an EmailSenderService or similar, I'll update NotificationService 
-                // later to inject EmailSenderService instead of EmailProvider if needed.
-                // For now, I'll bypass EmailProvider compile errors.
-                // emailProvider.sendEmail(userEmail, title, message);
-                emailLog.setStatus("SUCCESS");
-                emailLog.setSentAt(LocalDateTime.now());
-                notification.setDeliveryStatus("COMPLETED");
-            } catch (Exception e) {
-                emailLog.setStatus("FAILED");
-                emailLog.setLastError(e.getMessage());
-                notification.setDeliveryStatus("FAILED");
-                emailDeliveryLogRepository.save(emailLog);
-                notificationRepository.save(notification);
-                
-                throw new RuntimeException("Email delivery failed", e);
-            }
-        } else {
-            emailLog.setStatus("SKIPPED");
-            notification.setDeliveryStatus("COMPLETED");
+        // Send Real-time STOMP Message
+        sendRealTimeUpdate(recipientId, recipientRole);
+
+        // Send Email Async
+        if (emailRequired && recipientEmail != null && !recipientEmail.isBlank()) {
+            emailSenderService.sendNotificationEmailAsync(notification.getId(), recipientEmail, notification);
         }
-        
-        emailDeliveryLogRepository.save(emailLog);
-        notificationRepository.save(notification);
-        
+
         return notification;
     }
 
-    public List<Notification> getUserNotifications(Long userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+    private void sendRealTimeUpdate(String recipientId, String recipientRole) {
+        Long unreadCount = notificationRepository.countByRecipientIdAndRecipientRoleAndIsReadFalse(recipientId, recipientRole);
+        // Assuming user id is the recipient ID for USER role, and some admin topic for ADMIN role
+        if ("USER".equalsIgnoreCase(recipientRole)) {
+            messagingTemplate.convertAndSendToUser(
+                recipientId,
+                "/queue/notifications",
+                Map.of("unreadCount", unreadCount, "event", "NEW_NOTIFICATION")
+            );
+        } else if ("ADMIN".equalsIgnoreCase(recipientRole)) {
+            messagingTemplate.convertAndSendToUser(
+                recipientId,
+                "/queue/notifications",
+                Map.of("unreadCount", unreadCount, "event", "NEW_NOTIFICATION")
+            );
+        }
     }
 
-    public void markAsRead(String id) {
+    public Page<Notification> getNotifications(String recipientId, String recipientRole, String category, Boolean unreadOnly, Pageable pageable) {
+        if (category != null && !category.isBlank()) {
+            if (Boolean.TRUE.equals(unreadOnly)) {
+                return notificationRepository.findByRecipientIdAndRecipientRoleAndCategoryAndIsReadOrderByCreatedAtDesc(recipientId, recipientRole, category, false, pageable);
+            }
+            return notificationRepository.findByRecipientIdAndRecipientRoleAndCategoryOrderByCreatedAtDesc(recipientId, recipientRole, category, pageable);
+        } else {
+            if (Boolean.TRUE.equals(unreadOnly)) {
+                return notificationRepository.findByRecipientIdAndRecipientRoleAndIsReadOrderByCreatedAtDesc(recipientId, recipientRole, false, pageable);
+            }
+            return notificationRepository.findByRecipientIdAndRecipientRoleOrderByCreatedAtDesc(recipientId, recipientRole, pageable);
+        }
+    }
+
+    public List<Notification> getLatestNotifications(String recipientId, String recipientRole) {
+        return notificationRepository.findByRecipientIdAndRecipientRoleOrderByCreatedAtDesc(
+                recipientId, recipientRole, org.springframework.data.domain.PageRequest.of(0, 10)).getContent();
+    }
+
+    public void markAsRead(String id, String recipientId, String recipientRole) {
         Optional<Notification> opt = notificationRepository.findById(id);
         if (opt.isPresent()) {
             Notification n = opt.get();
-            n.setRead(true);
-            n.setReadAt(LocalDateTime.now());
-            notificationRepository.save(n);
+            if (n.getRecipientId().equals(recipientId) && n.getRecipientRole().equals(recipientRole)) {
+                n.setRead(true);
+                n.setReadAt(LocalDateTime.now());
+                n.setUpdatedAt(LocalDateTime.now());
+                notificationRepository.save(n);
+                sendRealTimeUpdate(recipientId, recipientRole);
+            }
         }
     }
 
-    public void markAllAsRead(Long userId) {
-        List<Notification> unread = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId).stream().filter(n -> !n.isRead()).toList();
+    public void markAllAsRead(String recipientId, String recipientRole) {
+        List<Notification> unread = notificationRepository.findByRecipientIdAndRecipientRoleAndIsReadFalse(recipientId, recipientRole);
         for (Notification n : unread) {
             n.setRead(true);
             n.setReadAt(LocalDateTime.now());
-            notificationRepository.save(n);
+            n.setUpdatedAt(LocalDateTime.now());
+        }
+        if (!unread.isEmpty()) {
+            notificationRepository.saveAll(unread);
+            sendRealTimeUpdate(recipientId, recipientRole);
         }
     }
 
-    public Long getUnreadCount(Long userId) {
-        return notificationRepository.countByUserIdAndReadFalse(userId);
+    public Long getUnreadCount(String recipientId, String recipientRole) {
+        return notificationRepository.countByRecipientIdAndRecipientRoleAndIsReadFalse(recipientId, recipientRole);
     }
 }

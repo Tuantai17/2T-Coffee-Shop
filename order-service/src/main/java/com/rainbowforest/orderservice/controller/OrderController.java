@@ -210,8 +210,30 @@ public class OrderController {
                     orderEvent.put("status", order.getStatus());
                     orderEvent.put("paymentStatus", order.getPaymentStatus());
                     orderEvent.put("email", order.getEmail());
+                    orderEvent.put("customerEmail", order.getEmail());
                     orderEvent.put("recipientName", order.getReceiverName() != null ? order.getReceiverName() : "Customer");
                     orderEvent.put("orderCode", "MKD" + String.format("%08d", order.getId()));
+                    
+                    // Add details for email
+                    orderEvent.put("subtotal", subTotal);
+                    orderEvent.put("discountAmount", discountAmount);
+                    orderEvent.put("shippingFee", order.getShippingFee());
+                    
+                    java.util.List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
+                    for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
+                        Map<String, Object> itemData = new HashMap<>();
+                        itemData.put("name", item.getProductNameSnapshot());
+                        itemData.put("sku", item.getProduct() != null ? item.getProduct().getId() : "");
+                        itemData.put("price", item.getUnitPrice());
+                        itemData.put("quantity", item.getQuantity());
+                        itemData.put("subTotal", item.getSubTotal());
+                        itemData.put("variantName", item.getVariantName());
+                        itemData.put("options", item.getOptionsSnapshot());
+                        itemData.put("toppings", item.getToppingsSnapshot());
+                        itemData.put("note", item.getNote());
+                        itemsList.add(itemData);
+                    }
+                    orderEvent.put("items", itemsList);
                     
                     com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(
                         java.util.UUID.randomUUID().toString(), "ORDER_CREATED", 1, java.util.UUID.randomUUID().toString(), "order-service", orderEvent

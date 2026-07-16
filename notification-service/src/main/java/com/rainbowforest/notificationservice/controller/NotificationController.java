@@ -3,6 +3,8 @@ package com.rainbowforest.notificationservice.controller;
 import com.rainbowforest.notificationservice.domain.Notification;
 import com.rainbowforest.notificationservice.service.NotificationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,41 +19,110 @@ public class NotificationController {
     @Autowired
     private NotificationService notificationService;
 
-    private Long extractUserId(HttpServletRequest request) {
-        String userIdStr = request.getHeader("X-User-Id");
-        if (userIdStr != null) {
-            return Long.parseLong(userIdStr);
+    private String extractUserId(HttpServletRequest request) {
+        return request.getHeader("X-User-Id");
+    }
+
+    private String extractUserRole(HttpServletRequest request) {
+        String role = request.getHeader("X-User-Role");
+        if (role != null) {
+            // Normalize role
+            if (role.startsWith("ROLE_")) {
+                return role.substring(5);
+            }
+            return role;
         }
         return null;
     }
 
-    @GetMapping("/me")
-    public ResponseEntity<List<Notification>> getMyNotifications(HttpServletRequest request) {
-        Long userId = extractUserId(request);
-        if (userId == null) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        return ResponseEntity.ok(notificationService.getUserNotifications(userId));
+    @GetMapping
+    public ResponseEntity<Page<Notification>> getNotifications(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(required = false) String category,
+            @RequestParam(required = false) Boolean unreadOnly,
+            HttpServletRequest request) {
+        
+        String userId = extractUserId(request);
+        String role = extractUserRole(request);
+        
+        if (role != null && role.equalsIgnoreCase("ADMIN")) {
+            userId = "ADMIN";
+        }
+
+        if (userId == null || role == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        Page<Notification> notifications = notificationService.getNotifications(
+                userId, role, category, unreadOnly, PageRequest.of(page, size));
+        return ResponseEntity.ok(notifications);
+    }
+
+    @GetMapping("/latest")
+    public ResponseEntity<List<Notification>> getLatestNotifications(HttpServletRequest request) {
+        String userId = extractUserId(request);
+        String role = extractUserRole(request);
+        
+        if (role != null && role.equalsIgnoreCase("ADMIN")) {
+            userId = "ADMIN";
+        }
+        
+        if (userId == null || role == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        List<Notification> notifications = notificationService.getLatestNotifications(userId, role);
+        return ResponseEntity.ok(notifications);
     }
 
     @PatchMapping("/{id}/read")
     public ResponseEntity<Void> markAsRead(@PathVariable("id") String id, HttpServletRequest request) {
-        Long userId = extractUserId(request);
-        if (userId == null) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        notificationService.markAsRead(id);
+        String userId = extractUserId(request);
+        String role = extractUserRole(request);
+        
+        if (role != null && role.equalsIgnoreCase("ADMIN")) {
+            userId = "ADMIN";
+        }
+        
+        if (userId == null || role == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        notificationService.markAsRead(id, userId, role);
         return ResponseEntity.ok().build();
     }
 
     @PatchMapping("/read-all")
     public ResponseEntity<Void> markAllAsRead(HttpServletRequest request) {
-        Long userId = extractUserId(request);
-        if (userId == null) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        notificationService.markAllAsRead(userId);
+        String userId = extractUserId(request);
+        String role = extractUserRole(request);
+        
+        if (role != null && role.equalsIgnoreCase("ADMIN")) {
+            userId = "ADMIN";
+        }
+        
+        if (userId == null || role == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        notificationService.markAllAsRead(userId, role);
         return ResponseEntity.ok().build();
     }
 
     @GetMapping("/unread-count")
     public ResponseEntity<Long> getUnreadCount(HttpServletRequest request) {
-        Long userId = extractUserId(request);
-        if (userId == null) return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
-        return ResponseEntity.ok(notificationService.getUnreadCount(userId));
+        String userId = extractUserId(request);
+        String role = extractUserRole(request);
+        
+        if (role != null && role.equalsIgnoreCase("ADMIN")) {
+            userId = "ADMIN";
+        }
+        
+        if (userId == null || role == null) {
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+        
+        return ResponseEntity.ok(notificationService.getUnreadCount(userId, role));
     }
 }

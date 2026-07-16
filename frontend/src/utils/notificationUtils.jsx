@@ -54,7 +54,9 @@ export const getNotificationTypeBadge = (type) => {
 
 export const formatRelativeTime = (dateStr) => {
   if (!dateStr) return "";
-  const date = new Date(dateStr);
+  // Ensure the date string is treated as UTC if it lacks a timezone offset
+  const normalizedDateStr = dateStr.endsWith("Z") ? dateStr : `${dateStr}Z`;
+  const date = new Date(normalizedDateStr);
   const now = new Date();
   const diffInSeconds = Math.floor((now - date) / 1000);
   
@@ -72,7 +74,8 @@ export const formatRelativeTime = (dateStr) => {
 
 export const formatTimeDisplay = (dateStr) => {
   if (!dateStr) return "";
-  const date = new Date(dateStr);
+  const normalizedDateStr = dateStr.endsWith("Z") ? dateStr : `${dateStr}Z`;
+  const date = new Date(normalizedDateStr);
   const now = new Date();
   const diffInDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
   

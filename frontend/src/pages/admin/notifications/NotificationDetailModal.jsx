@@ -22,9 +22,13 @@ function NotificationDetailModal({ show, notif, onClose, onToggleRead, onDelete 
   const handleNavigate = () => {
     onClose();
     if (notif.targetUrl) {
-      navigate(notif.targetUrl);
+      let finalUrl = notif.targetUrl;
+      if (finalUrl.match(/^\/admin\/orders\/\d+$/)) {
+        finalUrl = `${finalUrl}/edit`;
+      }
+      navigate(finalUrl);
     } else if (notif.type?.startsWith("ORDER") && notif.relatedEntityId) {
-      navigate(`/admin/orders?search=${notif.relatedEntityId}`);
+      navigate(`/admin/orders/${notif.relatedEntityId}/edit`);
     } else if (notif.type?.startsWith("PRODUCT") && notif.relatedEntityId) {
       navigate(`/admin/products`);
     } else if (notif.type?.startsWith("USER") && notif.relatedEntityId) {

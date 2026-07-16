@@ -3,6 +3,7 @@ import { useNavigate, Link } from "react-router-dom";
 import { getAdminNotifications, getAdminUnreadCount, markNotificationAsRead, markAllNotificationsAsRead } from "../../../services/notificationService";
 
 import { getNotificationIcon, formatRelativeTime } from "../../../utils/notificationUtils";
+import notificationSocket from "../../../services/notificationSocket";
 
 function NotificationDropdown() {
   const navigate = useNavigate();
@@ -40,7 +41,16 @@ function NotificationDropdown() {
   useEffect(() => {
     fetchNotifications();
     window.addEventListener("notifications_updated", syncEvent);
-    return () => window.removeEventListener("notifications_updated", syncEvent);
+    
+    // Connect websocket
+    notificationSocket.connect((msg) => {
+      // The socket already dispatches notifications_updated event
+    });
+    
+    return () => {
+      window.removeEventListener("notifications_updated", syncEvent);
+      // We don't disconnect here because it might be used globally or we can just leave it connected
+    };
   }, [syncEvent]);
 
   // Handle click outside to close
@@ -83,9 +93,13 @@ function NotificationDropdown() {
     setIsOpen(false);
     
     if (notif.targetUrl) {
-      navigate(notif.targetUrl);
+      let finalUrl = notif.targetUrl;
+      if (finalUrl.match(/^\/admin\/orders\/\d+$/)) {
+        finalUrl = `${finalUrl}/edit`;
+      }
+      navigate(finalUrl);
     } else if (notif.type?.startsWith("ORDER") && notif.relatedEntityId) {
-      navigate(`/admin/orders?search=${notif.relatedEntityId}`);
+      navigate(`/admin/orders/${notif.relatedEntityId}/edit`);
     } else if (notif.type?.startsWith("PRODUCT") && notif.relatedEntityId) {
       navigate(`/admin/products`);
     } else if (notif.type?.startsWith("USER") && notif.relatedEntityId) {

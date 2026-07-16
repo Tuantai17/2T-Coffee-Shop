@@ -93,6 +93,10 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
             publishOrderEvent(savedOrder, "ORDER_COMPLETED");
         }
+        
+        if (!newStatus.equals(oldStatus)) {
+            publishOrderEvent(savedOrder, "ORDER_STATUS_CHANGED");
+        }
 
         logActivity(orderId, "STATUS_CHANGE", "Cập nhật trạng thái đơn hàng", oldStatus, newStatus, performedBy);
         
@@ -487,13 +491,21 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             event.put("total", order.getTotal());
             event.put("productSubtotal", order.getTotal());
             event.put("status", order.getStatus());
+            event.put("customerEmail", order.getEmail());
             
             java.util.List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
             if (order.getItems() != null) {
                 for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
                     Map<String, Object> itemData = new java.util.HashMap<>();
-                    itemData.put("productId", item.getProduct() != null ? item.getProduct().getId() : null);
+                    itemData.put("name", item.getProductNameSnapshot());
+                    itemData.put("sku", item.getProduct() != null ? item.getProduct().getId() : "");
+                    itemData.put("price", item.getUnitPrice());
                     itemData.put("quantity", item.getFinalQuantity() != null ? item.getFinalQuantity() : item.getQuantity());
+                    itemData.put("subTotal", item.getSubTotal());
+                    itemData.put("variantName", item.getVariantName());
+                    itemData.put("options", item.getOptionsSnapshot());
+                    itemData.put("toppings", item.getToppingsSnapshot());
+                    itemData.put("note", item.getNote());
                     itemsList.add(itemData);
                 }
             }

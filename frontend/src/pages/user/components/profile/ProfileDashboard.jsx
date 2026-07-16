@@ -18,7 +18,8 @@ function ProfileDashboard({ profile, orders = [] }) {
 
   const recentOrders = recentOrdersData.map(recentOrderData => {
     const formattedCode = `BM${String(recentOrderData.id).padStart(8, "0")}`;
-    const orderDateObj = new Date(recentOrderData.orderedDate || Date.now());
+    const normalizedDateStr = typeof recentOrderData.orderedDate === 'string' && !recentOrderData.orderedDate.endsWith('Z') ? `${recentOrderData.orderedDate}Z` : recentOrderData.orderedDate;
+    const orderDateObj = new Date(normalizedDateStr || Date.now());
     const orderDate = orderDateObj.toLocaleDateString("vi-VN");
     let orderTime = "";
     

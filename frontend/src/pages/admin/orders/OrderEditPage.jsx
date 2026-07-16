@@ -23,7 +23,8 @@ const formatOrderDateTime = (orderedDate) => {
     return Number.isNaN(localDate.getTime()) ? "-" : localDate.toLocaleString("vi-VN");
   }
 
-  const parsedDate = new Date(orderedDate);
+  const normalizedDateStr = typeof orderedDate === 'string' && !orderedDate.endsWith('Z') ? `${orderedDate}Z` : orderedDate;
+  const parsedDate = new Date(normalizedDateStr);
   return Number.isNaN(parsedDate.getTime()) ? "-" : parsedDate.toLocaleString("vi-VN");
 };
 

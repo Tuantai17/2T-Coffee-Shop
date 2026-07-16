@@ -59,7 +59,9 @@ function OrderSuccessPage() {
     );
   }
 
-  const orderDate = new Date(order.orderDate || order.createdAt || Date.now());
+  const orderDateStr = order.orderDate || order.createdAt || order.orderedDate;
+  const normalizedDateStr = typeof orderDateStr === 'string' && !orderDateStr.endsWith('Z') ? `${orderDateStr}Z` : orderDateStr;
+  const orderDate = new Date(normalizedDateStr || Date.now());
   const formattedDate = `${orderDate.getDate().toString().padStart(2, "0")}/${(orderDate.getMonth() + 1).toString().padStart(2, "0")}/${orderDate.getFullYear()} ${orderDate.getHours().toString().padStart(2, "0")}:${orderDate.getMinutes().toString().padStart(2, "0")}:${orderDate.getSeconds().toString().padStart(2, "0")}`;
 
   let paymentMethodStr = "Thanh toán khi nhận hàng (COD)";

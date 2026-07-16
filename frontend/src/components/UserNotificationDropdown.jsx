@@ -4,6 +4,7 @@ import { getMyNotifications, getMyUnreadCount, markMyNotificationAsRead, markAll
 import { getAuthSession, AUTH_SCOPES } from "../utils/authStorage";
 
 import { getNotificationIcon, formatRelativeTime } from "../utils/notificationUtils";
+import notificationSocket from "../services/notificationSocket";
 
 function UserNotificationDropdown() {
   const navigate = useNavigate();
@@ -26,7 +27,7 @@ function UserNotificationDropdown() {
         getMyNotifications(),
         getMyUnreadCount()
       ]);
-      setNotifications(listRes.data || []);
+      setNotifications(listRes.data?.content || []);
       setUnreadCount(countRes.data || 0);
     } catch (err) {
       console.error("Lỗi lấy thông báo:", err);
@@ -45,13 +46,23 @@ function UserNotificationDropdown() {
   useEffect(() => {
     fetchNotifications();
     window.addEventListener("notifications_updated", syncEvent);
-    return () => window.removeEventListener("notifications_updated", syncEvent);
+    
+    // Connect websocket
+    notificationSocket.connect((msg) => {
+      // The socket already dispatches notifications_updated event
+    });
+    
+    return () => {
+      window.removeEventListener("notifications_updated", syncEvent);
+    };
   }, [syncEvent]);
+
+  const dropdownRef = React.useRef(null);
 
   // Handle click outside to close
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (isOpen && !event.target.closest("#user-notification-dropdown")) {
+      if (isOpen && dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
@@ -66,8 +77,9 @@ function UserNotificationDropdown() {
     };
   }, [isOpen]);
 
-  const handleToggle = () => {
-    setIsOpen(!isOpen);
+  const handleToggle = (e) => {
+    e.stopPropagation(); // Prevents multiple instances from triggering each other
+    setIsOpen(prev => !prev);
     if (!isOpen && !notifications.length && !error) {
       fetchNotifications();
     }
@@ -90,7 +102,7 @@ function UserNotificationDropdown() {
     if (notif.targetUrl) {
       navigate(notif.targetUrl);
     } else if (notif.type?.startsWith("ORDER") && notif.referenceId) {
-      navigate(`/profile/orders/${notif.referenceId}`);
+      navigate('/profile/orders', { state: { openOrder: notif.referenceId } });
     } else if (notif.type?.startsWith("PRODUCT") && notif.referenceId) {
       navigate(`/products/${notif.referenceId}`);
     } else {
@@ -110,7 +122,7 @@ function UserNotificationDropdown() {
   };
 
   return (
-    <div className="position-relative text-dark" id="user-notification-dropdown" style={{ cursor: "pointer" }} onClick={handleToggle}>
+    <div ref={dropdownRef} className="position-relative text-dark" style={{ cursor: "pointer" }} onClick={handleToggle}>
       <i className="fa-regular fa-bell fs-5"></i>
       {unreadCount > 0 && (
         <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger" style={{ fontSize: "0.6rem" }}>
@@ -173,14 +185,14 @@ function UserNotificationDropdown() {
               notifications.map((notif) => (
                 <div 
                   key={notif.id} 
-                  className={`d-flex gap-3 p-3 border-bottom position-relative ${!notif.isRead ? "bg-light bg-opacity-50" : ""}`}
+                  className={`d-flex gap-3 p-3 border-bottom position-relative ${!notif.read ? "bg-light bg-opacity-50" : ""}`}
                   style={{ cursor: "pointer", transition: "background-color 0.2s" }}
-                  onClick={() => handleNotificationClick(notif)}
+                  onClick={(e) => { e.stopPropagation(); handleNotificationClick(notif); }}
                   onMouseEnter={(e) => e.currentTarget.style.backgroundColor = "var(--admin-surface)"}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = !notif.isRead ? "rgba(248, 249, 250, 0.5)" : "transparent"}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = !notif.read ? "rgba(248, 249, 250, 0.5)" : "transparent"}
                 >
                   {/* Unread Dot */}
-                  {!notif.isRead && (
+                  {!notif.read && (
                     <div className="position-absolute bg-primary rounded-circle" style={{ width: "8px", height: "8px", left: "8px", top: "20px" }}></div>
                   )}
                   
@@ -190,14 +202,14 @@ function UserNotificationDropdown() {
                   
                   <div className="flex-grow-1">
                     <div className="d-flex justify-content-between align-items-start mb-1">
-                      <h6 className={`mb-0 ${!notif.isRead ? "fw-bold text-dark" : "fw-semibold text-secondary"}`} style={{ fontSize: "14px" }}>
+                      <h6 className={`mb-0 ${!notif.read ? "fw-bold text-dark" : "fw-semibold text-secondary"}`} style={{ fontSize: "14px" }}>
                         {notif.title}
                       </h6>
                       <span className="small text-muted text-nowrap ms-2" style={{ fontSize: "11px" }}>
                         {formatRelativeTime(notif.createdAt)}
                       </span>
                     </div>
-                    <p className={`mb-0 small ${!notif.isRead ? "text-dark" : "text-muted"}`} style={{ fontSize: "13px", display: "-webkit-box", WebkitLineClamp: "2", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                    <p className={`mb-0 small ${!notif.read ? "text-dark" : "text-muted"}`} style={{ fontSize: "13px", display: "-webkit-box", WebkitLineClamp: "2", WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                       {notif.message}
                     </p>
                   </div>

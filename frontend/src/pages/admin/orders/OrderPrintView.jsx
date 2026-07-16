@@ -20,8 +20,9 @@ function OrderPrintView({ ordersToPrint }) {
       const [y, m, d] = dateArr;
       return `${String(d).padStart(2, '0')}/${String(m).padStart(2, '0')}/${y}`;
     }
-    const date = new Date(dateArr);
-    return date.toLocaleString("vi-VN");
+    const normalizedDateStr = typeof dateArr === 'string' && !dateArr.endsWith('Z') ? `${dateArr}Z` : dateArr;
+    const date = new Date(normalizedDateStr);
+    return date.toLocaleString("vi-VN", { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' });
   };
 
   return (

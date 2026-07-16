@@ -51,10 +51,12 @@ const OrderDetailModal = ({ order, profile, onClose, claimedOrders = {}, onClaim
   const formattedCode = `MKD${String(order.id).padStart(8, "0")}`;
   
   // Xử lý ngày giờ
-  const orderDateObj = new Date(order.orderedDate || Date.now());
+  const normalizedDateStr = typeof order.orderedDate === 'string' && !order.orderedDate.endsWith('Z') ? `${order.orderedDate}Z` : order.orderedDate;
+  const orderDateObj = new Date(normalizedDateStr || Date.now());
   const orderDate = orderDateObj.toLocaleDateString("vi-VN");
-  let orderTime = "";
+  let orderTime = "-";
   if (Array.isArray(order.orderedDate) && order.orderedDate.length > 3) {
+      // Assuming [y,m,d,h,m,s]
       orderTime = `${String(order.orderedDate[3]).padStart(2, '0')}:${String(order.orderedDate[4]).padStart(2, '0')}`;
   } else if (!Array.isArray(order.orderedDate) && String(order.orderedDate).includes("T")) {
       orderTime = orderDateObj.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });

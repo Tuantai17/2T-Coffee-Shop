@@ -10,13 +10,16 @@
         .header h1 { color: #fff; margin: 0; font-size: 24px; }
         .content { padding: 40px 30px; text-align: center; }
         .status-box { font-size: 18px; font-weight: bold; color: #2563eb; margin: 20px 0; padding: 15px; border: 2px solid #2563eb; border-radius: 8px; display: inline-block; }
+        .order-info { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; text-align: left; }
         .footer { background-color: #f8f9fa; padding: 20px; text-align: center; font-size: 14px; color: #888; }
+        .item-list { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        .item-list th, .item-list td { padding: 10px; border-bottom: 1px solid #eee; text-align: left; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>BrewMoments - Cập Nhật Trạng Thái</h1>
+            <h1>2T Coffee Shop - Cập Nhật Trạng Thái</h1>
         </div>
         <div class="content">
             <p>Chào <strong th:text="${recipientName}">Bạn</strong>,</p>
@@ -24,10 +27,62 @@
             
             <div class="status-box" th:text="${status}">Đang giao hàng</div>
             
+            <div class="order-info">
+                <h3 style="margin-top: 0; color: #059669; border-bottom: 2px solid #eee; padding-bottom: 10px;">Chi tiết đơn hàng</h3>
+                <p>Mã đơn hàng: <strong th:text="${orderCode}">0000</strong></p>
+                
+                <table class="item-list" th:if="${items != null}">
+                    <thead>
+                        <tr style="background-color: #f1f5f9;">
+                            <th>Sản phẩm</th>
+                            <th style="text-align: center;">Đơn giá</th>
+                            <th style="text-align: center;">SL</th>
+                            <th style="text-align: right;">Thành tiền</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr th:each="item : ${items}">
+                            <td>
+                                <strong th:text="${item.name}" style="color: #1f2937; display: block; margin-bottom: 4px;">Tên SP</strong>
+                                <div th:if="${item.sku != null}" style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">SKU: <span th:text="${item.sku}"></span></div>
+                                <div th:if="${item.variantName != null}" style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">Size: <span th:text="${item.variantName}"></span></div>
+                                <div th:if="${item.options != null && !item.options.empty}" style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">Tuỳ chọn: <span th:text="${item.options}"></span></div>
+                                <div th:if="${item.toppings != null && !item.toppings.empty}" style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">Topping: <span th:text="${item.toppings}"></span></div>
+                                <div th:if="${item.note != null && !item.note.empty}" style="font-size: 12px; color: #eab308; margin-top: 4px;"><i class="fa-solid fa-note-sticky"></i> <span th:text="${item.note}"></span></div>
+                            </td>
+                            <td style="text-align: center; color: #4b5563;" th:text="${item.price != null ? #numbers.formatDecimal(item.price, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">44.000 đ</td>
+                            <td style="text-align: center; color: #4b5563;">x<span th:text="${item.quantity}">1</span></td>
+                            <td style="text-align: right; font-weight: 600; color: #059669;" th:text="${item.subTotal != null ? #numbers.formatDecimal(item.subTotal, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">132.000 đ</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <div style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                        <tr>
+                            <td style="padding: 5px 0; color: #6b7280;">Tạm tính:</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 500;" th:text="${subtotal != null ? #numbers.formatDecimal(subtotal, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0; color: #6b7280;">Giảm giá:</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 500;" th:text="${discountAmount != null ? '-' + #numbers.formatDecimal(discountAmount, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">-0 đ</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 5px 0; color: #6b7280;">Phí vận chuyển:</td>
+                            <td style="padding: 5px 0; text-align: right; font-weight: 500;" th:text="${shippingFee != null ? #numbers.formatDecimal(shippingFee, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 10px 0; color: #111827; font-weight: bold; font-size: 16px; border-top: 1px dashed #cbd5e1;">Tổng thanh toán:</td>
+                            <td style="padding: 10px 0; text-align: right; font-weight: bold; font-size: 18px; color: #e11d48; border-top: 1px dashed #cbd5e1;" th:text="${total != null ? #numbers.formatDecimal(total, 0, 'COMMA', 0, 'POINT') + ' đ' : '0 đ'}">0 đ</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
             <p>Bạn có thể theo dõi tiến trình đơn hàng trong mục Quản lý đơn hàng trên website của chúng tôi.</p>
         </div>
         <div class="footer">
-            &copy; 2026 BrewMoments. All rights reserved.
+            &copy; 2026 2T Coffee Shop. All rights reserved.
         </div>
     </div>
 </body>

@@ -282,7 +282,8 @@ function OrderHistoryPage() {
                       <tbody className="border-top-0">
                         {filteredOrders.map(order => {
                           const formattedCode = `MKD${String(order.id).padStart(8, "0")}`;
-                          const orderDateObj = new Date(order.orderedDate || Date.now());
+                          const normalizedDateStr = typeof order.orderedDate === 'string' && !order.orderedDate.endsWith('Z') ? `${order.orderedDate}Z` : order.orderedDate;
+                          const orderDateObj = new Date(normalizedDateStr || Date.now());
                           const orderDate = orderDateObj.toLocaleDateString("vi-VN");
                           let orderTime = "-";
                           if (Array.isArray(order.orderedDate) && order.orderedDate.length > 3) {
