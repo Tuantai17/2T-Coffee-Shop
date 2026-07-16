@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import LoyaltyPointHistory from "./LoyaltyPointHistory";
 import LoyaltyActivityTimeline from "./LoyaltyActivityTimeline";
+import MiniGameTicketAdjustModal from "./MiniGameTicketAdjustModal";
+import miniGameApi from "../../../../api/miniGameApi";
 
 function LoyaltyMemberDetailDrawer({
   showDrawer,
@@ -11,6 +13,8 @@ function LoyaltyMemberDetailDrawer({
 }) {
   const [internalNote, setInternalNote] = useState("");
   const [savingNote, setSavingNote] = useState(false);
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [savingTicketAdjustment, setSavingTicketAdjustment] = useState(false);
 
   // Default empty objects for missing API data to ensure safe mapping
   const safeUser = selectedUser || {};
@@ -55,6 +59,21 @@ function LoyaltyMemberDetailDrawer({
       setSavingNote(false);
       // alert("Đã lưu ghi chú!");
     }, 500);
+  };
+
+  const handleTicketSubmit = async (data) => {
+    try {
+      setSavingTicketAdjustment(true);
+      await miniGameApi.adjustAdminUserLimit(safeUser.id || safeUser.userId, data);
+      setShowTicketModal(false);
+      // Optional: you can show a success toast here if available in the app context
+      // alert("Điều chỉnh lượt chơi thành công!");
+    } catch (error) {
+      console.error(error);
+      alert("Có lỗi xảy ra khi điều chỉnh lượt chơi.");
+    } finally {
+      setSavingTicketAdjustment(false);
+    }
   };
 
   const getTierBadge = (tier) => {
@@ -298,9 +317,19 @@ function LoyaltyMemberDetailDrawer({
               {/* Mini Game & Check-in Accordion (Space saving) */}
               <div className="accordion" id="accordionGames">
                 <div className="accordion-item border-0 rounded-4 shadow-sm mb-3 overflow-hidden">
-                  <h2 className="accordion-header">
-                    <button className="accordion-button collapsed bg-white fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGame" style={{ fontSize: "14px" }}>
+                  <h2 className="accordion-header d-flex align-items-center">
+                    <button className="accordion-button collapsed bg-white fw-bold py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapseGame" style={{ fontSize: "14px", flex: 1 }}>
                       <i className="fa-solid fa-gamepad text-info me-2"></i> Mini Game
+                    </button>
+                    <button 
+                      className="btn btn-sm btn-outline-info rounded-pill px-3 me-3 position-absolute end-0 me-5" 
+                      style={{ zIndex: 3 }}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowTicketModal(true);
+                      }}
+                    >
+                      <i className="fa-solid fa-ticket me-1"></i> Cộng/Trừ vé
                     </button>
                   </h2>
                   <div id="collapseGame" className="accordion-collapse collapse" data-bs-parent="#accordionGames">
@@ -448,6 +477,15 @@ function LoyaltyMemberDetailDrawer({
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #a8a8a8; }
         .text-light-muted { color: #dee2e6; }
       `}</style>
+      
+      {showTicketModal && (
+        <MiniGameTicketAdjustModal 
+          selectedUser={safeUser} 
+          onClose={() => setShowTicketModal(false)}
+          onSubmit={handleTicketSubmit}
+          savingAdjustment={savingTicketAdjustment}
+        />
+      )}
     </>
   );
 }

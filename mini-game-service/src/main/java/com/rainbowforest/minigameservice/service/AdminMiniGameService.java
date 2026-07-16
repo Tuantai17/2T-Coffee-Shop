@@ -8,10 +8,12 @@ import com.rainbowforest.minigameservice.dto.MiniGameUpsertRequest;
 import com.rainbowforest.minigameservice.repository.GameRewardRepository;
 import com.rainbowforest.minigameservice.repository.MiniGamePlaySessionRepository;
 import com.rainbowforest.minigameservice.repository.MiniGameRepository;
+import com.rainbowforest.minigameservice.repository.GameUserLimitRepository;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.criteria.Predicate;
+import java.time.ZoneId;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -46,6 +48,9 @@ public class AdminMiniGameService {
 
     @Autowired
     private MiniGamePlaySessionRepository playSessionRepository;
+
+    @Autowired
+    private GameUserLimitRepository gameUserLimitRepository;
 
     @Autowired
     private MiniGameValidationService miniGameValidationService;
@@ -140,6 +145,70 @@ public class AdminMiniGameService {
         response.put("analytics", getAnalytics(game.getId()));
         response.put("activityLogs", gameActivityLogService.getByGameId(game.getId()));
         return response;
+    }
+
+    public List<Map<String, Object>> getUserGameLimits(Long userId) {
+        List<MiniGame> activeGames = miniGameRepository.findByDeletedFalseOrderByFeaturedDescUpdatedAtDesc();
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (MiniGame game : activeGames) {
+            GameUserLimit limit = gameUserLimitRepository.findByUserIdAndGame_IdAndPlayDate(userId, game.getId(), today)
+                    .orElse(null);
+
+            int maxCount = limit != null ? limit.getMaxCount() : (game.getDailyPlayLimit() != null ? game.getDailyPlayLimit() : 0);
+            int usedCount = limit != null ? limit.getUsedCount() : 0;
+            int remaining = Math.max(0, maxCount - usedCount);
+
+            Map<String, Object> map = new LinkedHashMap<>();
+            map.put("gameId", game.getId());
+            map.put("gameName", game.getName());
+            map.put("slug", game.getSlug());
+            map.put("maxCount", maxCount);
+            map.put("usedCount", usedCount);
+            map.put("remainingPlays", remaining);
+            result.add(map);
+        }
+        return result;
+    }
+
+    public Map<String, Object> adjustUserGameLimit(Long userId, Long gameId, int amount, String note, Long actorId) {
+        MiniGame game = findGame(gameId);
+        LocalDate today = LocalDate.now(ZoneId.of("Asia/Ho_Chi_Minh"));
+        
+        GameUserLimit limit = gameUserLimitRepository.findByUserIdAndGame_IdAndPlayDate(userId, gameId, today)
+                .orElse(null);
+
+        if (limit == null) {
+            limit = GameUserLimit.builder()
+                    .userId(userId)
+                    .game(game)
+                    .playDate(today)
+                    .usedCount(0)
+                    .maxCount(game.getDailyPlayLimit() != null ? game.getDailyPlayLimit() : 0)
+                    .build();
+        }
+
+        // Adjust maxCount
+        limit.setMaxCount(Math.max(0, limit.getMaxCount() + amount));
+        GameUserLimit savedLimit = gameUserLimitRepository.save(limit);
+
+        gameActivityLogService.log(game, actorId, "LIMIT_ADJUSTED", "Admin dieu chinh luot choi user: " + userId, Map.of(
+                "userId", userId,
+                "amount", amount,
+                "newMaxCount", savedLimit.getMaxCount(),
+                "note", normalizeText(note)
+        ));
+
+        int remaining = Math.max(0, savedLimit.getMaxCount() - savedLimit.getUsedCount());
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("gameId", game.getId());
+        result.put("gameName", game.getName());
+        result.put("maxCount", savedLimit.getMaxCount());
+        result.put("usedCount", savedLimit.getUsedCount());
+        result.put("remainingPlays", remaining);
+        return result;
     }
 
     public Map<String, Object> createGame(MiniGameUpsertRequest request, Long actorId) {

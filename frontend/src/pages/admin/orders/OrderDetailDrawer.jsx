@@ -179,14 +179,12 @@ function OrderDetailDrawer({ show, order, loading, error, onRetry, onClose, onUp
                               <div>
                                 <div className="fw-semibold" style={{ fontSize: "14px" }}>{item.productName || item.product?.productName || "Sản phẩm không rõ"}</div>
                                 <div className="small text-muted mb-1">SKU: {item.productId || item.product?.id || "N/A"}</div>
-                                {(item.variantName || item.options || item.toppings || item.note) && (
-                                  <div className="small p-2 bg-light rounded border border-light" style={{ fontSize: "12px" }}>
+                                {(item.variantName || item.optionsSnapshot || item.toppingsSnapshot || item.note) && (
+                                  <div className="small p-2 bg-light rounded border border-light mt-1" style={{ fontSize: "12px" }}>
                                     {item.variantName && <div className="mb-1"><span className="fw-semibold">Size:</span> {item.variantName}</div>}
-                                    {item.options && item.options.length > 0 && (
-                                      <div className="mb-1"><span className="fw-semibold">Tùy chọn:</span> {Array.isArray(item.options) ? item.options.join(", ") : item.options}</div>
-                                    )}
-                                    {item.toppings && item.toppings.length > 0 && (
-                                      <div className="mb-1"><span className="fw-semibold">Topping:</span> {Array.isArray(item.toppings) ? item.toppings.join(", ") : item.toppings}</div>
+                                    {item.optionsSnapshot && <div className="mb-1"><span className="fw-semibold">Tùy chọn:</span> {item.optionsSnapshot}</div>}
+                                    {item.toppingsSnapshot && (
+                                      <div className="mb-1"><span className="fw-semibold">Topping:</span> {Object.entries(item.toppingsSnapshot.split(', ').reduce((acc, curr) => { acc[curr] = (acc[curr] || 0) + 1; return acc; }, {})).map(([name, count]) => count > 1 ? `${name} (x${count})` : name).join(', ')}</div>
                                     )}
                                     {item.note && (
                                       <div><span className="fw-semibold">Ghi chú:</span> <span className="fst-italic">{item.note}</span></div>
@@ -196,9 +194,9 @@ function OrderDetailDrawer({ show, order, loading, error, onRetry, onClose, onUp
                               </div>
                             </div>
                           </td>
-                          <td className="py-3 text-center">{formatMoney(item.unitPrice)}</td>
+                          <td className="py-3 text-center">{formatMoney(item.unitPrice || item.product?.price || 0)}</td>
                           <td className="py-3 text-center fw-semibold">x{item.quantity}</td>
-                          <td className="py-3 px-4 text-end fw-bold text-dark">{formatMoney((item.unitPrice || 0) * (item.quantity || 0))}</td>
+                          <td className="py-3 px-4 text-end fw-bold text-dark">{formatMoney(item.subTotal || ((item.unitPrice || item.product?.price || 0) * (item.quantity || 0)))}</td>
                         </tr>
                       ))}
                     </tbody>

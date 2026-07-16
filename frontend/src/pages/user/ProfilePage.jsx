@@ -10,6 +10,7 @@ import ProfileLoyalty from "./components/profile/ProfileLoyalty";
 import ProfileCheckin from "./components/profile/ProfileCheckin";
 import ProfileVoucher from "./components/profile/ProfileVoucher";
 import ProfileMiniGame from "./components/profile/ProfileMiniGame";
+import ProfilePassword from "./components/profile/ProfilePassword";
 
 import { getOrdersByUser } from "../../services/orderService";
 import loyaltyApi from "../../api/loyaltyApi";
@@ -77,6 +78,7 @@ function ProfilePage() {
   const isCheckinPage = location.pathname.includes("/profile/checkin");
   const isVoucherPage = location.pathname.includes("/profile/vouchers");
   const isMiniGamePage = location.pathname.includes("/profile/minigame");
+  const isPasswordPage = location.pathname.includes("/profile/password");
 
   return (
     <UserLayout>
@@ -118,6 +120,8 @@ function ProfilePage() {
                     summary={profile?.miniGameSummary}
                     unavailable={profile?.miniGameUnavailable}
                   />
+                ) : isPasswordPage ? (
+                  <ProfilePassword profile={profile} />
                 ) : (
                   <ProfileDashboard profile={profile} orders={orders} />
                 )}

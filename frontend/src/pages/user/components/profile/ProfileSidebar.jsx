@@ -63,7 +63,7 @@ function ProfileSidebar({ profile, refreshKey = 0 }) {
     { path: "#notification", label: "Thông báo", icon: "fa-regular fa-bell" },
     { path: "/profile/minigame", label: "Mini Game", icon: "fa-solid fa-gamepad" },
     { path: "/profile/checkin", label: "Điểm danh mỗi ngày", icon: "fa-regular fa-calendar-check" },
-    { path: "#password", label: "Đổi mật khẩu", icon: "fa-solid fa-key" },
+    { path: "/profile/password", label: "Đổi mật khẩu", icon: "fa-solid fa-key" },
     { path: "#settings", label: "Cài đặt", icon: "fa-solid fa-gear" }
   ];
 

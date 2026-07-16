@@ -111,4 +111,54 @@ public class AuthController {
         }
         return ResponseEntity.ok("Logged out successfully");
     }
+
+    @PostMapping("/change-password")
+    public ResponseEntity<?> changePassword(@RequestBody ChangePasswordRequest request) {
+        if (request.getUserId() == null || request.getOldPassword() == null || request.getNewPassword() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Vui lòng cung cấp đầy đủ thông tin");
+        }
+
+        User user = userService.getUserById(request.getUserId());
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Không tìm thấy người dùng");
+        }
+
+        if (!passwordEncoder.matches(request.getOldPassword(), user.getUserPassword())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Mật khẩu cũ không chính xác");
+        }
+
+        userService.updatePassword(user.getId(), passwordEncoder.encode(request.getNewPassword()));
+        
+        return ResponseEntity.ok("Đổi mật khẩu thành công");
+    }
+
+    public static class ChangePasswordRequest {
+        private Long userId;
+        private String oldPassword;
+        private String newPassword;
+
+        public Long getUserId() {
+            return userId;
+        }
+
+        public void setUserId(Long userId) {
+            this.userId = userId;
+        }
+
+        public String getOldPassword() {
+            return oldPassword;
+        }
+
+        public void setOldPassword(String oldPassword) {
+            this.oldPassword = oldPassword;
+        }
+
+        public String getNewPassword() {
+            return newPassword;
+        }
+
+        public void setNewPassword(String newPassword) {
+            this.newPassword = newPassword;
+        }
+    }
 }

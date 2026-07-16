@@ -105,6 +105,15 @@ public class UserServiceImpl implements UserService {
         return null;
     }
 
+    @Override
+    public void updatePassword(Long id, String newPassword) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user != null) {
+            user.setUserPassword(newPassword);
+            userRepository.save(user);
+        }
+    }
+
     @jakarta.annotation.PostConstruct
     public void initData() {
         // Migrate ROLE_USER → ROLE_MEMBER if exists

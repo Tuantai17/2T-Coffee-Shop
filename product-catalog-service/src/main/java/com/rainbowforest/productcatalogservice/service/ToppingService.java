@@ -8,5 +8,6 @@ public interface ToppingService {
     List<Topping> getAllToppings();
     Topping getToppingById(Long id);
     Topping saveTopping(Topping topping);
+    Topping updateTopping(Long id, Topping toppingDetails);
     void deleteTopping(Long id);
 }

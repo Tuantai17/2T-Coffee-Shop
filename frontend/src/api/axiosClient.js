@@ -8,6 +8,7 @@ import {
 
 const axiosClient = axios.create({
   baseURL: "http://localhost:8900",
+  timeout: 10000,
   headers: {
     "Content-Type": "application/json",
   },

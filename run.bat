@@ -1,45 +1,45 @@
 @echo off
 chcp 65001 >nul
-title Khoi dong he thong Lab 2 Saga E-Commerce Microservices
+title Khoi dong he thong Lab 2 Saga E-Commerce (Native Mode)
 color 0A
 
 echo =====================================================================
 echo   [HE THONG TU DONG KHOI DONG LAB 2 SAGA E-COMMERCE]
+echo   Chay truc tiep tren Windows (Toi uu RAM hon Docker)
 echo =====================================================================
 echo.
 
 echo [1/6] Don dep cac tien trinh cu (Java, Node)...
 taskkill /f /im java.exe >nul 2>&1
 taskkill /f /im node.exe >nul 2>&1
-echo Da don dep xong tat ca cac tien trinh dang chay ngam!
+echo Da don dep xong tien trinh chay ngam!
 echo.
 
-echo [2/6] Dung cac Docker app containers cu de tranh xung dot voi ban local...
-docker-compose stop api-gateway eureka-server user-service product-catalog-service product-recommendation-service order-service payment-service notification-service inventory-service delivery-service revenue-service loyalty-service mini-game-service >nul 2>&1
-docker-compose rm -f api-gateway eureka-server user-service product-catalog-service product-recommendation-service order-service payment-service notification-service inventory-service delivery-service revenue-service loyalty-service mini-game-service >nul 2>&1
-echo Da don dep xong cac app containers cu.
+echo [2/6] Dung va don dep Docker cu tranh xung dot...
+docker-compose down >nul 2>&1
+echo Da don dep xong Docker.
 echo.
 
-echo [3/7] Khoi dong Docker Containers ha tang (Postgres, Redis, MongoDB, Kafka, Zookeeper)...
-docker-compose up -d postgres redis mongodb zookeeper kafka
+echo [3/7] Khoi dong ha tang (Postgres, Redis, MongoDB, Kafka, Zookeeper)...
+docker-compose up -d postgres postgres-init redis mongodb zookeeper kafka
 if %ERRORLEVEL% neq 0 (
-    echo [ERROR] Docker-compose up that bai! Vui long bat Docker Desktop va chay lai.
+    echo [ERROR] Docker-compose up that bai! Vui long bat Docker Desktop.
     pause
     exit /b %ERRORLEVEL%
 )
-echo Docker Containers dang hoat dong tot!
+echo Ha tang dang hoat dong tot!
 echo.
 
 echo [4/7] Khoi dong Eureka Discovery Server (Port 8761)...
 start "Eureka Server [8761]" cmd /c "cd eureka-server && mvnw spring-boot:run"
 echo Vui long cho Eureka khoi dong hoan toan trong 15 giay...
-timeout /t 15 /nobreak
+ping 127.0.0.1 -n 16 > nul
 echo.
 
 echo [5/7] Khoi dong API Gateway (Port 8900)...
 start "API Gateway [8900]" cmd /c "cd api-gateway && mvnw spring-boot:run"
 echo Cho API Gateway dang ky thong tin vao Discovery trong 8 giay...
-timeout /t 8 /nobreak
+ping 127.0.0.1 -n 9 > nul
 echo.
 
 echo [6/7] Khoi dong 11 Microservices nghiep vu...

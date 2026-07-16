@@ -56,14 +56,10 @@ public class AdminToppingController {
             return new ResponseEntity<>(HttpStatus.FORBIDDEN);
         }
         try {
-            Topping existing = toppingService.getToppingById(id);
-            if (existing == null) {
+            Topping updated = toppingService.updateTopping(id, topping);
+            if (updated == null) {
                 return new ResponseEntity<>(headerGenerator.getHeadersForError(), HttpStatus.NOT_FOUND);
             }
-            existing.setName(topping.getName());
-            existing.setPrice(topping.getPrice());
-            existing.setImageUrl(topping.getImageUrl());
-            Topping updated = toppingService.saveTopping(existing);
             return new ResponseEntity<>(
                 updated,
                 headerGenerator.getHeadersForSuccessGetMethod(),

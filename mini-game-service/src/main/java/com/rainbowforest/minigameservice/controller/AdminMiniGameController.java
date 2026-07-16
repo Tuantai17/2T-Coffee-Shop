@@ -167,6 +167,23 @@ public class AdminMiniGameController {
                 .body(adminMiniGameService.exportActivityLogs(id));
     }
 
+    @GetMapping("/users/{userId}/limits")
+    public ResponseEntity<List<Map<String, Object>>> getUserLimits(@PathVariable Long userId) {
+        return ResponseEntity.ok(adminMiniGameService.getUserGameLimits(userId));
+    }
+
+    @PostMapping("/users/{userId}/limits/adjust")
+    public ResponseEntity<Map<String, Object>> adjustUserLimit(
+            @PathVariable Long userId,
+            @RequestBody Map<String, Object> payload,
+            @RequestHeader(value = "X-User-Id", required = false) String userIdHeader
+    ) {
+        Long gameId = ((Number) payload.get("gameId")).longValue();
+        int amount = ((Number) payload.get("amount")).intValue();
+        String note = (String) payload.get("note");
+        return ResponseEntity.ok(adminMiniGameService.adjustUserGameLimit(userId, gameId, amount, note, parseUserId(userIdHeader)));
+    }
+
     private Long parseUserId(String userIdHeader) {
         if (userIdHeader == null || userIdHeader.isBlank()) {
             return null;

@@ -20,7 +20,7 @@ public class OrderEventConsumer {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @KafkaListener(topics = "order-events", groupId = "product-catalog-group")
+    @KafkaListener(topics = {"order-completed", "order-events"}, groupId = "product-catalog-group")
     @Transactional
     public void consumeOrderEvent(String message) {
         try {

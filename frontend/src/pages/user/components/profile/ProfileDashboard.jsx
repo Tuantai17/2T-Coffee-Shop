@@ -14,10 +14,9 @@ function ProfileDashboard({ profile, orders = [] }) {
     { icon: "fa-star", color: "text-warning", bg: "bg-warning-subtle", value: loyaltyPoints.toLocaleString("vi-VN"), label: "Điểm Loyalty", link: "#loyalty", linkText: "Xem chi tiết" },
   ];
 
-  const recentOrderData = orders.length > 0 ? orders[0] : null;
+  const recentOrdersData = orders.slice(0, 5);
 
-  let recentOrder = null;
-  if (recentOrderData) {
+  const recentOrders = recentOrdersData.map(recentOrderData => {
     const formattedCode = `BM${String(recentOrderData.id).padStart(8, "0")}`;
     const orderDateObj = new Date(recentOrderData.orderedDate || Date.now());
     const orderDate = orderDateObj.toLocaleDateString("vi-VN");
@@ -29,7 +28,7 @@ function ProfileDashboard({ profile, orders = [] }) {
       orderTime = orderDateObj.toLocaleTimeString("vi-VN", { hour: '2-digit', minute: '2-digit' });
     }
 
-    recentOrder = {
+    return {
       id: formattedCode,
       date: orderDate,
       time: orderTime,
@@ -40,9 +39,10 @@ function ProfileDashboard({ profile, orders = [] }) {
             : recentOrderData.status === "PACKING" ? "Đang chuẩn bị"
             : recentOrderData.status === "CANCELLED" ? "Đã hủy"
             : "Chờ duyệt",
-      image: recentOrderData.items?.[0]?.product?.imageUrl || "https://images.unsplash.com/photo-1559525839-b184a4d698c7?w=500"
+      image: recentOrderData.items?.[0]?.product?.imageUrl || "https://images.unsplash.com/photo-1559525839-b184a4d698c7?w=500",
+      rawId: recentOrderData.id
     };
-  }
+  });
 
   // Loyalty calculations based on real points
   const currentPoints = loyaltyPoints;
@@ -103,34 +103,38 @@ function ProfileDashboard({ profile, orders = [] }) {
             ))}
           </div>
 
-          {/* Middle Row: Recent Order */}
-          {recentOrder && (
+          {/* Middle Row: Recent Orders */}
+          {recentOrders.length > 0 && (
             <div className="mb-4">
               <div className="d-flex justify-content-between align-items-end mb-3">
                 <h6 className="fw-bold mb-0">Đơn hàng gần nhất</h6>
                 <Link to="/profile/orders" className="text-decoration-none small text-danger fw-medium">Xem tất cả <i className="fa-solid fa-chevron-right" style={{fontSize:"10px"}}></i></Link>
               </div>
-              <div className="card border-0 rounded-4 p-4 bg-white shadow-sm hover-lift transition-all">
-                <div className="row align-items-center">
-                  <div className="col-md-8">
-                    <div className="d-flex gap-3 mb-0">
-                      <img src={recentOrder.image} alt="Order" className="rounded-4 object-fit-cover shadow-sm" style={{ width: "80px", height: "80px" }} />
-                      <div className="d-flex flex-column justify-content-center">
-                        <div className="d-flex align-items-center gap-2 mb-1">
-                          <span className="fw-bold text-dark">{recentOrder.id}</span>
-                          <span className="badge bg-primary-subtle text-primary rounded-pill" style={{ fontSize: "10px" }}>{recentOrder.status}</span>
+              <div className="d-flex flex-column gap-3">
+                {recentOrders.map((order, idx) => (
+                  <div key={idx} className="card border-0 rounded-4 p-4 bg-white shadow-sm hover-lift transition-all">
+                    <div className="row align-items-center">
+                      <div className="col-md-8">
+                        <div className="d-flex gap-3 mb-0">
+                          <img src={order.image} alt="Order" className="rounded-4 object-fit-cover shadow-sm" style={{ width: "80px", height: "80px" }} />
+                          <div className="d-flex flex-column justify-content-center">
+                            <div className="d-flex align-items-center gap-2 mb-1">
+                              <span className="fw-bold text-dark">{order.id}</span>
+                              <span className="badge bg-primary-subtle text-primary rounded-pill" style={{ fontSize: "10px" }}>{order.status}</span>
+                            </div>
+                            <div className="text-muted small mb-1">{order.date} {order.time && `· ${order.time}`}</div>
+                            <div className="text-dark fw-medium">{order.itemsCount} món · {formatPrice(order.total)}</div>
+                          </div>
                         </div>
-                        <div className="text-muted small mb-1">{recentOrder.date} {recentOrder.time && `· ${recentOrder.time}`}</div>
-                        <div className="text-dark fw-medium">{recentOrder.itemsCount} món · {formatPrice(recentOrder.total)}</div>
+                      </div>
+                      <div className="col-md-4 text-md-end mt-3 mt-md-0">
+                        <Link to="/profile/orders" className="btn btn-outline-danger w-100 rounded-pill fw-bold" style={{ fontSize: "13px" }}>
+                          CHI TIẾT ĐƠN HÀNG
+                        </Link>
                       </div>
                     </div>
                   </div>
-                  <div className="col-md-4 text-md-end mt-3 mt-md-0">
-                    <Link to="/profile/orders" className="btn btn-outline-danger w-100 rounded-pill fw-bold" style={{ fontSize: "13px" }}>
-                      CHI TIẾT ĐƠN HÀNG
-                    </Link>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
           )}

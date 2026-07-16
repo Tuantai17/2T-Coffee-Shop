@@ -118,16 +118,20 @@ function ProductDetailPage() {
         if (variant && typeof variant.id === 'number') variantId = variant.id;
       }
 
+      const isProductDrink = product ? !getCategoryName(product.categoryId).toLowerCase().includes('bánh') : true;
+
       // Collect all selected option IDs (temp, ice, sugar)
       const optionIds = [];
-      if (selectedTemp && !isNaN(Number(selectedTemp))) optionIds.push(Number(selectedTemp));
-      if (selectedIce && !isNaN(Number(selectedIce))) optionIds.push(Number(selectedIce));
-      if (selectedSugar && !isNaN(Number(selectedSugar))) optionIds.push(Number(selectedSugar));
+      if (isProductDrink) {
+        if (selectedTemp && !isNaN(Number(selectedTemp))) optionIds.push(Number(selectedTemp));
+        if (selectedIce && !isNaN(Number(selectedIce))) optionIds.push(Number(selectedIce));
+        if (selectedSugar && !isNaN(Number(selectedSugar))) optionIds.push(Number(selectedSugar));
+      }
 
       // Collect selected topping IDs
-      const toppingIds = selectedToppings
+      const toppingIds = isProductDrink ? selectedToppings
         .filter(id => !isNaN(Number(id)))
-        .map(id => Number(id));
+        .map(id => Number(id)) : [];
 
       await addToCart(product.id, quantity, {
         variantId,

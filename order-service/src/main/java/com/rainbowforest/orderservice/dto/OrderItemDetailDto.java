@@ -13,6 +13,10 @@ public class OrderItemDetailDto {
     private Integer originalQuantity;
     private Integer finalQuantity;
     private String itemStatus;
+    private String variantName;
+    private String optionsSnapshot;
+    private String toppingsSnapshot;
+    private String note;
     
     // Getters and setters
     public Long getId() { return id; }
@@ -44,4 +48,16 @@ public class OrderItemDetailDto {
     
     public String getItemStatus() { return itemStatus; }
     public void setItemStatus(String itemStatus) { this.itemStatus = itemStatus; }
+    
+    public String getVariantName() { return variantName; }
+    public void setVariantName(String variantName) { this.variantName = variantName; }
+    
+    public String getOptionsSnapshot() { return optionsSnapshot; }
+    public void setOptionsSnapshot(String optionsSnapshot) { this.optionsSnapshot = optionsSnapshot; }
+    
+    public String getToppingsSnapshot() { return toppingsSnapshot; }
+    public void setToppingsSnapshot(String toppingsSnapshot) { this.toppingsSnapshot = toppingsSnapshot; }
+    
+    public String getNote() { return note; }
+    public void setNote(String note) { this.note = note; }
 }

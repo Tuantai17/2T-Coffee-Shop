@@ -7,21 +7,19 @@ class UploadService {
   async uploadImage(file, folder = 'products') {
     let compressedFile = file;
     if (file.type && file.type.startsWith('image/')) {
-      // Banner cần độ phân giải cao để không mất chữ/logo trên ảnh
-      // Sản phẩm/category giữ nén nhẹ để tải trang nhanh
-      const isBanner = folder === "banners";
+      // Banner và collection cần độ phân giải cao
+      const isHighRes = folder.includes("banner") || folder.includes("collection");
+      
       const options = {
-            maxSizeMB: 0.2, // Tối đa 200KB
-            maxWidthOrHeight: 1024,
-            useWebWorker: true,
-          };
+        maxSizeMB: isHighRes ? 2 : 0.2, // Tối đa 2MB cho banner, 200KB cho sản phẩm
+        maxWidthOrHeight: isHighRes ? 1920 : 1024,
+        useWebWorker: true,
+      };
 
-      if (!isBanner) {
-        try {
-          compressedFile = await imageCompression(file, options);
-        } catch (error) {
-          console.warn("Không thể nén ảnh, sử dụng ảnh gốc:", error);
-        }
+      try {
+        compressedFile = await imageCompression(file, options);
+      } catch (error) {
+        console.warn("Không thể nén ảnh, sử dụng ảnh gốc:", error);
       }
     }
 

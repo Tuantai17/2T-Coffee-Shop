@@ -11,4 +11,5 @@ public interface UserService {
     User getUserByEmail(String email);
     User saveUser(User user);
     User updateUser(Long id, User userDetails);
+    void updatePassword(Long id, String newPassword);
 }

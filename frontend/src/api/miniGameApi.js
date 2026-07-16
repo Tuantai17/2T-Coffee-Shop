@@ -97,6 +97,8 @@ const miniGameApi = {
   getAdminPlaySessions: (params = {}) => get("/api/admin/mini-games/play-sessions", { params }),
   exportAdminPlaySessions: (params = {}) => get("/api/admin/mini-games/play-sessions/export", { params, responseType: "blob" }),
   exportAdminActivityLogs: (gameId) => get(`/api/admin/mini-games/${gameId}/activity-logs/export`, { responseType: "blob" }),
+  getAdminUserLimits: (userId) => get(`/api/admin/mini-games/users/${userId}/limits`),
+  adjustAdminUserLimit: (userId, payload) => post(`/api/admin/mini-games/users/${userId}/limits/adjust`, payload),
 
   getGames: () => get("/api/games"),
   getGameDetail: (slug) => get(`/api/games/${slug}`),

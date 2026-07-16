@@ -85,6 +85,9 @@ public class AdminOrderServiceImpl implements AdminOrderService {
         if ("CONFIRMED".equals(newStatus) && order.getConfirmedAt() == null) {
             order.setConfirmedAt(LocalDateTime.now());
         }
+        if ("COMPLETED".equals(newStatus) && "COD".equalsIgnoreCase(order.getPaymentMethod()) && !"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+            order.setPaymentStatus("PAID");
+        }
         Order savedOrder = orderRepository.save(order);
 
         if ("COMPLETED".equals(newStatus) && !"COMPLETED".equals(oldStatus)) {
@@ -485,6 +488,17 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             event.put("productSubtotal", order.getTotal());
             event.put("status", order.getStatus());
             
+            java.util.List<Map<String, Object>> itemsList = new java.util.ArrayList<>();
+            if (order.getItems() != null) {
+                for (com.rainbowforest.orderservice.domain.Item item : order.getItems()) {
+                    Map<String, Object> itemData = new java.util.HashMap<>();
+                    itemData.put("productId", item.getProduct() != null ? item.getProduct().getId() : null);
+                    itemData.put("quantity", item.getFinalQuantity() != null ? item.getFinalQuantity() : item.getQuantity());
+                    itemsList.add(itemData);
+                }
+            }
+            event.put("items", itemsList);
+            
             com.rainbowforest.orderservice.domain.EventEnvelope envelope = new com.rainbowforest.orderservice.domain.EventEnvelope(
                 java.util.UUID.randomUUID().toString(), eventType, 1, java.util.UUID.randomUUID().toString(), "order-service", event
             );
@@ -789,6 +803,10 @@ public class AdminOrderServiceImpl implements AdminOrderService {
             // Need to handle price properly, using unitPrice or price
             itemDto.setUnitPrice(item.getUnitPrice()); 
             itemDto.setSubTotal(item.getSubTotal());
+            itemDto.setVariantName(item.getVariantName());
+            itemDto.setOptionsSnapshot(item.getOptionsSnapshot());
+            itemDto.setToppingsSnapshot(item.getToppingsSnapshot());
+            itemDto.setNote(item.getNote());
             if (item.getProduct() != null) {
                 itemDto.setProductId(item.getProduct().getId());
                 itemDto.setProductName(item.getProduct().getProductName());

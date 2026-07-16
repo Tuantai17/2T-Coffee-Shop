@@ -68,7 +68,7 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
     return (
       <div className="card border-0 rounded-4 p-4 bg-white shadow-sm text-center">
         <div className="spinner-border text-warning mx-auto" role="status"></div>
-        <div className="text-muted mt-3">Dang tai ho so mini game...</div>
+        <div className="text-muted mt-3">Đang tải hồ sơ mini game...</div>
       </div>
     );
   }
@@ -81,47 +81,47 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
       <div className="row g-3">
         <div className="col-md-4">
           <div className="card border-0 rounded-4 p-4 bg-white shadow-sm h-100">
-            <div className="text-muted small text-uppercase fw-bold mb-2">Tong luot choi</div>
+            <div className="text-muted small text-uppercase fw-bold mb-2">Tổng lượt chơi</div>
             <div className="fw-bold text-dark" style={{ fontSize: "32px" }}>
               {(summary?.totalPlays || 0).toLocaleString("vi-VN")}
             </div>
-            <div className="text-muted small mt-2">Bao gom tat ca Memory Match va Lucky Spin</div>
+            <div className="text-muted small mt-2">Bao gồm tất cả Memory Match và Lucky Spin</div>
           </div>
         </div>
         <div className="col-md-4">
           <div className="card border-0 rounded-4 p-4 bg-white shadow-sm h-100">
-            <div className="text-muted small text-uppercase fw-bold mb-2">Tong diem tu mini game</div>
+            <div className="text-muted small text-uppercase fw-bold mb-2">Tổng điểm từ mini game</div>
             <div className="fw-bold text-dark" style={{ fontSize: "32px" }}>
               {(summary?.totalPoints || 0).toLocaleString("vi-VN")}
             </div>
-            <div className="text-muted small mt-2">Diem da nhan qua cac luot trung thuong</div>
+            <div className="text-muted small mt-2">Điểm đã nhận qua các lượt trúng thưởng</div>
           </div>
         </div>
         <div className="col-md-4">
           <div className="card border-0 rounded-4 p-4 bg-white shadow-sm h-100">
-            <div className="text-muted small text-uppercase fw-bold mb-2">Voucher da nhan</div>
+            <div className="text-muted small text-uppercase fw-bold mb-2">Voucher đã nhận</div>
             <div className="fw-bold text-dark" style={{ fontSize: "32px" }}>
               {(summary?.totalVouchers || 0).toLocaleString("vi-VN")}
             </div>
-            <div className="text-muted small mt-2">Lan choi gan nhat: {formatDateTime(summary?.lastPlayedAt)}</div>
+            <div className="text-muted small mt-2">Lần chơi gần nhất: {formatDateTime(summary?.lastPlayedAt)}</div>
           </div>
         </div>
       </div>
 
       {serviceUnavailable ? (
         <div className="alert alert-warning rounded-4 mb-0">
-          Mini game service chua san sang tren backend. Frontend da render an toan, nhung de co du lieu that ban can khoi dong lai `mini-game-service` va gateway.
+          Dịch vụ mini game chưa sẵn sàng trên backend. Frontend đã hiển thị an toàn, nhưng để có dữ liệu thật bạn cần khởi động lại `mini-game-service` và gateway.
         </div>
       ) : null}
 
       <div className="card border-0 rounded-4 p-4 bg-white shadow-sm">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
           <div>
-            <h5 className="fw-bold mb-1">Tien do theo tung game</h5>
-            <div className="text-muted small">Dong bo luot con lai, diem va voucher ngay trong profile</div>
+            <h5 className="fw-bold mb-1">Tiến độ theo từng game</h5>
+            <div className="text-muted small">Đồng bộ lượt còn lại, điểm và voucher ngay trong profile</div>
           </div>
           <Link to="/game" className="btn btn-outline-danger rounded-pill px-3">
-            Den Game Center
+            Đến Game Center
           </Link>
         </div>
         <div className="row g-3">
@@ -135,31 +135,31 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
                       <div className="text-muted small">{game.slug}</div>
                     </div>
                     <Link to={`/game/${game.slug}`} className="btn btn-sm btn-light rounded-pill">
-                      Choi ngay
+                      Chơi ngay
                     </Link>
                   </div>
                   <div className="row g-2 mt-2">
                     <div className="col-4">
-                      <div className="text-muted small">Luot choi</div>
+                      <div className="text-muted small">Lượt chơi</div>
                       <div className="fw-semibold">{(game.plays || 0).toLocaleString("vi-VN")}</div>
                     </div>
                     <div className="col-4">
-                      <div className="text-muted small">Diem</div>
+                      <div className="text-muted small">Điểm</div>
                       <div className="fw-semibold">{(game.points || 0).toLocaleString("vi-VN")}</div>
                     </div>
                     <div className="col-4">
-                      <div className="text-muted small">Con lai</div>
+                      <div className="text-muted small">Còn lại</div>
                       <div className="fw-semibold">{(game.remainingPlays || 0).toLocaleString("vi-VN")}</div>
                     </div>
                   </div>
-                  <div className="text-muted small mt-3">Lan choi gan nhat: {formatDateTime(game.lastPlayedAt)}</div>
+                  <div className="text-muted small mt-3">Lần chơi gần nhất: {formatDateTime(game.lastPlayedAt)}</div>
                 </div>
               </div>
             ))
           ) : (
             <div className="col-12">
               <div className="text-center text-muted py-4">
-                Chua co du lieu mini game. Hay thu choi mot luot tai Game Center.
+                Chưa có dữ liệu mini game. Hãy thử chơi một lượt tại Game Center.
               </div>
             </div>
           )}
@@ -169,8 +169,8 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
       <div className="card border-0 rounded-4 p-4 bg-white shadow-sm">
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-3 mb-3">
           <div>
-            <h5 className="fw-bold mb-1">Lich su nhan thuong</h5>
-            <div className="text-muted small">Bao gom ket qua, diem, voucher va thoi gian choi</div>
+            <h5 className="fw-bold mb-1">Lịch sử nhận thưởng</h5>
+            <div className="text-muted small">Bao gồm kết quả, điểm, voucher và thời gian chơi</div>
           </div>
         </div>
         <div className="table-responsive">
@@ -178,11 +178,11 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
             <thead>
               <tr>
                 <th>Game</th>
-                <th>Ket qua</th>
-                <th>Diem</th>
+                <th>Kết quả</th>
+                <th>Điểm</th>
                 <th>Voucher</th>
-                <th>Phan thuong</th>
-                <th>Thoi gian</th>
+                <th>Phần thưởng</th>
+                <th>Thời gian</th>
               </tr>
             </thead>
             <tbody>
@@ -194,7 +194,7 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
                       <div className="text-muted small">{item.slug}</div>
                     </td>
                     <td>{item.result}</td>
-                    <td>{item.pointEarned ? `${Number(item.pointEarned).toLocaleString("vi-VN")} diem` : "-"}</td>
+                    <td>{item.pointEarned ? `${Number(item.pointEarned).toLocaleString("vi-VN")} điểm` : "-"}</td>
                     <td>{item.voucherId || "-"}</td>
                     <td>{item.rewardName || "-"}</td>
                     <td>{formatDateTime(item.playedAt)}</td>
@@ -203,7 +203,7 @@ function ProfileMiniGame({ summary: initialSummary = null, unavailable = false }
               ) : (
                 <tr>
                   <td colSpan="6" className="text-center text-muted py-4">
-                    Chua co lich su mini game.
+                    Chưa có lịch sử mini game.
                   </td>
                 </tr>
               )}

@@ -46,6 +46,14 @@ export const resetForgotPassword = async (data) => {
   });
 };
 
+export const changePassword = async (data) => {
+  return axiosClient.post("/api/auth/change-password", {
+    userId: data.userId,
+    oldPassword: data.oldPassword,
+    newPassword: data.newPassword,
+  });
+};
+
 export const logout = (scope = AUTH_SCOPES.USER) => {
   clearAuthSession(scope);
 };

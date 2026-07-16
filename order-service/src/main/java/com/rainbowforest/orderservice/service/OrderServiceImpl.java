@@ -152,7 +152,12 @@ public class OrderServiceImpl implements OrderService {
                 order.setDeliveryFailedAt(now); 
                 order.setFailureReason(reason);
                 break;
-            case "COMPLETED": order.setCompletedAt(now); break;
+            case "COMPLETED": 
+                order.setCompletedAt(now); 
+                if ("COD".equalsIgnoreCase(order.getPaymentMethod()) && !"PAID".equalsIgnoreCase(order.getPaymentStatus())) {
+                    order.setPaymentStatus("PAID");
+                }
+                break;
             case "CANCELLED": 
                 order.setCancelledAt(now); 
                 order.setCancelReason(reason);
